@@ -115,7 +115,8 @@ tasks {
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            artifactId = "mps-legacy-sync-plugin"
+            groupId = "org.modelix.mps"
+            artifactId = "legacy-sync-plugin"
             artifact(tasks.buildPlugin) {
                 extension = "zip"
             }
