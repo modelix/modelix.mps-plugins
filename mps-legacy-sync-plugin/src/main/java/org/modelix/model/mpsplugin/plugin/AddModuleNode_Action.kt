@@ -56,7 +56,7 @@ class AddModuleNode_Action() : BaseAction("Add Module", "", ICON) {
         if ((name == null || name.length == 0)) {
             return
         }
-        CloudNodeTreeNodeCreationMethods.createModule(nodeTreeNode, name)
+        CloudNodeTreeNodeCreationMethods.createModule(nodeTreeNode!!, name)
     }
 
     companion object {

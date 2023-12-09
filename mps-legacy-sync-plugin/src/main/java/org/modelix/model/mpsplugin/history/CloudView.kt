@@ -38,7 +38,7 @@ class CloudView() : JPanel(BorderLayout()) {
             return root
         }
 
-        override fun createPopupActionGroup(node: MPSTreeNode): ActionGroup {
+        override fun createPopupActionGroup(node: MPSTreeNode): ActionGroup? {
             if (node is CloudRootTreeNode) {
                 return ActionManager.getInstance()
                     .getAction("org.modelix.model.mpsplugin.plugin.CloudRootGroup_ActionGroup") as ActionGroup

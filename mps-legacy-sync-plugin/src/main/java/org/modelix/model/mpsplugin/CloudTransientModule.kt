@@ -12,7 +12,7 @@ import org.modelix.model.util.pmap.SmallPMap.Companion.empty
 class CloudTransientModule(name: String?, id: ModuleId?) : AbstractModule(null as IFile?), IUserObjectContainer,
     TransientSModule {
     private val myDescriptor: ModuleDescriptor
-    private var userObjects: CustomPMap<Any, Any>? = empty()
+    private var userObjects: CustomPMap<Any, Any?> = empty()
 
     init {
         myDescriptor = ModuleDescriptor()
@@ -26,7 +26,7 @@ class CloudTransientModule(name: String?, id: ModuleId?) : AbstractModule(null a
     }
 
     public override fun <T> putUserObject(key: UserObjectKey<T>, value: T) {
-        userObjects = userObjects!!.put(key, value)
+        userObjects = userObjects!!.put(key, value) ?: empty()
     }
 
     public override fun getModuleDescriptor(): ModuleDescriptor? {

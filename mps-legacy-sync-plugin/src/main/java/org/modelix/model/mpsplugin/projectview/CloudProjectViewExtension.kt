@@ -190,8 +190,8 @@ class CloudProjectViewExtension(private val project: Project?) {
         // wrong position
         val preferedIndex: Int = 3
         if (cloudTreeNode!!.getParent() != null && cloudTreeNode!!.getParent().getIndex(cloudTreeNode) != min(
-                (cloudTreeNode!!.getParent().getChildCount() - 1).toDouble(),
-                preferedIndex.toDouble()
+                (cloudTreeNode!!.getParent().getChildCount() - 1),
+                preferedIndex
             )
         ) {
             model!!.removeNodeFromParent(cloudTreeNode)

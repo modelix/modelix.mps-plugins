@@ -22,8 +22,8 @@ class Reconnect_Action : BaseAction("Reconnect", "", ICON) {
         if (event.getData(MPSCommonDataKeys.TREE_NODE) !is ModelServerTreeNode) {
             return false
         }
-        val modelServer = (event.getData(MPSCommonDataKeys.TREE_NODE) as ModelServerTreeNode?).getModelServer()
-        return !modelServer!!.isConnected()
+        val modelServer = (event.getData(MPSCommonDataKeys.TREE_NODE) as ModelServerTreeNode?)!!.modelServer
+        return !modelServer.isConnected
     }
 
     public override fun doUpdate(event: AnActionEvent, _params: Map<String, Any>) {
@@ -44,7 +44,7 @@ class Reconnect_Action : BaseAction("Reconnect", "", ICON) {
     }
 
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
-        val modelServer = (event.getData(MPSCommonDataKeys.TREE_NODE) as ModelServerTreeNode?).getModelServer()
+        val modelServer = (event.getData(MPSCommonDataKeys.TREE_NODE) as ModelServerTreeNode?)!!.modelServer
         modelServer!!.reconnect()
     }
 

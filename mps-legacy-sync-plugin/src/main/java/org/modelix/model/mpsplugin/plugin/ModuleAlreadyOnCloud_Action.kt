@@ -24,7 +24,7 @@ class ModuleAlreadyOnCloud_Action(private val treeInRepository: CloudRepository)
     }
 
     public override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
-        val connected: Boolean = treeInRepository.isConnected()
+        val connected: Boolean = treeInRepository.isConnected
         event.getPresentation().setText(event.getData(MPSCommonDataKeys.MODULE)!!.getModuleName() + " already in Cloud")
         try {
             return connected && ModelCloudImportUtils.containsModule(

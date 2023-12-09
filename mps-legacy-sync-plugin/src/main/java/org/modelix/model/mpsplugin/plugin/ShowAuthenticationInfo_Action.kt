@@ -50,10 +50,10 @@ class ShowAuthenticationInfo_Action() : BaseAction("Show Authentication Info", "
     }
 
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
-        val modelServer: ModelServerConnection? =
-            (event.getData(MPSCommonDataKeys.TREE_NODE) as ModelServerTreeNode?).getModelServer()
-        val author: String? = modelServer.getAuthor()
-        val email: String? = modelServer.getEmail()
+        val modelServer: ModelServerConnection =
+            (event.getData(MPSCommonDataKeys.TREE_NODE) as ModelServerTreeNode?)!!.modelServer
+        val author: String? = modelServer.author
+        val email: String? = modelServer.email
         Messages.showInfoMessage(
             event.getData(CommonDataKeys.PROJECT),
             "Author: " + author + "\nEmail: " + email,

@@ -49,10 +49,10 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
     private val nodeChangeListener: SNodeChangeListener = object : SNodeChangeListener {
         public override fun propertyChanged(e: SPropertyChangeEvent) {
             try {
-                if (isSynchronizing()) {
+                if (isSynchronizing) {
                     return
                 }
-                val branch: IBranch? = getBranch()
+                val branch: IBranch? = this@ModelBinding.branch
                 PArea((branch)!!).executeWrite({
                     synchronizer!!.runAndFlushReferences(object : Runnable {
                         public override fun run() {
@@ -74,7 +74,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
 
         public override fun referenceChanged(e: SReferenceChangeEvent) {
             try {
-                if (isSynchronizing()) {
+                if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
@@ -91,7 +91,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
 
         public override fun nodeAdded(e: SNodeAddEvent) {
             try {
-                if (isSynchronizing()) {
+                if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
@@ -108,7 +108,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
 
         public override fun nodeRemoved(e: SNodeRemoveEvent) {
             try {
-                if (isSynchronizing()) {
+                if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
@@ -126,7 +126,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
     private val modelListener: SModelListener = object : SModelListener {
         public override fun languageAdded(event: SModelLanguageEvent) {
             try {
-                if (isSynchronizing()) {
+                if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
@@ -143,7 +143,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
 
         public override fun languageRemoved(event: SModelLanguageEvent) {
             try {
-                if (isSynchronizing()) {
+                if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
@@ -160,7 +160,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
 
         public override fun devkitAdded(event: SModelDevKitEvent) {
             try {
-                if (isSynchronizing()) {
+                if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
@@ -177,7 +177,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
 
         public override fun devkitRemoved(event: SModelDevKitEvent) {
             try {
-                if (isSynchronizing()) {
+                if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
@@ -204,7 +204,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
 
         public override fun importAdded(event: SModelImportEvent) {
             try {
-                if (isSynchronizing()) {
+                if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
@@ -221,7 +221,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
 
         public override fun importRemoved(event: SModelImportEvent) {
             try {
-                if (isSynchronizing()) {
+                if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
@@ -256,7 +256,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
     }
 
     override fun doActivate() {
-        synchronizer = ModelSynchronizer(modelNodeId, model, getCloudRepository())
+        synchronizer = ModelSynchronizer(modelNodeId, model, cloudRepository!!)
         model!!.addChangeListener(nodeChangeListener)
         (model as SModelInternal?)!!.addModelListener(modelListener)
     }

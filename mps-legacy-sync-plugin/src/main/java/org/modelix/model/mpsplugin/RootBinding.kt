@@ -36,12 +36,12 @@ class RootBinding(override val cloudRepository: ICloudRepository) : Binding(null
 
     override val branch: IBranch?
         get() {
-            val branch: IBranch? = super.getBranch()
-            return (if (branch != null) branch else cloudRepository.getBranch())
+            val branch: IBranch? = super.branch
+            return (if (branch != null) branch else cloudRepository.branch)
         }
 
-    public override fun treeChanged(oldTree: ITree, newTree: ITree) {
-        if (syncQueue.isSynchronizing()) {
+    public override fun treeChanged(oldTree: ITree?, newTree: ITree) {
+        if (syncQueue.isSynchronizing) {
             return
         }
         enqueueSync(SyncDirection.TO_MPS, false, null)
@@ -49,15 +49,10 @@ class RootBinding(override val cloudRepository: ICloudRepository) : Binding(null
 
     override fun doSyncToMPS(newTree: ITree) {
         assertSyncThread()
-        val oldTree: ITree? = syncQueue.getLastTreeAfterSync()
+        val oldTree: ITree? = syncQueue.lastTreeAfterSync
         if (oldTree != null && !(Objects.equals(newTree, oldTree))) {
-            val visitors: List<ITreeChangeVisitor> =
-                Sequence.fromIterable(getAllBindings()).select(object : ISelector<Binding, ITreeChangeVisitor?>() {
-                    public override fun select(it: Binding): ITreeChangeVisitor? {
-                        return it.getTreeChangeVisitor(oldTree, newTree)
-                    }
-                }).where(NotNullWhereFilter<Any?>()).toListSequence()
-            if (ListSequence.fromList(visitors).isNotEmpty()) {
+            val visitors = allBindings.mapNotNull { it.getTreeChangeVisitor(oldTree, newTree) }
+            if (visitors.isNotEmpty()) {
                 newTree.visitChanges(oldTree, TreeChangeMulticaster(visitors))
             }
         }
@@ -72,12 +67,12 @@ class RootBinding(override val cloudRepository: ICloudRepository) : Binding(null
         if (disposed) {
             throw IllegalStateException("Reactivation not supported")
         }
-        cloudRepository.getActiveBranch().addListener(this)
+        cloudRepository.activeBranch!!.addListener(this)
     }
 
     override fun doDeactivate() {
         disposed = true
-        cloudRepository.getActiveBranch().removeListener(this)
+        cloudRepository.activeBranch!!.removeListener(this)
         syncQueue.dispose()
     }
 }

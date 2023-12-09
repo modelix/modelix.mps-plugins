@@ -57,14 +57,14 @@ class ShowProperties_Action() : BaseAction("Show Properties", "", ICON) {
     }
 
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
-        val nodeTreeNode: CloudNodeTreeNode? = event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?
-        val treeInRepository: CloudRepository? = CloudNodeTreeNodeBinding.getTreeInRepository(nodeTreeNode)
+        val nodeTreeNode: CloudNodeTreeNode = (event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?)!!
+        val treeInRepository: CloudRepository = CloudNodeTreeNodeBinding.getTreeInRepository(nodeTreeNode)
         // I need to know in which module to look for this node
         val sb: StringBuilder = StringBuilder()
-        treeInRepository!!.runRead(object : Runnable {
+        treeInRepository.runRead(object : Runnable {
             public override fun run() {
-                val node: INode? = nodeTreeNode.getNode()
-                val properties: List<IProperty> = node!!.concept!!.getAllProperties()
+                val node: INode = nodeTreeNode.node
+                val properties: List<IProperty> = node.concept!!.getAllProperties()
                 for (property: String? in ListSequence.fromList<IProperty>(properties)
                     .select<String>(object : ISelector<IProperty, String>() {
                         public override fun select(it: IProperty): String {

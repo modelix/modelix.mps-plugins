@@ -47,9 +47,9 @@ class GetCloudRepositorySize_Action() : BaseAction("Get Number of Nodes", "", IC
     }
 
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
-        val treeNode: RepositoryTreeNode? = event.getData(MPSCommonDataKeys.TREE_NODE) as RepositoryTreeNode?
-        val activeBranch: ActiveBranch? = treeNode.getModelServer().getActiveBranch(treeNode.getRepositoryId())
-        val branch: IBranch = activeBranch!!.branch
+        val treeNode: RepositoryTreeNode = (event.getData(MPSCommonDataKeys.TREE_NODE) as RepositoryTreeNode?)!!
+        val activeBranch: ActiveBranch = treeNode.modelServer.getActiveBranch(treeNode.repositoryId)
+        val branch: IBranch = activeBranch.branch
         val size: Long = branch.computeRead({
             val tree: ITree = branch.transaction.tree.unwrap()
             if (tree is CLTree) {

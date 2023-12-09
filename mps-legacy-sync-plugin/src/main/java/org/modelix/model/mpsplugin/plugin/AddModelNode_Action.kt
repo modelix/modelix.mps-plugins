@@ -56,7 +56,7 @@ class AddModelNode_Action() : BaseAction("Add Model", "", ICON) {
         if ((name == null || name.length == 0)) {
             return
         }
-        CloudNodeTreeNodeCreationMethods.createModel(nodeTreeNode, name)
+        CloudNodeTreeNodeCreationMethods.createModel(nodeTreeNode!!, name)
     }
 
     companion object {

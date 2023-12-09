@@ -42,9 +42,9 @@ class NavigateToMpsNode_Action() : BaseAction("Navigate to Corresponding MPS Nod
         if (!(TreeNodeClassification.isProperNode(event.getData(MPSCommonDataKeys.TREE_NODE)))) {
             return false
         }
-        val nodeTreeNode: CloudNodeTreeNode? = event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?
-        val treeInRepository: CloudRepository? = CloudNodeTreeNodeBinding.getTreeInRepository(nodeTreeNode)
-        return treeInRepository!!.computeRead({ MPSNodeMapping.isMappedToMpsNode(nodeTreeNode.getNode()) })
+        val nodeTreeNode = (event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?)!!
+        val treeInRepository = CloudNodeTreeNodeBinding.getTreeInRepository(nodeTreeNode)
+        return treeInRepository.computeRead({ MPSNodeMapping.isMappedToMpsNode(nodeTreeNode.node) })
     }
 
     public override fun doUpdate(event: AnActionEvent, _params: Map<String, Any>) {
@@ -71,14 +71,14 @@ class NavigateToMpsNode_Action() : BaseAction("Navigate to Corresponding MPS Nod
     }
 
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
-        val nodeTreeNode: CloudNodeTreeNode? = event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?
-        val treeInRepository: CloudRepository? = CloudNodeTreeNodeBinding.getTreeInRepository(nodeTreeNode)
+        val nodeTreeNode = (event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?)!!
+        val treeInRepository = CloudNodeTreeNodeBinding.getTreeInRepository(nodeTreeNode)
         // I need to know in which module to look for this node
-        treeInRepository!!.runRead(object : Runnable {
+        treeInRepository.runRead(object : Runnable {
             public override fun run() {
                 val mpsNodeId: String? =
-                    treeInRepository.computeRead({ MPSNodeMapping.mappedMpsNodeID(nodeTreeNode.getNode()) })
-                val cloudModule: INode? = INodeUtils.containingModule(nodeTreeNode.getNode())
+                    treeInRepository.computeRead({ MPSNodeMapping.mappedMpsNodeID(nodeTreeNode.node) })
+                val cloudModule: INode? = INodeUtils.containingModule(nodeTreeNode.node)
                 if (cloudModule == null) {
                     Messages.showErrorDialog(
                         event.getData(CommonDataKeys.PROJECT),
@@ -87,7 +87,7 @@ class NavigateToMpsNode_Action() : BaseAction("Navigate to Corresponding MPS Nod
                     )
                     return
                 }
-                val cloudModel: INode? = INodeUtils.containingModel(nodeTreeNode.getNode())
+                val cloudModel: INode? = INodeUtils.containingModel(nodeTreeNode.node)
                 if (cloudModel == null) {
                     Messages.showErrorDialog(
                         event.getData(CommonDataKeys.PROJECT),

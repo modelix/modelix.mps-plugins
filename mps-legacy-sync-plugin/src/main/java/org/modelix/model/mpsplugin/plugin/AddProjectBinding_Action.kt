@@ -39,12 +39,9 @@ class AddProjectBinding_Action() : BaseAction("Bind to Current Project", "", ICO
         }
         val nodeTreeNode: CloudNodeTreeNode =
             ((as_8zbn8k_a0a1a4(event.getData(MPSCommonDataKeys.TREE_NODE), CloudNodeTreeNode::class.java))!!)
-        val nodeId: Long = (nodeTreeNode.getNode() as PNodeAdapter?)!!.nodeId
-        val repositoryId: RepositoryId? = nodeTreeNode.getAncestor(RepositoryTreeNode::class.java).getRepositoryId()
-        if (nodeTreeNode.getModelServer().hasProjectBinding(repositoryId, nodeId)) {
-            return false
-        }
-        return true
+        val nodeId: Long = (nodeTreeNode.node as PNodeAdapter?)!!.nodeId
+        val repositoryId: RepositoryId? = nodeTreeNode.getAncestor(RepositoryTreeNode::class.java).repositoryId
+        return nodeTreeNode.modelServer?.hasProjectBinding(repositoryId, nodeId) == false
     }
 
     public override fun doUpdate(event: AnActionEvent, _params: Map<String, Any>) {
@@ -71,9 +68,9 @@ class AddProjectBinding_Action() : BaseAction("Bind to Current Project", "", ICO
     }
 
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
-        val nodeTreeNode: CloudNodeTreeNode? = event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?
-        val expectedProjectName: String? = PArea(nodeTreeNode.getBranch()).executeRead({
-            nodeTreeNode.getNode().getPropertyValue(
+        val nodeTreeNode: CloudNodeTreeNode = (event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?)!!
+        val expectedProjectName: String? = PArea(nodeTreeNode.branch).executeRead({
+            nodeTreeNode.node.getPropertyValue(
                 PROPS.`name$MnvL`.getName()
             )
         })
@@ -93,14 +90,14 @@ class AddProjectBinding_Action() : BaseAction("Bind to Current Project", "", ICO
             }
         }
         val modelServer: ModelServerConnection? =
-            nodeTreeNode!!.getAncestor(ModelServerTreeNode::class.java).getModelServer()
-        val repositoryId: RepositoryId? = nodeTreeNode.getAncestor(RepositoryTreeNode::class.java).getRepositoryId()
+            nodeTreeNode!!.getAncestor(ModelServerTreeNode::class.java).modelServer
+        val repositoryId: RepositoryId? = nodeTreeNode.getAncestor(RepositoryTreeNode::class.java).repositoryId
         val treeInRepository: CloudRepository = CloudRepository(modelServer, repositoryId)
-        val cloudProjectId: Long = (nodeTreeNode.getNode() as PNodeAdapter?)!!.nodeId
+        val cloudProjectId: Long = (nodeTreeNode.node as PNodeAdapter?)!!.nodeId
         ModelCloudImportUtils.bindCloudProjectToMpsProject(
             treeInRepository,
             cloudProjectId,
-            event.getData(MPSCommonDataKeys.MPS_PROJECT),
+            event.getData(MPSCommonDataKeys.MPS_PROJECT)!!,
             SyncDirection.TO_MPS
         )
     }

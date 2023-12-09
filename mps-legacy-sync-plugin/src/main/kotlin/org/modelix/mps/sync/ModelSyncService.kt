@@ -104,7 +104,7 @@ class ModelSyncService : Disposable, ISyncService {
     }
 
     private inner class ServerConnection(httpClient: HttpClient?, url: String) : IModelServerConnection {
-        private val legacyConnection = ModelServerConnections.getInstance().addModelServer(url, httpClient)
+        private val legacyConnection = ModelServerConnections.instance.addModelServer(url, httpClient)
         private val legacyActiveBranches: MutableMap<RepositoryId, ActiveBranchAdapter> = HashMap()
 
         override fun getActiveBranches(): List<IBranchConnection> {
@@ -125,19 +125,19 @@ class ModelSyncService : Disposable, ISyncService {
         }
 
         override fun listRepositories(): List<RepositoryId> {
-            val infoBranch = legacyConnection.infoBranch
+            val infoBranch = legacyConnection.infoBranch!!
             val ids = infoBranch.computeRead {
                 legacyConnection.allRepositories.map {
-                    SNodeToNodeAdapter.wrap(it).getPropertyValue(IProperty.fromName("id"))
+                    SNodeToNodeAdapter.wrap(it)?.getPropertyValue(IProperty.fromName("id"))
                 }
             }
             return ids.filterNotNull().map { RepositoryId(it) }
         }
 
         override fun listBranches(): List<BranchReference> {
-            val infoBranch = legacyConnection.infoBranch
+            val infoBranch = legacyConnection.infoBranch!!
             return infoBranch.computeRead {
-                legacyConnection.allRepositories.map { SNodeToNodeAdapter.wrap(it) }
+                legacyConnection.allRepositories.mapNotNull { SNodeToNodeAdapter.wrap(it) }
                     .flatMap { repoNode ->
                         val repoId = RepositoryId(repoNode.getPropertyValue(IProperty.fromName("id"))!!)
                         repoNode.getChildren(IChildLink.fromName("branches")).map { branchNode ->
@@ -153,7 +153,7 @@ class ModelSyncService : Disposable, ISyncService {
 
         override fun dispose() {
             serverConnections -= this
-            ModelServerConnections.getInstance().removeModelServer(legacyConnection)
+            ModelServerConnections.instance.removeModelServer(legacyConnection)
         }
 
         private inner class ActiveBranchAdapter(val repositoryId: RepositoryId, val legacyActiveBranch: ActiveBranch) : IBranchConnection {
@@ -239,7 +239,7 @@ class ModelSyncService : Disposable, ISyncService {
             inner class ProjectBindingAdapter(override val legacyBinding: ProjectBinding) : BindingAdapter()
 
             inner class ModuleBindingAdapter(override val legacyBinding: ModuleBinding) : BindingAdapter(), org.modelix.mps.sync.api.IModuleBinding {
-                override fun getModule(): SModule = legacyBinding.module
+                override fun getModule(): SModule = legacyBinding.module!!
             }
         }
     }

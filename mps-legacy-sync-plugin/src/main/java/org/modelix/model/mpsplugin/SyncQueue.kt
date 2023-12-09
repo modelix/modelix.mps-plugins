@@ -56,7 +56,7 @@ class SyncQueue(private val owner: RootBinding) {
 
     fun dispose() {}
     fun enqueue(task: SyncTask): Boolean {
-        if (task.binding.getRootBinding() !== owner) {
+        if (task.binding.rootBinding !== owner) {
             throw IllegalArgumentException(task.binding.toString() + " is not attached to " + this)
         }
         synchronized(syncQueue, {
@@ -77,7 +77,7 @@ class SyncQueue(private val owner: RootBinding) {
         flushExecutor.flush()
     }
 
-    private fun loadFromQueue(locks2tasks: MutableMap<Set<ELockType?>?, List<SyncTask>>) {
+    private fun loadFromQueue(locks2tasks: MutableMap<Set<ELockType>, List<SyncTask>>) {
         var queueElements: List<SyncTask>?
         synchronized(syncQueue, {
             queueElements = ListSequence.fromListWithValues(ArrayList(), MapSequence.fromMap(syncQueue).values)
@@ -98,7 +98,7 @@ class SyncQueue(private val owner: RootBinding) {
             public override fun accept(it: List<SyncTask>?) {
                 Collections.sort(it, object : Comparator<SyncTask> {
                     public override fun compare(t1: SyncTask, t2: SyncTask): Int {
-                        return t1.binding.getDepth() - t2.binding.getDepth()
+                        return t1.binding.depth - t2.binding.depth
                     }
                 })
             }
@@ -112,10 +112,10 @@ class SyncQueue(private val owner: RootBinding) {
             try {
                 isSynchronizing = true
                 syncThread = Thread.currentThread()
-                val locks2task: MutableMap<Set<ELockType?>?, List<SyncTask>> = LinkedHashMap()
+                val locks2task: MutableMap<Set<ELockType>, List<SyncTask>> = LinkedHashMap()
                 loadFromQueue(locks2task)
                 while (Sequence.fromIterable<List<SyncTask>>(
-                        MapSequence.fromMap<Set<ELockType?>?, List<SyncTask>>(
+                        MapSequence.fromMap<Set<ELockType>, List<SyncTask>>(
                             locks2task
                         ).values
                     ).translate<SyncTask>(object : ITranslator2<List<SyncTask>, SyncTask>() {
@@ -124,10 +124,10 @@ class SyncQueue(private val owner: RootBinding) {
                         }
                     }).isNotEmpty()
                 ) {
-                    for (entry: IMapping<Set<ELockType?>?, List<SyncTask>> in MapSequence.fromMap<Set<ELockType?>?, List<SyncTask>>(
+                    for (entry: IMapping<Set<ELockType>, List<SyncTask>> in MapSequence.fromMap<Set<ELockType>, List<SyncTask>>(
                         locks2task
-                    ).where(object : IWhereFilter<IMapping<Set<ELockType?>?, List<SyncTask?>?>>() {
-                        public override fun accept(it: IMapping<Set<ELockType?>?, List<SyncTask?>?>): Boolean {
+                    ).where(object : IWhereFilter<IMapping<Set<ELockType>, List<SyncTask>>>() {
+                        public override fun accept(it: IMapping<Set<ELockType>, List<SyncTask>>): Boolean {
                             return ListSequence.fromList(it.value()).isNotEmpty()
                         }
                     })) {
@@ -220,7 +220,7 @@ class SyncQueue(private val owner: RootBinding) {
                     })
 
                 ELockType.CLOUD_WRITE -> {
-                    val branch: IBranch? = owner.getBranch()
+                    val branch: IBranch? = owner.branch
                     PArea((branch)!!).executeWrite({
                         body.run()
                         val t: IWriteTransaction = branch.writeTransaction
@@ -235,9 +235,9 @@ class SyncQueue(private val owner: RootBinding) {
                     })
                 }
 
-                ELockType.CLOUD_READ -> PArea(owner.getBranch()).executeRead({
+                ELockType.CLOUD_READ -> PArea(owner.branch!!).executeRead({
                     body.run()
-                    lastTreeAfterSync = owner.getBranch().transaction.tree
+                    lastTreeAfterSync = owner.branch!!.transaction.tree
                     Unit
                 })
 

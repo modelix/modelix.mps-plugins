@@ -53,7 +53,7 @@ class AddRepository_Action() : BaseAction("Add Repository", "", ICON) {
 
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
         val modelServer: ModelServerConnection? =
-            (event.getData(MPSCommonDataKeys.TREE_NODE) as ModelServerTreeNode?).getModelServer()
+            (event.getData(MPSCommonDataKeys.TREE_NODE) as ModelServerTreeNode?)!!.modelServer
         val id: String? = Messages.showInputDialog(
             event.getData(CommonDataKeys.PROJECT),
             "ID",

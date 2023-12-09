@@ -34,7 +34,7 @@ class SyncTask(
         }
         try {
             state = State.RUNNING
-            if (binding.isActive()) {
+            if (binding.isActive) {
                 binding.runningTask = this
                 implementation.run()
             } else {

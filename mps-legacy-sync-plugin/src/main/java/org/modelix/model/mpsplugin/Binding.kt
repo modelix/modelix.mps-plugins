@@ -27,7 +27,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
         protected set
     var runningTask: SyncTask? = null
     protected fun assertSyncThread() {
-        rootBinding.getSyncQueue().assertSyncThread()
+        rootBinding.syncQueue.assertSyncThread()
     }
 
     val depth: Int
@@ -58,7 +58,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
                     ),
                     object : Runnable {
                         public override fun run() {
-                            syncToMPS(branch.transaction.tree)
+                            branch?.transaction?.tree?.let { syncToMPS(it) }
                         }
                     })
 
@@ -102,7 +102,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
 
     fun forceEnqueueSyncTo(direction: SyncDirection, initial: Boolean, callback: Runnable?) {
         val task: SyncTask = createTask(direction, initial, callback)
-        val isEnqueued: Boolean = rootBinding.getSyncQueue().enqueue(task)
+        val isEnqueued: Boolean = rootBinding.syncQueue.enqueue(task)
         if (isEnqueued) {
             pendingTask = task
         }
@@ -110,7 +110,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
 
     val isDone: Boolean
         get() {
-            return (pendingTask == null || pendingTask!!.isDone()) && Sequence.fromIterable(getOwnedBindings())
+            return (pendingTask == null || pendingTask!!.isDone) && Sequence.fromIterable(getOwnedBindings())
                 .all(object : IWhereFilter<Binding>() {
                     public override fun accept(it: Binding): Boolean {
                         return it.isDone
@@ -164,13 +164,9 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
     }
 
     abstract fun doSyncToCloud(t: IWriteTransaction)
-    open val cloudRepository: ICloudRepository
+    open val cloudRepository: ICloudRepository?
         get() {
-            if (owner == null) {
-                return null
-            } else {
-                return owner!!.cloudRepository
-            }
+            return owner?.cloudRepository
         }
 
     fun setOwner(newOwner: Binding?) {
@@ -226,15 +222,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
 
     val owners: Iterable<Binding>
         get() {
-            return (if (owner == null) Sequence.fromIterable(emptyList()) else Sequence.fromIterable(
-                Sequence.singleton(
-                    owner
-                )
-            ).concat(
-                Sequence.fromIterable(
-                    owner!!.owners
-                )
-            ))
+            return owner?.let { listOf(it) + it.owners } ?: emptyList()
         }
     val rootOwnerOrSelf: Binding
         get() {
@@ -274,7 +262,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
         }
         isActive = true
         doActivate()
-        if (rootBinding.getSyncQueue().getTask(this) == null) {
+        if (rootBinding.syncQueue.getTask(this) == null) {
             enqueueSync(
                 ((if (initialSyncDirection != null) initialSyncDirection else SyncDirection.TO_MPS)!!),
                 true,
@@ -319,9 +307,9 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
         ListSequence.fromList(listeners).removeElement(l)
     }
 
-    protected fun notifyListeners(notifier: _void_P1_E0<in IListener?>) {
-        ListSequence.fromList(listeners).visitAll(object : IVisitor<IListener?>() {
-            public override fun visit(it: IListener?) {
+    protected fun notifyListeners(notifier: _void_P1_E0<in IListener>) {
+        ListSequence.fromList(listeners).visitAll(object : IVisitor<IListener>() {
+            public override fun visit(it: IListener) {
                 try {
                     notifier.invoke(it)
                 } catch (ex: Exception) {
@@ -345,7 +333,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
         private val LOG: Logger = LogManager.getLogger(Binding::class.java)
         private fun check_cvbvhu_a0a63(checkedDotOperand: SyncTask?): Boolean {
             if (null != checkedDotOperand) {
-                return checkedDotOperand.isRunning()
+                return checkedDotOperand.isRunning
             }
             return false
         }

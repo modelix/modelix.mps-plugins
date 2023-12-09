@@ -27,7 +27,7 @@ class CopyPhysicalModuleOnCloud_Action(private val treeInRepository: CloudReposi
     }
 
     public override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
-        val connected: Boolean = treeInRepository.isConnected()
+        val connected: Boolean = treeInRepository.isConnected
         event.getPresentation().setText("Copy on Cloud -> " + treeInRepository.presentation())
         try {
             return connected && !(ModelCloudImportUtils.containsModule(

@@ -15,20 +15,20 @@ import javax.swing.tree.TreeNode
 object TreeNodeAccess {
     fun getName(_this: TreeNode?): String? {
         val nodeTreeNode: CloudNodeTreeNode = ((as_ps3aya_a0a0a1(_this, CloudNodeTreeNode::class.java))!!)
-        return PArea(nodeTreeNode.getBranch()).executeRead({
-            nodeTreeNode.getNode().getPropertyValue(PROPS.`name$MnvL`.getName())
+        return PArea(nodeTreeNode.branch).executeRead({
+            nodeTreeNode.node.getPropertyValue(PROPS.`name$MnvL`.getName())
         })
     }
 
     fun delete(_this: TreeNode?) {
         val nodeTreeNode: CloudNodeTreeNode = ((as_ps3aya_a0a0a2(_this, CloudNodeTreeNode::class.java))!!)
         val parent: TreeNode? = nodeTreeNode.getParent()
-        PArea(nodeTreeNode.getBranch()).executeWrite({
-            val nodeIN: INode? = nodeTreeNode.getNode()
+        PArea(nodeTreeNode.branch).executeWrite({
+            val nodeIN: INode? = nodeTreeNode.node
             val parent: INode? = nodeIN!!.parent
             if (parent == null) {
                 val found: Wrappers._boolean = Wrappers._boolean(false)
-                ListSequence.fromList(ModelServerNavigation.trees(nodeTreeNode.getModelServer()))
+                ListSequence.fromList(ModelServerNavigation.trees(nodeTreeNode.modelServer!!))
                     .visitAll(object : IVisitor<CloudRepository>() {
                         public override fun visit(tree: CloudRepository) {
                             if (ListSequence.fromList(tree.repoRoots()).contains(nodeIN)) {

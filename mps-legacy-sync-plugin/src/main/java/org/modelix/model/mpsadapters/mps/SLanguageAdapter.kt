@@ -20,8 +20,8 @@ class SLanguageAdapter(private val language: SLanguage?) : ILanguage {
 
     public override fun getConcepts(): List<IConcept> {
         val concepts: Iterable<SAbstractConcept> = language!!.getConcepts()
-        return Sequence.fromIterable(concepts).select(object : ISelector<SAbstractConcept?, IConcept>() {
-            public override fun select(it: SAbstractConcept?): IConcept {
+        return Sequence.fromIterable(concepts).select(object : ISelector<SAbstractConcept, IConcept>() {
+            public override fun select(it: SAbstractConcept): IConcept {
                 val c: IConcept = SConceptAdapter(it)
                 return c
             }

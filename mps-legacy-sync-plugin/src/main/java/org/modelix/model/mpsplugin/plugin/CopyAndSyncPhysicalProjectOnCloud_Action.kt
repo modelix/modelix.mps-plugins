@@ -37,7 +37,7 @@ class CopyAndSyncPhysicalProjectOnCloud_Action(
             })
         }
         // TODO verify it is not already stored
-        return treeInRepository.isConnected()
+        return treeInRepository.isConnected
     }
 
     public override fun doUpdate(event: AnActionEvent, _params: Map<String, Any>) {
@@ -60,7 +60,7 @@ class CopyAndSyncPhysicalProjectOnCloud_Action(
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
         ModelCloudImportUtils.copyAndSyncInModelixAsEntireProject(
             treeInRepository,
-            event.getData(MPSCommonDataKeys.MPS_PROJECT),
+            event.getData(MPSCommonDataKeys.MPS_PROJECT)!!,
             cloudProject
         )
     }

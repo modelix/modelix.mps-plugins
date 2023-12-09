@@ -19,12 +19,12 @@ class ModuleCheckout(mpsProject: Project?, private val treeInRepository: CloudRe
         this.mpsProject = mpsProject as MPSProject?
     }
 
-    fun checkoutCloudModule(cloudModule: PNodeAdapter?): Solution? {
+    fun checkoutCloudModule(cloudModule: PNodeAdapter): Solution {
         val modelCloudExporter: ModelCloudExporter = ModelCloudExporter(treeInRepository)
         modelCloudExporter.setCheckoutMode()
         val exportPath: String = mpsProject!!.getProjectFile().getAbsolutePath()
-        val moduleIds: Set<Long> = SetSequence.fromSetAndArray(HashSet(), cloudModule!!.nodeId)
-        val solutions: _T<List<Solution?>?> = _T()
+        val moduleIds: Set<Long> = SetSequence.fromSetAndArray(HashSet(), cloudModule.nodeId)
+        val solutions: _T<List<Solution>> = _T()
         val r: Runnable = object : Runnable {
             public override fun run() {
                 mpsProject.getRepository().getModelAccess().executeCommand(object : Runnable {

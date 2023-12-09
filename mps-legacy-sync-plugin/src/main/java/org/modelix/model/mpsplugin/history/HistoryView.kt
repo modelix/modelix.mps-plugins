@@ -105,8 +105,8 @@ class HistoryView() : JPanel() {
             branch.runWriteT({ t: IWriteTransaction ->
                 t.applyOperation(
                     RevertToOp(
-                        KVEntryReference(latestKnownVersion.data),
-                        KVEntryReference(versionToRevertTo.data)
+                        KVEntryReference(latestKnownVersion.data!!),
+                        KVEntryReference(versionToRevertTo.data!!)
                     )
                 )
                 Unit

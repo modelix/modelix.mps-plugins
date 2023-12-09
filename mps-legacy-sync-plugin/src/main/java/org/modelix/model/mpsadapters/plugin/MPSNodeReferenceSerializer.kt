@@ -22,9 +22,9 @@ class MPSNodeReferenceSerializer() : INodeReferenceSerializer {
         if (ref is SNodeReferenceAdapter) {
             return NODE_PREFIX + SNodePointer.serialize(ref.getReference())
         } else if (ref is SModelAsNode.NodeReference) {
-            return MODEL_PREFIX + PersistenceFacade.getInstance().asString(ref.getModelRef())
+            return MODEL_PREFIX + PersistenceFacade.getInstance().asString(ref.modelRef)
         } else if (ref is SModuleAsNode.NodeReference) {
-            return MODULE_PREFIX + PersistenceFacade.getInstance().asString(ref.getModuleRef())
+            return MODULE_PREFIX + PersistenceFacade.getInstance().asString(ref.moduleRef)
         } else if (ref is SRepositoryAsNode.NodeReference) {
             return SERIALIZED_GLOBAL_REPOSITORY
         } else {

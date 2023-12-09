@@ -55,11 +55,11 @@ class CheckoutModule_Action() : BaseAction("Checkout", "", ICON) {
     }
 
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
-        val nodeTreeNode: CloudNodeTreeNode? = event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?
-        val treeInRepository: CloudRepository? = CloudNodeTreeNodeBinding.getTreeInRepository(nodeTreeNode)
+        val nodeTreeNode: CloudNodeTreeNode = (event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?)!!
+        val treeInRepository: CloudRepository = CloudNodeTreeNodeBinding.getTreeInRepository(nodeTreeNode)
         val mpsProject: jetbrains.mps.project.Project? =
             ProjectHelper.toMPSProject(event.getData(CommonDataKeys.PROJECT))
-        ModuleCheckout(mpsProject, treeInRepository).checkoutCloudModule((nodeTreeNode.getNode() as PNodeAdapter?))
+        ModuleCheckout(mpsProject, treeInRepository).checkoutCloudModule((nodeTreeNode.node as PNodeAdapter))
     }
 
     companion object {

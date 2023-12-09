@@ -55,7 +55,7 @@ class CloudBindingTreeNode(val binding: Binding?, val repositoryInModelServer: C
 
     val modelServer: ModelServerConnection?
         get() {
-            return repositoryInModelServer.getModelServer()
+            return repositoryInModelServer.modelServer
         }
 
     fun updateBindingsLater() {
@@ -67,7 +67,7 @@ class CloudBindingTreeNode(val binding: Binding?, val repositoryInModelServer: C
     }
 
     fun updateText() {
-        setText(binding.toString() + ((if (binding!!.isActive()) "" else " [disabled]")))
+        setText(binding.toString() + ((if (binding!!.isActive) "" else " [disabled]")))
     }
 
     fun updateBindings() {

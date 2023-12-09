@@ -57,9 +57,9 @@ class SetProperty_Action(private val node: INode, private val role: SProperty) :
     }
 
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
-        val nodeTreeNode: CloudNodeTreeNode? = event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?
+        val nodeTreeNode: CloudNodeTreeNode = (event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?)!!
         val currentValue: String? = CloudNodeTreeNodeBinding.getTreeInRepository(nodeTreeNode).computeRead({
-            nodeTreeNode.getNode().getPropertyValue(
+            nodeTreeNode.node.getPropertyValue(
                 role.getName()
             )
         })
@@ -82,7 +82,7 @@ class SetProperty_Action(private val node: INode, private val role: SProperty) :
         if (value == null) {
             return
         }
-        PArea(nodeTreeNode.getBranch()).executeWrite<Unit>({
+        PArea(nodeTreeNode.branch).executeWrite<Unit>({
             node.setPropertyValue(role.getName(), value)
             Unit
         })

@@ -59,14 +59,14 @@ class ShowReferences_Action() : BaseAction("Show References", "", ICON) {
     }
 
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
-        val nodeTreeNode: CloudNodeTreeNode? = event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?
-        val treeInRepository: CloudRepository? = CloudNodeTreeNodeBinding.getTreeInRepository(nodeTreeNode)
+        val nodeTreeNode: CloudNodeTreeNode = (event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?)!!
+        val treeInRepository: CloudRepository = CloudNodeTreeNodeBinding.getTreeInRepository(nodeTreeNode)
         // I need to know in which module to look for this node
         val sb: StringBuilder = StringBuilder()
-        treeInRepository!!.runRead(object : Runnable {
+        treeInRepository.runRead(object : Runnable {
             public override fun run() {
-                val node: INode? = nodeTreeNode.getNode()
-                val referenceLinks: List<IReferenceLink> = node!!.concept!!.getAllReferenceLinks()
+                val node: INode = nodeTreeNode.node
+                val referenceLinks: List<IReferenceLink> = node.concept!!.getAllReferenceLinks()
                 for (refLink: String? in ListSequence.fromList<IReferenceLink>(referenceLinks)
                     .select<String>(object : ISelector<IReferenceLink, String>() {
                         public override fun select(it: IReferenceLink): String {
@@ -78,7 +78,7 @@ class ShowReferences_Action() : BaseAction("Show References", "", ICON) {
                     val target: INode? = node.getReferenceTarget((refLink)!!)
                     if (target is PNodeAdapter) {
                         val targetAsPNA: PNodeAdapter = target
-                        if (!(Objects.equals(targetAsPNA.branch, nodeTreeNode.getBranch()))) {
+                        if (!(Objects.equals(targetAsPNA.branch, nodeTreeNode.branch))) {
                             sb.append("[branch " + targetAsPNA.branch.getId() + "] ")
                         }
                         sb.append("#")

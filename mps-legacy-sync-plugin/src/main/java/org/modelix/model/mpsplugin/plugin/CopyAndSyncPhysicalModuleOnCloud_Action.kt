@@ -27,7 +27,7 @@ class CopyAndSyncPhysicalModuleOnCloud_Action(private val treeInRepository: Clou
     }
 
     public override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
-        val connected: Boolean = treeInRepository.isConnected()
+        val connected: Boolean = treeInRepository.isConnected
         event.getPresentation().setText("Copy on Cloud and Sync -> " + treeInRepository.presentation())
         try {
             return connected && !(ModelCloudImportUtils.containsModule(
@@ -68,7 +68,7 @@ class CopyAndSyncPhysicalModuleOnCloud_Action(private val treeInRepository: Clou
             public override fun run(indicator: ProgressIndicator) {
                 ModelCloudImportUtils.copyAndSyncInModelixAsIndependentModule(
                     treeInRepository,
-                    event.getData(MPSCommonDataKeys.MODULE),
+                    event.getData(MPSCommonDataKeys.MODULE)!!,
                     event.getData(CommonDataKeys.PROJECT),
                     ProgressMonitorAdapter(indicator)
                 )

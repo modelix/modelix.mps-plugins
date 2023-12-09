@@ -34,9 +34,9 @@ class RemoveRepository_Action() : BaseAction("Remove Repository", "", ICON) {
     }
 
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
-        val repositoryNode: RepositoryTreeNode? = event.getData(MPSCommonDataKeys.TREE_NODE) as RepositoryTreeNode?
-        val modelServer: ModelServerConnection? = repositoryNode.getModelServer()
-        modelServer!!.removeRepository(repositoryNode.getRepositoryId().id)
+        val repositoryNode: RepositoryTreeNode = (event.getData(MPSCommonDataKeys.TREE_NODE) as RepositoryTreeNode?)!!
+        val modelServer: ModelServerConnection = repositoryNode.modelServer
+        modelServer.removeRepository(repositoryNode.repositoryId.id)
     }
 
     companion object {

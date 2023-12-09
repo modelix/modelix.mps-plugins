@@ -51,7 +51,7 @@ class AddProjectNode_Action() : BaseAction("Add Project", "", ICON) {
     }
 
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
-        val nodeTreeNode: CloudNodeTreeNode? = event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?
+        val nodeTreeNode: CloudNodeTreeNode = (event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?)!!
         val name: String? = Messages.showInputDialog(event.getData(CommonDataKeys.PROJECT), "Name", "Add Project", null)
         if ((name == null || name.length == 0)) {
             return
