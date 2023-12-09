@@ -119,7 +119,9 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
                 json()
             }
             install(io.ktor.server.websocket.WebSockets)
-            val repositoriesManager = RepositoriesManager(LocalModelClient(InMemoryStoreClient()))
+            val storeClient = InMemoryStoreClient()
+            storeClient.put("server-id", "sync-plugin-test")
+            val repositoriesManager = RepositoriesManager(LocalModelClient(storeClient))
             ModelReplicationServer(repositoriesManager).init(this)
             KeyValueLikeModelServer(repositoriesManager).init(this)
         }
