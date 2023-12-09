@@ -122,7 +122,7 @@ allprojects {
 }
 
 val mpsVersion = project.findProperty("mps.version")?.toString()?.takeIf { it.isNotEmpty() }
-    ?: "2023.2".also { ext["mps.version"] = it }
+    ?: "2021.1.4".also { ext["mps.version"] = it }
 println("Building for MPS version $mpsVersion")
 val mpsJavaVersion = if (mpsVersion >= "2022.2") 17 else 11
 ext["mps.java.version"] = mpsJavaVersion
