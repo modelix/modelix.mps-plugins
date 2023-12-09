@@ -680,9 +680,9 @@ class ModelSynchronizer(
 
         protected fun processPendingReferences() {
             val targetModels: Set<SModel?> = SetSequence.fromSet(HashSet())
-            for (r: _return_P0_E0<out SNode> in ListSequence.fromList<_return_P0_E0<out SNode>>(currentReferences)) {
+            currentReferences?.forEach { r ->
                 try {
-                    val targetNode: SNode = r.invoke()
+                    val targetNode = r.invoke()
                     SetSequence.fromSet(targetModels).addElement(check_l95w85_a0a1a0a1a6tc(targetNode))
                 } catch (ex: Exception) {
                     if (LOG.isEnabledFor(Level.ERROR)) {
