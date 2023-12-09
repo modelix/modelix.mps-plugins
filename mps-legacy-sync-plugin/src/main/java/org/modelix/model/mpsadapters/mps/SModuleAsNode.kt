@@ -131,7 +131,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
                     isDirectDependency(element, entry.key().getModuleId()),
                     isReexport(element, entry.key().getModuleId()),
                     element,
-                    getDependencyScope(element, entry.key().getModuleId())
+                    getDependencyScope(element, entry.key().getModuleId()),
                 )
             }
         }
@@ -228,7 +228,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
-            "org.modelix.model.repositoryconcepts.structure.Module"
+            "org.modelix.model.repositoryconcepts.structure.Module",
         )
     }
 
@@ -239,7 +239,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x69652614fd1c512L,
-            "models"
+            "models",
         )
 
         /*package*/
@@ -248,7 +248,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x1e9fde953529916cL,
-            "facets"
+            "facets",
         )
 
         /*package*/
@@ -257,7 +257,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x1e9fde9535299179L,
-            "dependencies"
+            "dependencies",
         )
 
         /*package*/
@@ -266,7 +266,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x1e9fde9535299187L,
-            "languageDependencies"
+            "languageDependencies",
         )
 
         /*package*/
@@ -275,7 +275,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
             -0x674e051c70651180L,
             0x69652614fd1c516L,
             0x69652614fd1c517L,
-            "modules"
+            "modules",
         )
 
         /*package*/
@@ -284,7 +284,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
             -0x674e051c70651180L,
             0x69652614fd1c516L,
             0x72291b7f31486ecaL,
-            "tempModules"
+            "tempModules",
         )
     }
 
@@ -295,7 +295,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
 
         /*package*/
@@ -304,7 +304,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x3aa34013f2a802e0L,
-            "id"
+            "id",
         )
 
         /*package*/
@@ -313,7 +313,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x1e9fde9535299142L,
-            "moduleVersion"
+            "moduleVersion",
         )
 
         /*package*/
@@ -322,7 +322,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x1e9fde9535299145L,
-            "compileInMPS"
+            "compileInMPS",
         )
 
         /*package*/
@@ -331,7 +331,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
             -0x646defc46a3573f4L,
             0x10802efe25aL,
             0x115eca8579fL,
-            "virtualPackage"
+            "virtualPackage",
         )
     }
 
@@ -354,7 +354,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
             public override fun get(element: SModule): String? {
                 val projects: List<Project> = ProjectManager.getInstance().getOpenedProjects()
                 val value: String? = ListSequence.fromList(projects).ofType(
-                    MPSProject::class.java
+                    MPSProject::class.java,
                 ).select(object : ISelector<MPSProject, String?>() {
                     public override fun select(it: MPSProject): String? {
                         return check_jbj149_a0a0a0a0b0a0a0f(it.getPath((element)!!))
@@ -430,7 +430,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
                     return emptyList()
                 }
                 for (depVersion: IMapping<SModuleReference, Int> in MapSequence.fromMap<SModuleReference, Int>(
-                    moduleDescriptor.getDependencyVersions()
+                    moduleDescriptor.getDependencyVersions(),
                 )) {
                     ListSequence.fromList(deps).addElement(
                         ModuleDependencyAsNode(
@@ -439,8 +439,8 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
                             isDirectDependency(module, depVersion.key().getModuleId()),
                             isReexport(module, depVersion.key().getModuleId()),
                             module,
-                            getDependencyScope(module, depVersion.key().getModuleId())
-                        )
+                            getDependencyScope(module, depVersion.key().getModuleId()),
+                        ),
                     )
                 }
                 return deps
@@ -459,12 +459,12 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
                             SingleLanguageDependencyAsNode(
                                 depVersion.key().getSourceModuleReference(),
                                 depVersion.value(),
-                                module
-                            )
+                                module,
+                            ),
                         )
                     }
                     for (devKit: SModuleReference in CollectionSequence.fromCollection<SModuleReference>(
-                        moduleDescriptor.getUsedDevkits()
+                        moduleDescriptor.getUsedDevkits(),
                     )) {
                         ListSequence.fromList(deps).addElement(DevKitDependencyAsNode(devKit, module))
                     }
@@ -485,7 +485,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
                 return null
             }
             for (declaredDep: SDependency in Sequence.fromIterable(
-                module!!.getDeclaredDependencies()
+                module!!.getDeclaredDependencies(),
             )) {
                 if (Objects.equals(declaredDep.getTargetModule().getModuleId(), moduleId)) {
                     return declaredDep.getScope()
@@ -506,7 +506,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
                 return false
             }
             for (declaredDep: SDependency in Sequence.fromIterable(
-                module!!.getDeclaredDependencies()
+                module!!.getDeclaredDependencies(),
             )) {
                 if (Objects.equals(declaredDep.getTargetModule().getModuleId(), moduleId)) {
                     return true
@@ -517,7 +517,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
 
         private fun isReexport(module: SModule?, moduleId: SModuleId): Boolean {
             for (declaredDep: SDependency in Sequence.fromIterable(
-                module!!.getDeclaredDependencies()
+                module!!.getDeclaredDependencies(),
             )) {
                 if (Objects.equals(declaredDep.getTargetModule().getModuleId(), moduleId)) {
                     return declaredDep.isReexport()

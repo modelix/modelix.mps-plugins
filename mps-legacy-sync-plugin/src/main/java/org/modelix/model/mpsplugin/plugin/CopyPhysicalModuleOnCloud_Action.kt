@@ -30,10 +30,12 @@ class CopyPhysicalModuleOnCloud_Action(private val treeInRepository: CloudReposi
         val connected: Boolean = treeInRepository.isConnected
         event.getPresentation().setText("Copy on Cloud -> " + treeInRepository.presentation())
         try {
-            return connected && !(ModelCloudImportUtils.containsModule(
-                treeInRepository,
-                event.getData(MPSCommonDataKeys.MODULE)
-            ))
+            return connected && !(
+                ModelCloudImportUtils.containsModule(
+                    treeInRepository,
+                    event.getData(MPSCommonDataKeys.MODULE),
+                )
+                )
         } catch (e: RuntimeException) {
             // This could happen because of repositories in invalid state. In this case let's ignore those repositories without preventing usage of other repositories
             return false
@@ -70,7 +72,7 @@ class CopyPhysicalModuleOnCloud_Action(private val treeInRepository: CloudReposi
                     treeInRepository,
                     event.getData(MPSCommonDataKeys.MODULE),
                     event.getData(CommonDataKeys.PROJECT),
-                    ProgressMonitorAdapter(indicator)
+                    ProgressMonitorAdapter(indicator),
                 )
             }
         }.queue()

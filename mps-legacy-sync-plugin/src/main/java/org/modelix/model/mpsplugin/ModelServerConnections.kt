@@ -48,20 +48,20 @@ class ModelServerConnections() {
                     return it.isConnected
                 }
             }).translate<ActiveBranch>(object : ITranslator2<ModelServerConnection, ActiveBranch?>() {
-            public override fun translate(it: ModelServerConnection): Iterable<ActiveBranch?> {
-                it.getActiveBranch(ModelServerConnection.Companion.UI_STATE_REPOSITORY_ID)
-                return it.getActiveBranches()
-            }
-        }).select<PArea>(object : ISelector<ActiveBranch, PArea>() {
-            public override fun select(it: ActiveBranch): PArea {
-                val branch: IBranch = it.branch
-                return PArea(branch)
-            }
-        }).where(NotNullWhereFilter<Any?>())
+                public override fun translate(it: ModelServerConnection): Iterable<ActiveBranch?> {
+                    it.getActiveBranch(ModelServerConnection.Companion.UI_STATE_REPOSITORY_ID)
+                    return it.getActiveBranches()
+                }
+            }).select<PArea>(object : ISelector<ActiveBranch, PArea>() {
+                public override fun select(it: ActiveBranch): PArea {
+                    val branch: IBranch = it.branch
+                    return PArea(branch)
+                }
+            }).where(NotNullWhereFilter<Any?>())
         val area: CompositeArea = CompositeArea(
             Sequence.fromIterable(Sequence.singleton<IArea>(MPSArea(mpsRepository))).concat(
-                Sequence.fromIterable(cloudAreas)
-            ).toListSequence()
+                Sequence.fromIterable(cloudAreas),
+            ).toListSequence(),
         )
         return area
     }
@@ -162,13 +162,19 @@ class ModelServerConnections() {
                 }
             }).first()
         val activeBranch: ActiveBranch? = repo!!.getActiveBranch(RepositoryId((repositoryId)!!))
-        return SNodeOperations.cast(NodeToSNodeAdapter.Companion.wrap(object :
-            PNodeAdapter(ITree.ROOT_ID, activeBranch!!.branch) {
-            override val concept: IConcept?
-                get() {
-                    return SConceptAdapter.Companion.wrap(CONCEPTS.`Repository$db`)
-                }
-        }, MPSModuleRepository.getInstance()), CONCEPTS.`Repository$db`)
+        return SNodeOperations.cast(
+            NodeToSNodeAdapter.Companion.wrap(
+                object :
+                    PNodeAdapter(ITree.ROOT_ID, activeBranch!!.branch) {
+                    override val concept: IConcept?
+                        get() {
+                            return SConceptAdapter.Companion.wrap(CONCEPTS.`Repository$db`)
+                        }
+                },
+                MPSModuleRepository.getInstance(),
+            ),
+            CONCEPTS.`Repository$db`,
+        )
     }
 
     fun dispose() {
@@ -192,7 +198,7 @@ class ModelServerConnections() {
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c516L,
-            "org.modelix.model.repositoryconcepts.structure.Repository"
+            "org.modelix.model.repositoryconcepts.structure.Repository",
         )
     }
 

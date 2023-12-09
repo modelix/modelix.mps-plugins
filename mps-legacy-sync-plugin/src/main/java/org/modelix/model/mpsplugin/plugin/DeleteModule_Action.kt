@@ -53,7 +53,7 @@ class DeleteModule_Action() : BaseAction("Delete Module", "", ICON) {
             event.getData(MPSCommonDataKeys.MPS_PROJECT)!!.getProject(),
             "Are you sure you want to delete module '" + TreeNodeAccess.getName(event.getData(MPSCommonDataKeys.TREE_NODE)) + "' ?",
             "Delete Module",
-            null
+            null,
         )
         if (dialogResult != Messages.OK) {
             return

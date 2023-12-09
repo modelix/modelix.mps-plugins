@@ -91,16 +91,20 @@ class SyncQueue(private val owner: RootBinding) {
                         public override fun apply(k: Set<ELockType?>?): List<SyncTask> {
                             return LinkedListSequence.fromLinkedListNew(LinkedList())
                         }
-                    })
+                    },
+                ),
             ).addElement(task)
         }
         locks2tasks.values.forEach(object : Consumer<List<SyncTask>?> {
             public override fun accept(it: List<SyncTask>?) {
-                Collections.sort(it, object : Comparator<SyncTask> {
-                    public override fun compare(t1: SyncTask, t2: SyncTask): Int {
-                        return t1.binding.depth - t2.binding.depth
-                    }
-                })
+                Collections.sort(
+                    it,
+                    object : Comparator<SyncTask> {
+                        public override fun compare(t1: SyncTask, t2: SyncTask): Int {
+                            return t1.binding.depth - t2.binding.depth
+                        }
+                    },
+                )
             }
         })
     }
@@ -116,8 +120,8 @@ class SyncQueue(private val owner: RootBinding) {
                 loadFromQueue(locks2task)
                 while (Sequence.fromIterable<List<SyncTask>>(
                         MapSequence.fromMap<Set<ELockType>, List<SyncTask>>(
-                            locks2task
-                        ).values
+                            locks2task,
+                        ).values,
                     ).translate<SyncTask>(object : ITranslator2<List<SyncTask>, SyncTask>() {
                         public override fun translate(it: List<SyncTask>): Iterable<SyncTask> {
                             return it
@@ -125,27 +129,33 @@ class SyncQueue(private val owner: RootBinding) {
                     }).isNotEmpty()
                 ) {
                     for (entry: IMapping<Set<ELockType>, List<SyncTask>> in MapSequence.fromMap<Set<ELockType>, List<SyncTask>>(
-                        locks2task
+                        locks2task,
                     ).where(object : IWhereFilter<IMapping<Set<ELockType>, List<SyncTask>>>() {
                         public override fun accept(it: IMapping<Set<ELockType>, List<SyncTask>>): Boolean {
                             return ListSequence.fromList(it.value()).isNotEmpty()
                         }
                     })) {
                         runWithLocks(
-                            SetSequence.fromSet<ELockType?>(entry.key()).sort(object : ISelector<ELockType, Int>() {
-                                public override fun select(it: ELockType): Int {
-                                    return it.ordinal
-                                }
-                            }, true).toListSequence(), object : _void_P0_E0 {
+                            SetSequence.fromSet<ELockType?>(entry.key()).sort(
+                                object : ISelector<ELockType, Int>() {
+                                    public override fun select(it: ELockType): Int {
+                                        return it.ordinal
+                                    }
+                                },
+                                true,
+                            ).toListSequence(),
+                            object : _void_P0_E0 {
                                 public override fun invoke() {
                                     val tasks: List<SyncTask> = entry.value()
                                     while (ListSequence.fromList<SyncTask>(tasks).isNotEmpty()) {
                                         while (ListSequence.fromList<SyncTask>(tasks).isNotEmpty()) {
                                             val task: SyncTask = ListSequence.fromList(tasks).removeElementAt(0)
-                                            if (!(Objects.equals(
-                                                    SetSequence.fromSetWithValues(HashSet(), activeLocks),
-                                                    task.requiredLocks
-                                                ))
+                                            if (!(
+                                                    Objects.equals(
+                                                        SetSequence.fromSetWithValues(HashSet(), activeLocks),
+                                                        task.requiredLocks,
+                                                    )
+                                                    )
                                             ) {
                                                 throw IllegalStateException(task.toString() + " requires locks " + task.requiredLocks + ", but active locks are " + activeLocks)
                                             }
@@ -161,7 +171,8 @@ class SyncQueue(private val owner: RootBinding) {
                                         loadFromQueue(locks2task)
                                     }
                                 }
-                            })
+                            },
+                        )
                     }
                 }
             } finally {
@@ -184,11 +195,14 @@ class SyncQueue(private val owner: RootBinding) {
         if (Sequence.fromIterable(locks).isEmpty()) {
             body.invoke()
         } else {
-            runWithLock(Sequence.fromIterable(locks).first(), object : Runnable {
-                public override fun run() {
-                    runWithLocks(Sequence.fromIterable(locks).skip(1), body)
-                }
-            })
+            runWithLock(
+                Sequence.fromIterable(locks).first(),
+                object : Runnable {
+                    public override fun run() {
+                        runWithLocks(Sequence.fromIterable(locks).skip(1), body)
+                    }
+                },
+            )
         }
     }
 
@@ -287,10 +301,11 @@ class SyncQueue(private val owner: RootBinding) {
 
     companion object {
         private val LOG: Logger = LogManager.getLogger(SyncQueue::class.java)
+
         @Throws(InterruptedException::class, ExecutionException::class, TimeoutException::class)
         private fun check_kjxrbf_a0a0a6ib(
             checkedDotOperand: Future<*>?,
-            checkedDotThisExpression: FlushExecutor
+            checkedDotThisExpression: FlushExecutor,
         ): Any? {
             if (null != checkedDotOperand) {
                 return checkedDotOperand.get(3, TimeUnit.MINUTES)

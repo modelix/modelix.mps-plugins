@@ -20,7 +20,7 @@ object ModelixNotifications {
     fun notifyError(title: String?, message: String?, mpsProject: MPSProject?) {
         Notifications.Bus.notify(
             Notification(GROUP_ID, (title)!!, (message)!!, NotificationType.ERROR),
-            ProjectHelper.toIdeaProject(mpsProject)
+            ProjectHelper.toIdeaProject(mpsProject),
         )
     }
 }

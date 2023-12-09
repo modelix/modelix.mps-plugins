@@ -30,9 +30,11 @@ class AddTransientModuleBinding_Action() : BaseAction("Bind to Transient Module"
     }
 
     public override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
-        return TreeNodeClassification.isModuleNode(event.getData(MPSCommonDataKeys.TREE_NODE)) && !(TreeNodeBinding.isBoundAsModule(
-            event.getData(MPSCommonDataKeys.TREE_NODE)
-        ))
+        return TreeNodeClassification.isModuleNode(event.getData(MPSCommonDataKeys.TREE_NODE)) && !(
+            TreeNodeBinding.isBoundAsModule(
+                event.getData(MPSCommonDataKeys.TREE_NODE),
+            )
+            )
     }
 
     public override fun doUpdate(event: AnActionEvent, _params: Map<String, Any>) {
@@ -62,18 +64,18 @@ class AddTransientModuleBinding_Action() : BaseAction("Bind to Transient Module"
         addTransientModuleBinding(
             event.getData(MPSCommonDataKeys.TREE_NODE),
             event.getData(CommonDataKeys.PROJECT),
-            event
+            event,
         )
     }
 
     fun addTransientModuleBinding(
         treeNode: TreeNode?,
         mpsProject: Project?,
-        event: AnActionEvent?
+        event: AnActionEvent?,
     ): TransientModuleBinding {
         val nodeTreeNode: CloudNodeTreeNode? = treeNode as CloudNodeTreeNode?
         val modelServerConnection: ModelServerConnection? = nodeTreeNode!!.getAncestor(
-            ModelServerTreeNode::class.java
+            ModelServerTreeNode::class.java,
         ).modelServer
         val repositoryId: RepositoryId? = nodeTreeNode.getAncestor(RepositoryTreeNode::class.java).repositoryId
         val transientModuleBinding: TransientModuleBinding =

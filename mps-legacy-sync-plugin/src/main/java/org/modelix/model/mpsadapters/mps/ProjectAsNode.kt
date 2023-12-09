@@ -87,11 +87,11 @@ class ProjectAsNode(element: MPSProject) : TreeElementAsNode<MPSProject>(element
         public override fun resolveNode(area: IArea?): ProjectAsNode? {
             val projects: List<Project> = ProjectManager.getInstance().getOpenedProjects()
             val project: MPSProject? = ListSequence.fromList(projects).ofType(
-                MPSProject::class.java
+                MPSProject::class.java,
             ).findFirst(object : IWhereFilter<MPSProject>() {
                 public override fun accept(it: MPSProject): Boolean {
                     return Objects.equals(it.getName(), projectName) && Objects.equals(
-                        it.getProject().getPresentableUrl(), path
+                        it.getProject().getPresentableUrl(), path,
                     )
                 }
             })
@@ -129,7 +129,7 @@ class ProjectAsNode(element: MPSProject) : TreeElementAsNode<MPSProject>(element
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x37a0917d689de959L,
-            "org.modelix.model.repositoryconcepts.structure.Project"
+            "org.modelix.model.repositoryconcepts.structure.Project",
         )
     }
 
@@ -140,7 +140,7 @@ class ProjectAsNode(element: MPSProject) : TreeElementAsNode<MPSProject>(element
             -0x674e051c70651180L,
             0x69652614fd1c516L,
             0x620a8558361d3e0cL,
-            "projects"
+            "projects",
         )
 
         /*package*/
@@ -149,7 +149,7 @@ class ProjectAsNode(element: MPSProject) : TreeElementAsNode<MPSProject>(element
             -0x674e051c70651180L,
             0x37a0917d689de959L,
             0x37a0917d689de9e2L,
-            "modules"
+            "modules",
         )
 
         /*package*/
@@ -158,7 +158,7 @@ class ProjectAsNode(element: MPSProject) : TreeElementAsNode<MPSProject>(element
             -0x674e051c70651180L,
             0x37a0917d689de959L,
             0x3a4fe9e427e83268L,
-            "projectModules"
+            "projectModules",
         )
     }
 
@@ -169,7 +169,7 @@ class ProjectAsNode(element: MPSProject) : TreeElementAsNode<MPSProject>(element
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
     }
 

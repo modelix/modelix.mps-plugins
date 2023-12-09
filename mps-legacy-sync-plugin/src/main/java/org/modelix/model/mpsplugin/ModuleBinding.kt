@@ -30,6 +30,7 @@ abstract class ModuleBinding(var moduleNodeId: Long, initialSyncDirection: SyncD
         public override fun referenceChanged(nodeId: Long, role: String) {}
         public override fun propertyChanged(nodeId: Long, role: String) {}
     }
+
     @Suppress("removal")
     private val moduleListener = object : org.jetbrains.mps.openapi.module.SModuleListenerBase() {
         public override fun modelAdded(module: SModule, model: SModel) {
@@ -65,7 +66,7 @@ abstract class ModuleBinding(var moduleNodeId: Long, initialSyncDirection: SyncD
 
     public override fun toString(): String {
         return "Module: " + java.lang.Long.toHexString(moduleNodeId) + " -> " + check_rpydrg_a0a0g(
-            module, this
+            module, this,
         )
     }
 
@@ -80,7 +81,7 @@ abstract class ModuleBinding(var moduleNodeId: Long, initialSyncDirection: SyncD
             enqueueSync(
                 ((if (initialSyncDirection == null) SyncDirection.TO_MPS else initialSyncDirection)!!),
                 true,
-                null
+                null,
             )
         }
     }
@@ -91,9 +92,9 @@ abstract class ModuleBinding(var moduleNodeId: Long, initialSyncDirection: SyncD
 
     override fun doSyncToMPS(tree: ITree) {
         if (runningTask!!.isInitialSync && Sequence.fromIterable(
-                modelsSynchronizer.mPSChildren
+                modelsSynchronizer.mPSChildren,
             ).isNotEmpty() && Sequence.fromIterable(
-                modelsSynchronizer.getCloudChildren(tree)
+                modelsSynchronizer.getCloudChildren(tree),
             ).isEmpty()
         ) {
             // TODO remove this workaround
@@ -115,7 +116,7 @@ abstract class ModuleBinding(var moduleNodeId: Long, initialSyncDirection: SyncD
     private fun updateBindings(mappings: Map<Long, SModel>, syncDirection: SyncDirection) {
         val bindings: Map<Long, ModelBinding> = MapSequence.fromMap(HashMap())
         Sequence.fromIterable<Binding?>(getOwnedBindings()).ofType<ModelBinding>(
-            ModelBinding::class.java
+            ModelBinding::class.java,
         ).visitAll(object : IVisitor<ModelBinding>() {
             public override fun visit(it: ModelBinding) {
                 MapSequence.fromMap(bindings).put(it.modelNodeId, it)

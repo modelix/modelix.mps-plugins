@@ -58,7 +58,7 @@ class AddRepository_Action() : BaseAction("Add Repository", "", ICON) {
             event.getData(CommonDataKeys.PROJECT),
             "ID",
             "Add Repository",
-            CloudIcons.REPOSITORY_ICON
+            CloudIcons.REPOSITORY_ICON,
         )
         if ((id == null || id.length == 0)) {
             return

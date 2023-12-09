@@ -24,7 +24,7 @@ import javax.swing.tree.TreeNode
 class AddChildNode_Action(
     private val parentNode: INode,
     private val childConcept: SAbstractConcept?,
-    private val role: SContainmentLink
+    private val role: SContainmentLink,
 ) : BaseAction("Add new child of concept ... in role ...", "", ICON) {
     init {
         setIsAlwaysVisible(false)
@@ -41,7 +41,7 @@ class AddChildNode_Action(
         } else {
             event.getPresentation().setText(
                 "To '" + role.getName() + "' add '" + childConcept.getLanguage()
-                    .getQualifiedName() + "." + childConcept.getName() + "'"
+                    .getQualifiedName() + "." + childConcept.getName() + "'",
             )
         }
         return true
@@ -78,7 +78,7 @@ class AddChildNode_Action(
                 event.getData(CommonDataKeys.PROJECT),
                 "Name",
                 "Add " + childConcept.getName(),
-                null
+                null,
             )
             if (isEmptyString(name.value)) {
                 return
@@ -86,9 +86,11 @@ class AddChildNode_Action(
         }
         PArea(nodeTreeNode!!.branch).executeWrite<Unit>({
             val newModule: INode = parentNode.addNewChild(
-                role.getName(), -1, SConceptAdapter.Companion.wrap(
-                    childConcept
-                )
+                role.getName(),
+                -1,
+                SConceptAdapter.Companion.wrap(
+                    childConcept,
+                ),
             )
             if (isNotEmptyString(name.value)) {
                 newModule.setPropertyValue(PROPS.`name$MnvL`.getName(), name.value)
@@ -117,7 +119,7 @@ class AddChildNode_Action(
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
     }
 

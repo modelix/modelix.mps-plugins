@@ -72,7 +72,7 @@ object TreeNodeAccess {
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
     }
 }

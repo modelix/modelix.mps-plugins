@@ -112,7 +112,7 @@ class ModelCloudExporter {
     @JvmOverloads
     constructor(
         treeInRepository: CloudRepository?,
-        branchName: String? = treeInRepository?.activeBranch?.branchName
+        branchName: String? = treeInRepository?.activeBranch?.branchName,
     ) {
         repositoryInModelServer = treeInRepository
         if (branchName == null) {
@@ -136,7 +136,7 @@ class ModelCloudExporter {
      */
     fun export(exportPath: String?, selectedMduleIds: Set<Long>?, mpsProject: Project?): List<Solution> {
         val coreComponents: MPSCoreComponents = ApplicationManager.getApplication().getComponent(
-            MPSCoreComponents::class.java
+            MPSCoreComponents::class.java,
         )
         val vfsManager: VFSManager? = coreComponents.getPlatform().findComponent(VFSManager::class.java)
         val fileSystem: IFileSystem = vfsManager!!.getFileSystem(VFSManager.FILE_FS)
@@ -251,12 +251,12 @@ class ModelCloudExporter {
         if (moduleIdAsString == null) {
             ModelixNotifications.notifyError(
                 "Module without ID",
-                "Module " + name + " has been stored without an ID. Please set the ID and check it out again"
+                "Module " + name + " has been stored without an ID. Please set the ID and check it out again",
             )
             return null
         }
         val coreComponents: MPSCoreComponents = ApplicationManager.getApplication().getComponent(
-            MPSCoreComponents::class.java
+            MPSCoreComponents::class.java,
         )
         val vfsManager: VFSManager? = coreComponents.getPlatform().findComponent(VFSManager::class.java)
         val fileSystem: IFileSystem = vfsManager!!.getFileSystem(VFSManager.FILE_FS)
@@ -280,8 +280,9 @@ class ModelCloudExporter {
         descriptor.setId(solutionId)
         descriptor.getModelRootDescriptors().add(
             DefaultModelRoot.createDescriptor(
-                (solutionFile.getParent())!!, solutionFile.getParent()!!.findChild(Solution.SOLUTION_MODELS)
-            )
+                (solutionFile.getParent())!!,
+                solutionFile.getParent()!!.findChild(Solution.SOLUTION_MODELS),
+            ),
         )
         descriptor.setKind(SolutionKind.PLUGIN_OTHER)
         for (facet: INode in Sequence.fromIterable<INode>(module.getChildren("facets"))) {
@@ -290,8 +291,9 @@ class ModelCloudExporter {
                 val javaFacetClassesMemento: Memento = javaFacetMemento.createChild("classes")
                 javaFacetClassesMemento.put("generated", facet.getPropertyValue("generated"))
                 javaFacetClassesMemento.put(
-                    "path", facet.getPropertyValue("path")!!
-                        .replace("\\$\\{module\\}".toRegex(), solutionFile.getParent()!!.toRealPath())
+                    "path",
+                    facet.getPropertyValue("path")!!
+                        .replace("\\$\\{module\\}".toRegex(), solutionFile.getParent()!!.toRealPath()),
                 )
                 val javaFacetDescriptor: ModuleFacetDescriptor =
                     ModuleFacetDescriptor(JavaModuleFacet.FACET_TYPE, javaFacetMemento)
@@ -318,7 +320,7 @@ class ModelCloudExporter {
     /**
      * We had to copy it from https://github.com/JetBrains/MPS/blob/14b86a2f987cdd3fbcc72b9262e8b388f7a5fae3/core/persistence/source/jetbrains/mps/persistence/DefaultModelPersistence.java#L115
      */
-    private class PersistenceFacility  /*package*/
+    private class PersistenceFacility /*package*/
     internal constructor(modelFactory: DefaultModelPersistence?, dataSource: StreamDataSource?) :
         LazyLoadFacility((modelFactory)!!, (dataSource)!!, true) {
         private val source0: StreamDataSource
@@ -375,7 +377,7 @@ class ModelCloudExporter {
                 public override fun create(
                     dataSource: DataSource,
                     modelName: SModelName,
-                    vararg options: ModelLoadingOption
+                    vararg options: ModelLoadingOption,
                 ): org.jetbrains.mps.openapi.model.SModel {
                     // COPIED FROM https://github.com/JetBrains/MPS/blob/14b86a2f987cdd3fbcc72b9262e8b388f7a5fae3/core/persistence/source/jetbrains/mps/persistence/DefaultModelPersistence.java#L115
                     if (!((supports(dataSource)))) {
@@ -423,7 +425,8 @@ class ModelCloudExporter {
         val smodel: EditableSModel? = res.get()
         if (smodel != null) {
             ModelSynchronizer((model as PNodeAdapter).nodeId, smodel, repositoryInModelServer!!).syncModelToMPS(
-                model.branch.transaction.tree, true
+                model.branch.transaction.tree,
+                true,
             )
             module.getRepository()!!.getModelAccess().runWriteAction(object : Runnable {
                 public override fun run() {
@@ -441,7 +444,7 @@ class ModelCloudExporter {
             -0x674e051c70651180L,
             0x69652614fd1c516L,
             0x69652614fd1c517L,
-            "modules"
+            "modules",
         )
     }
 
@@ -451,7 +454,7 @@ class ModelCloudExporter {
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x1e9fde9535299166L,
-            "org.modelix.model.repositoryconcepts.structure.JavaModuleFacet"
+            "org.modelix.model.repositoryconcepts.structure.JavaModuleFacet",
         )
     }
 

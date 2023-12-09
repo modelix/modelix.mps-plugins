@@ -47,7 +47,7 @@ object SNodeAPI {
         parent: SNode,
         role: SContainmentLink,
         index: Int = -1,
-        childConcept: SAbstractConcept? = role.getTargetConcept()
+        childConcept: SAbstractConcept? = role.getTargetConcept(),
     ): SNode {
         val newChild: INode = SNodeToNodeAdapter.Companion.wrap(parent)!!
             .addNewChild(role.getName(), index, SConceptAdapter.Companion.wrap(childConcept))
@@ -64,11 +64,12 @@ object SNodeAPI {
 
     fun <T : SNode> copyAsMPSNode(sourceNode: T): T {
         return copyRootNode(
-            sourceNode, SConceptOperations.createNewNode(
+            sourceNode,
+            SConceptOperations.createNewNode(
                 SNodeOperations.asInstanceConcept(
-                    SNodeOperations.getConcept(sourceNode)
-                )
-            ) as T
+                    SNodeOperations.getConcept(sourceNode),
+                ),
+            ) as T,
         )
     }
 
@@ -92,7 +93,7 @@ object SNodeAPI {
         targetParent: SNode,
         targetRole: SContainmentLink,
         targetIndex: Int,
-        copiedNodes: Map<SNode, SNode>
+        copiedNodes: Map<SNode, SNode>,
     ): SNode {
         val concept: SConcept = sourceNode.getConcept()
         val copy: SNode = addNewChild(targetParent, targetRole, targetIndex, concept)
@@ -122,7 +123,7 @@ object SNodeAPI {
     private fun resolveReferences(copiedNodes: Map<SNode, SNode?>) {
         for (entry: IMapping<SNode, SNode?> in MapSequence.fromMap(copiedNodes)) {
             for (link: SReferenceLink in CollectionSequence.fromCollection(
-                entry.key().getConcept().getReferenceLinks()
+                entry.key().getConcept().getReferenceLinks(),
             )) {
                 val ref: SReference? = entry.key().getReference(link)
                 if (ref == null) {
@@ -157,7 +158,7 @@ object SNodeAPI {
         }
         return as_jvh1te_a0b0jb<jetbrains.mps.smodel.SNode>(
             NodeToSNodeAdapter.wrap(deepUnwrapNode((SNodeToNodeAdapter.Companion.wrap(node))!!)),
-            jetbrains.mps.smodel.SNode::class.java
+            jetbrains.mps.smodel.SNode::class.java,
         )
     }
 

@@ -221,7 +221,7 @@ abstract class TreeElementAsNode<E : Any>(val element: E) : INode {
             -0x646defc46a3573f4L,
             0x10802efe25aL,
             0x10d34f97574L,
-            "shortDescription"
+            "shortDescription",
         )
 
         /*package*/
@@ -230,7 +230,7 @@ abstract class TreeElementAsNode<E : Any>(val element: E) : INode {
             -0x646defc46a3573f4L,
             0x10802efe25aL,
             0x115eca8579fL,
-            "virtualPackage"
+            "virtualPackage",
         )
     }
 
@@ -241,7 +241,7 @@ abstract class TreeElementAsNode<E : Any>(val element: E) : INode {
             -0x646defc46a3573f4L,
             0x10802efe25aL,
             0x47bf8397520e5942L,
-            "smodelAttribute"
+            "smodelAttribute",
         )
     }
 

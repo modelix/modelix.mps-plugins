@@ -27,21 +27,21 @@ class CloudActionsForPhysicalProjectsCloudActions_ActionGroup(plugin: Applicatio
     public override fun doUpdate(event: AnActionEvent) {
         removeAll()
         for (treeInRepository: CloudRepository in Sequence.fromIterable<CloudRepository>(
-            ModelServerConnections.instance.connectedTreesInRepositories
+            ModelServerConnections.instance.connectedTreesInRepositories,
         )) {
             treeInRepository.processProjects(object : Consumer<SNode> {
                 public override fun accept(pr: SNode) {
                     this@CloudActionsForPhysicalProjectsCloudActions_ActionGroup.addParameterizedAction(
                         CopyAndSyncPhysicalProjectOnCloud_Action(treeInRepository, pr),
                         treeInRepository,
-                        pr
+                        pr,
                     )
                 }
             })
             this@CloudActionsForPhysicalProjectsCloudActions_ActionGroup.addParameterizedAction(
                 CopyAndSyncPhysicalProjectOnCloud_Action(treeInRepository, null),
                 treeInRepository,
-                null
+                null,
             )
         }
         for (p: Pair<ActionPlace, Condition<BaseAction>?> in myPlaces) {

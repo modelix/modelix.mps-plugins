@@ -66,27 +66,30 @@ class CloudTransientModules(private val mpsRepository: SRepositoryExt) {
         }
         val models: Iterable<SModel> = module.getModels()
         for (model: CloudTransientModel in Sequence.fromIterable(models).ofType(
-            CloudTransientModel::class.java
+            CloudTransientModel::class.java,
         )) {
             model.dispose()
         }
     }
 
     fun dispose() {
-        WriteAccessUtil.runWrite(mpsRepository, object : Runnable {
-            public override fun run() {
-                try {
-                    for (module: CloudTransientModule? in ListSequence.fromList(modules)) {
-                        doDisposeModule(module)
-                    }
-                    ListSequence.fromList(modules).clear()
-                } catch (ex: Exception) {
-                    if (LOG.isEnabledFor(Level.ERROR)) {
-                        LOG.error("", ex)
+        WriteAccessUtil.runWrite(
+            mpsRepository,
+            object : Runnable {
+                public override fun run() {
+                    try {
+                        for (module: CloudTransientModule? in ListSequence.fromList(modules)) {
+                            doDisposeModule(module)
+                        }
+                        ListSequence.fromList(modules).clear()
+                    } catch (ex: Exception) {
+                        if (LOG.isEnabledFor(Level.ERROR)) {
+                            LOG.error("", ex)
+                        }
                     }
                 }
-            }
-        })
+            },
+        )
     }
 
     companion object {

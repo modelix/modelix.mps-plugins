@@ -27,9 +27,11 @@ object CloudNodeTreeNodeCreationMethods {
         // TODO check this represent a module
         return PArea(_this.branch).executeWrite<INode>({
             val newModel: INode = _this.node.addNewChild(
-                LINKS.`models$h3QT`.getName(), -1, SConceptAdapter.Companion.wrap(
-                    CONCEPTS.`Model$2P`
-                )
+                LINKS.`models$h3QT`.getName(),
+                -1,
+                SConceptAdapter.Companion.wrap(
+                    CONCEPTS.`Model$2P`,
+                ),
             )
             newModel.setPropertyValue(PROPS.`name$MnvL`.getName(), modelName)
             newModel
@@ -43,7 +45,7 @@ object CloudNodeTreeNodeCreationMethods {
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x69652614fd1c512L,
-            "models"
+            "models",
         )
     }
 
@@ -53,7 +55,7 @@ object CloudNodeTreeNodeCreationMethods {
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
-            "org.modelix.model.repositoryconcepts.structure.Model"
+            "org.modelix.model.repositoryconcepts.structure.Model",
         )
     }
 
@@ -64,7 +66,7 @@ object CloudNodeTreeNodeCreationMethods {
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
     }
 }

@@ -30,7 +30,7 @@ class RemoveTransientModuleBinding_Action() : BaseAction("Unbind from Transient 
 
     public override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
         return TreeNodeClassification.isModuleNode(event.getData(MPSCommonDataKeys.TREE_NODE)) && TreeNodeBinding.isBoundAsModule(
-            event.getData(MPSCommonDataKeys.TREE_NODE)
+            event.getData(MPSCommonDataKeys.TREE_NODE),
         )
     }
 
@@ -62,7 +62,7 @@ class RemoveTransientModuleBinding_Action() : BaseAction("Unbind from Transient 
             event.getData(MPSCommonDataKeys.TREE_NODE),
             event.getData(CommonDataKeys.PROJECT),
             TreeNodeBinding.getTransientModuleBinding(event.getData(MPSCommonDataKeys.TREE_NODE)),
-            event
+            event,
         )
     }
 
@@ -70,12 +70,12 @@ class RemoveTransientModuleBinding_Action() : BaseAction("Unbind from Transient 
         treeNode: TreeNode?,
         mpsProject: Project?,
         transientModuleBinding: TransientModuleBinding?,
-        event: AnActionEvent?
+        event: AnActionEvent?,
     ) {
         val nodeTreeNode: CloudNodeTreeNode? = treeNode as CloudNodeTreeNode?
         val repositoryId: RepositoryId? = nodeTreeNode!!.getAncestor(RepositoryTreeNode::class.java).repositoryId
         val modelServerConnection: ModelServerConnection? = nodeTreeNode.getAncestor(
-            ModelServerTreeNode::class.java
+            ModelServerTreeNode::class.java,
         ).modelServer
         modelServerConnection!!.removeBinding(transientModuleBinding)
         val treeInRepository: CloudRepository = CloudRepository(modelServerConnection, repositoryId)

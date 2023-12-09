@@ -17,7 +17,6 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.INode
-import org.modelix.model.mpsplugin.CloudRepository
 import org.modelix.model.mpsplugin.INodeUtils
 import org.modelix.model.mpsplugin.MPSNodeMapping
 import org.modelix.model.mpsplugin.history.CloudNodeTreeNode
@@ -83,7 +82,7 @@ class NavigateToMpsNode_Action() : BaseAction("Navigate to Corresponding MPS Nod
                     Messages.showErrorDialog(
                         event.getData(CommonDataKeys.PROJECT),
                         "No containing module found",
-                        "Error navigating to MPS node"
+                        "Error navigating to MPS node",
                     )
                     return
                 }
@@ -92,7 +91,7 @@ class NavigateToMpsNode_Action() : BaseAction("Navigate to Corresponding MPS Nod
                     Messages.showErrorDialog(
                         event.getData(CommonDataKeys.PROJECT),
                         "No containing model found",
-                        "Error navigating to MPS node"
+                        "Error navigating to MPS node",
                     )
                     return
                 }
@@ -101,7 +100,7 @@ class NavigateToMpsNode_Action() : BaseAction("Navigate to Corresponding MPS Nod
                     Messages.showErrorDialog(
                         event.getData(CommonDataKeys.PROJECT),
                         "No module id",
-                        "Error navigating to MPS node"
+                        "Error navigating to MPS node",
                     )
                     return
                 }
@@ -110,7 +109,7 @@ class NavigateToMpsNode_Action() : BaseAction("Navigate to Corresponding MPS Nod
                     Messages.showErrorDialog(
                         event.getData(CommonDataKeys.PROJECT),
                         "No model id",
-                        "Error navigating to MPS node"
+                        "Error navigating to MPS node",
                     )
                     return
                 }
@@ -127,7 +126,7 @@ class NavigateToMpsNode_Action() : BaseAction("Navigate to Corresponding MPS Nod
                                             Messages.showErrorDialog(
                                                 event.getData(CommonDataKeys.PROJECT),
                                                 "No node found: " + mpsNodeId,
-                                                "Error navigating to MPS node"
+                                                "Error navigating to MPS node",
                                             )
                                             return
                                         } else {
@@ -135,7 +134,7 @@ class NavigateToMpsNode_Action() : BaseAction("Navigate to Corresponding MPS Nod
                                                 (ProjectHelper.toMPSProject(event.getData(CommonDataKeys.PROJECT)))!!,
                                                 node,
                                                 false,
-                                                true
+                                                true,
                                             )
                                             return
                                         }
@@ -144,7 +143,7 @@ class NavigateToMpsNode_Action() : BaseAction("Navigate to Corresponding MPS Nod
                                 Messages.showErrorDialog(
                                     event.getData(CommonDataKeys.PROJECT),
                                     "No model found: " + modelId,
-                                    "Error navigating to MPS node"
+                                    "Error navigating to MPS node",
                                 )
                                 return
                             }
@@ -152,7 +151,7 @@ class NavigateToMpsNode_Action() : BaseAction("Navigate to Corresponding MPS Nod
                         Messages.showErrorDialog(
                             event.getData(CommonDataKeys.PROJECT),
                             "No module found: " + moduleId,
-                            "Error navigating to MPS node"
+                            "Error navigating to MPS node",
                         )
                     }
                 })
@@ -192,7 +191,7 @@ class NavigateToMpsNode_Action() : BaseAction("Navigate to Corresponding MPS Nod
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x3aa34013f2a802e0L,
-            "id"
+            "id",
         )
 
         /*package*/
@@ -201,7 +200,7 @@ class NavigateToMpsNode_Action() : BaseAction("Navigate to Corresponding MPS Nod
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
             0x244b85440ee67212L,
-            "id"
+            "id",
         )
     }
 

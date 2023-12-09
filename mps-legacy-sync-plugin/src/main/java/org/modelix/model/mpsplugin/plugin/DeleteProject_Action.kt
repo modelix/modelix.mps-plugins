@@ -53,7 +53,7 @@ class DeleteProject_Action() : BaseAction("Delete Project", "", ICON) {
             event.getData(MPSCommonDataKeys.MPS_PROJECT)!!.getProject(),
             "Are you sure you want to delete project '" + TreeNodeAccess.getName(event.getData(MPSCommonDataKeys.TREE_NODE)) + "' ?",
             "Delete Project",
-            null
+            null,
         )
         if (dialogResult != Messages.OK) {
             return

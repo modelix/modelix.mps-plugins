@@ -53,7 +53,7 @@ object MPSProjectUtils {
         mpsProject.addModule(module)
         ModuleDependencyVersions(
             LanguageRegistry.getInstance(mpsProject.getRepository()),
-            mpsProject.getRepository()
+            mpsProject.getRepository(),
         ).update(module)
         module.save()
         return module

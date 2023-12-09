@@ -61,7 +61,7 @@ class CloudNodeGroupAddChild_ActionGroup(plugin: ApplicationPlugin) :
             ModelixNotifications.notifyError(
                 "Unable to unwrap concept",
                 "We were unable to unwrap concept " + concept.getLongName() + " (" + concept.javaClass.getCanonicalName() + ")",
-                project
+                project,
             )
             return
         }
@@ -81,29 +81,38 @@ class CloudNodeGroupAddChild_ActionGroup(plugin: ApplicationPlugin) :
             })
             if (Objects.equals(role, LINKS.`rootNodes$jxXY`)) {
                 subConcepts = Sequence.fromIterable(subConcepts).ofType(
-                    SConcept::class.java
+                    SConcept::class.java,
                 ).where(object : IWhereFilter<SConcept>() {
                     public override fun accept(it: SConcept): Boolean {
                         return it.isRootable()
                     }
                 }).ofType(SAbstractConcept::class.java)
             }
-            subConcepts = Sequence.fromIterable(subConcepts).sort(object : ISelector<SAbstractConcept, String>() {
-                public override fun select(it: SAbstractConcept): String {
-                    return it.getLanguage().getQualifiedName()
-                }
-            }, true).alsoSort(object : ISelector<SAbstractConcept, String>() {
-                public override fun select(it: SAbstractConcept): String {
-                    return it.getName()
-                }
-            }, true)
+            subConcepts = Sequence.fromIterable(subConcepts).sort(
+                object : ISelector<SAbstractConcept, String>() {
+                    public override fun select(it: SAbstractConcept): String {
+                        return it.getLanguage().getQualifiedName()
+                    }
+                },
+                true,
+            ).alsoSort(
+                object : ISelector<SAbstractConcept, String>() {
+                    public override fun select(it: SAbstractConcept): String {
+                        return it.getName()
+                    }
+                },
+                true,
+            )
             for (subconcept: SAbstractConcept? in Sequence.fromIterable(subConcepts)) {
                 this@CloudNodeGroupAddChild_ActionGroup.addParameterizedAction(
                     AddChildNode_Action(
                         node,
                         subconcept,
-                        role
-                    ), node, subconcept, role
+                        role,
+                    ),
+                    node,
+                    subconcept,
+                    role,
                 )
             }
         }
@@ -127,7 +136,7 @@ class CloudNodeGroupAddChild_ActionGroup(plugin: ApplicationPlugin) :
             -0x646defc46a3573f4L,
             0x10802efe25aL,
             0x47bf8397520e5942L,
-            "smodelAttribute"
+            "smodelAttribute",
         )
 
         /*package*/
@@ -136,7 +145,7 @@ class CloudNodeGroupAddChild_ActionGroup(plugin: ApplicationPlugin) :
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
             0x69652614fd1c514L,
-            "rootNodes"
+            "rootNodes",
         )
     }
 

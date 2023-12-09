@@ -42,11 +42,14 @@ class RepositoryTreeNode(val modelServer: ModelServerConnection, val repositoryI
         public override fun treeChanged(oldTree: ITree?, newTree: ITree) {
             SwingUtilities.invokeLater(object : Runnable {
                 public override fun run() {
-                    (getTree() as CloudViewTree).runRebuildAction(object : Runnable {
-                        public override fun run() {
-                            updateData()
-                        }
-                    }, true)
+                    (getTree() as CloudViewTree).runRebuildAction(
+                        object : Runnable {
+                            public override fun run() {
+                                updateData()
+                            }
+                        },
+                        true,
+                    )
                 }
             })
         }
@@ -59,16 +62,16 @@ class RepositoryTreeNode(val modelServer: ModelServerConnection, val repositoryI
                 RepositoryId(
                     SPropertyOperations.getString(
                         repositoryInfo,
-                        PROPS.`id$baYB`
-                    )
-                )
+                        PROPS.`id$baYB`,
+                    ),
+                ),
             )
             val cloudRepository: CloudRepository = CloudRepository(modelServer, repositoryId)
             bindingsTreeNode = CloudBindingTreeNode(cloudRepository.rootBinding, cloudRepository)
             setAllowsChildren(true)
             TreeModelUtil.setChildren(
                 this,
-                ListSequence.fromListAndArray(ArrayList<TreeNode>(), dataTreeNode, branchesTreeNode, bindingsTreeNode)
+                ListSequence.fromListAndArray(ArrayList<TreeNode>(), dataTreeNode, branchesTreeNode, bindingsTreeNode),
             )
             activeBranch.addListener(branchListener)
             updateData()
@@ -76,8 +79,9 @@ class RepositoryTreeNode(val modelServer: ModelServerConnection, val repositoryI
             throw RuntimeException(
                 "Unable to initialize RepositoryTreeNode for repository with id " + SPropertyOperations.getString(
                     repositoryInfo,
-                    PROPS.`id$baYB`
-                ), e
+                    PROPS.`id$baYB`,
+                ),
+                e,
             )
         }
     }
@@ -98,15 +102,15 @@ class RepositoryTreeNode(val modelServer: ModelServerConnection, val repositoryI
                 if (Sequence.fromIterable<TreeNode?>(TreeModelUtil.getChildren(this@RepositoryTreeNode)).isEmpty()) {
                     TreeModelUtil.setChildren(
                         this@RepositoryTreeNode,
-                        Sequence.singleton<TreeNode>(LoadingIcon.Companion.apply<TextTreeNode>(TextTreeNode("loading ...")))
+                        Sequence.singleton<TreeNode>(LoadingIcon.Companion.apply<TextTreeNode>(TextTreeNode("loading ..."))),
                     )
                 }
                 for (node: CloudBranchTreeNode in Sequence.fromIterable<TreeNode?>(
                     TreeModelUtil.getChildren(
-                        branchesTreeNode
-                    )
+                        branchesTreeNode,
+                    ),
                 ).ofType<CloudBranchTreeNode>(
-                    CloudBranchTreeNode::class.java
+                    CloudBranchTreeNode::class.java,
                 )) {
                     MapSequence.fromMap(existing).put(node.branchInfo, node)
                 }
@@ -119,9 +123,15 @@ class RepositoryTreeNode(val modelServer: ModelServerConnection, val repositoryI
                         ListSequence.fromList<SNode>(SLinkOperations.getChildren(repositoryInfo, LINKS.`branches$b5_g`))
                             .select<TreeNode>(object : ISelector<SNode?, TreeNode>() {
                                 public override fun select(it: SNode?): TreeNode? {
-                                    val tn: TreeNode? = (if (MapSequence.fromMap(existing)
-                                            .containsKey(it)
-                                    ) MapSequence.fromMap(existing).get(it) else CloudBranchTreeNode(modelServer, it))
+                                    val tn: TreeNode? = (
+                                        if (MapSequence.fromMap(existing)
+                                                .containsKey(it)
+                                        ) {
+                                            MapSequence.fromMap(existing).get(it)
+                                        } else {
+                                            CloudBranchTreeNode(modelServer, it)
+                                        }
+                                        )
                                     return tn
                                 }
                             }).toListSequence()
@@ -141,15 +151,17 @@ class RepositoryTreeNode(val modelServer: ModelServerConnection, val repositoryI
         val rootNode: PNodeAdapter = PNodeAdapter(ITree.ROOT_ID, branch)
         val childTreeNodes: Iterable<TreeNode> =
             Sequence.fromIterable(TreeModelUtil.getChildren(dataTreeNode)).toListSequence()
-        if (Sequence.fromIterable(childTreeNodes).count() != 1 || !(Objects.equals(
-                (Sequence.fromIterable(childTreeNodes).first() as CloudNodeTreeNode).node, rootNode
-            ))
+        if (Sequence.fromIterable(childTreeNodes).count() != 1 || !(
+                Objects.equals(
+                    (Sequence.fromIterable(childTreeNodes).first() as CloudNodeTreeNode).node, rootNode,
+                )
+                )
         ) {
             val newTreeNode: CloudNodeTreeNode = CloudNodeTreeNode(branch, rootNode)
             TreeModelUtil.setChildren(dataTreeNode, ListSequence.fromListAndArray(ArrayList<TreeNode>(), newTreeNode))
         }
         Sequence.fromIterable(TreeModelUtil.getChildren(dataTreeNode)).ofType(
-            CloudNodeTreeNode::class.java
+            CloudNodeTreeNode::class.java,
         ).visitAll(object : IVisitor<CloudNodeTreeNode>() {
             public override fun visit(it: CloudNodeTreeNode) {
                 it.update()
@@ -164,7 +176,7 @@ class RepositoryTreeNode(val modelServer: ModelServerConnection, val repositoryI
             -0x56adc78bf09cec4cL,
             0x62b7d9b07cecbcc0L,
             0x62b7d9b07cecbcc6L,
-            "id"
+            "id",
         )
     }
 
@@ -175,7 +187,7 @@ class RepositoryTreeNode(val modelServer: ModelServerConnection, val repositoryI
             -0x56adc78bf09cec4cL,
             0x62b7d9b07cecbcc0L,
             0x62b7d9b07cecbcc4L,
-            "branches"
+            "branches",
         )
     }
 }

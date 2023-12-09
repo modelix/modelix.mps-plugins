@@ -89,7 +89,7 @@ class StoreAllModules_Action() : BaseAction("Store Entire MPS Module Repository"
         val task: Task.Backgroundable = object : Task.Backgroundable(
             ProjectHelper.toIdeaProject(event.getData<MPSProject>(MPSCommonDataKeys.MPS_PROJECT)),
             "Import MPS Repository",
-            true
+            true,
         ) {
             public override fun run(indicator: ProgressIndicator) {
                 val progress: ProgressMonitorAdapter = ProgressMonitorAdapter(indicator)
@@ -109,7 +109,7 @@ class StoreAllModules_Action() : BaseAction("Store Entire MPS Module Repository"
                             public override fun select(it: Long?): String? {
                                 return t.getProperty((it)!!, PROPS.`name$MnvL`.getName())
                             }
-                        })
+                        }),
                     )
                 })
                 mpsModules.value =
@@ -121,7 +121,7 @@ class StoreAllModules_Action() : BaseAction("Store Entire MPS Module Repository"
                 Collections.shuffle(mpsModules.value)
                 progress.start(
                     "Importing " + ListSequence.fromList(mpsModules.value).count() + " Modules",
-                    ListSequence.fromList(mpsModules.value).count()
+                    ListSequence.fromList(mpsModules.value).count(),
                 )
                 for (mpsModule: SModule? in ListSequence.fromList<SModule?>(mpsModules.value)) {
                     if (progress.isCanceled()) {
@@ -141,9 +141,12 @@ class StoreAllModules_Action() : BaseAction("Store Entire MPS Module Repository"
                     branch.runWrite({
                         val t: IWriteTransaction = branch.writeTransaction
                         val cloudModuleId: Long = t.addNewChild(
-                            cloudProjectId, LINKS.`modules$Bi3g`.getName(), -1, SConceptAdapter.Companion.wrap(
-                                CONCEPTS.`Module$4i`
-                            )
+                            cloudProjectId,
+                            LINKS.`modules$Bi3g`.getName(),
+                            -1,
+                            SConceptAdapter.Companion.wrap(
+                                CONCEPTS.`Module$4i`,
+                            ),
                         )
                         t.setProperty(cloudModuleId, PROPS.`name$MnvL`.getName(), mpsModule.getModuleName())
                         ModelCloudImportUtils.replicatePhysicalModule(
@@ -151,7 +154,7 @@ class StoreAllModules_Action() : BaseAction("Store Entire MPS Module Repository"
                             PNodeAdapter(cloudModuleId, branch),
                             mpsModule,
                             null,
-                            progress.subTask(1)
+                            progress.subTask(1),
                         )
                         Unit
                     })
@@ -168,7 +171,7 @@ class StoreAllModules_Action() : BaseAction("Store Entire MPS Module Repository"
             -0x674e051c70651180L,
             0x37a0917d689de959L,
             0x37a0917d689de9e2L,
-            "modules"
+            "modules",
         )
     }
 
@@ -179,7 +182,7 @@ class StoreAllModules_Action() : BaseAction("Store Entire MPS Module Repository"
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
     }
 
@@ -189,7 +192,7 @@ class StoreAllModules_Action() : BaseAction("Store Entire MPS Module Repository"
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
-            "org.modelix.model.repositoryconcepts.structure.Module"
+            "org.modelix.model.repositoryconcepts.structure.Module",
         )
     }
 

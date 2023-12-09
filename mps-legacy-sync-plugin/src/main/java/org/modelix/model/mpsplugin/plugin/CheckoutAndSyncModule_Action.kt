@@ -52,7 +52,7 @@ class CheckoutAndSyncModule_Action() : BaseAction("Checkout and Sync", "", ICON)
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
         ModelCloudImportUtils.checkoutAndSync(
             event.getData(MPSCommonDataKeys.TREE_NODE),
-            ProjectHelper.toMPSProject(event.getData(CommonDataKeys.PROJECT))
+            ProjectHelper.toMPSProject(event.getData(CommonDataKeys.PROJECT)),
         )
     }
 

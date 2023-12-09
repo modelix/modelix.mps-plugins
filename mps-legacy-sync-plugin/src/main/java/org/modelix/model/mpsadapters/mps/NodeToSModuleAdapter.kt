@@ -106,7 +106,7 @@ class NodeToSModuleAdapter protected constructor(private val node: INode, privat
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
-            "org.modelix.model.repositoryconcepts.structure.Module"
+            "org.modelix.model.repositoryconcepts.structure.Module",
         )
     }
 
@@ -117,7 +117,7 @@ class NodeToSModuleAdapter protected constructor(private val node: INode, privat
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x69652614fd1c512L,
-            "models"
+            "models",
         )
     }
 
@@ -128,7 +128,7 @@ class NodeToSModuleAdapter protected constructor(private val node: INode, privat
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
     }
 

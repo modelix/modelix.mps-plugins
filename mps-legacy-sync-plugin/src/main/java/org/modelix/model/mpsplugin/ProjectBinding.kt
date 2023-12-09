@@ -63,9 +63,10 @@ class ProjectBinding(val project: MPSProject, var projectNodeId: Long, initialSy
                 public override fun run() {
                     branch!!.runWriteT({ t: IWriteTransaction ->
                         projectNodeId = t.addNewChild(
-                            ITree.ROOT_ID, "projects", -1, SConceptAdapter.Companion.wrap(
-                                CONCEPTS.`Project$An`
-                            )
+                            ITree.ROOT_ID, "projects", -1,
+                            SConceptAdapter.Companion.wrap(
+                                CONCEPTS.`Project$An`,
+                            ),
                         )
                         t.setProperty(projectNodeId, PROPS.`name$MnvL`.getName(), project.getName())
                         Unit
@@ -129,7 +130,7 @@ class ProjectBinding(val project: MPSProject, var projectNodeId: Long, initialSy
             })
         val bindings: Map<Long, ProjectModuleBinding> = MapSequence.fromMap(HashMap())
         Sequence.fromIterable<Binding?>(getOwnedBindings()).ofType<ProjectModuleBinding>(
-            ProjectModuleBinding::class.java
+            ProjectModuleBinding::class.java,
         ).visitAll(object : IVisitor<ProjectModuleBinding>() {
             public override fun visit(it: ProjectModuleBinding) {
                 MapSequence.fromMap(bindings).put(it.moduleNodeId, it)
@@ -147,7 +148,7 @@ class ProjectBinding(val project: MPSProject, var projectNodeId: Long, initialSy
                     public override fun select(it: IMapping<Long, SModule>): Long? {
                         return it.key()
                     }
-                })
+                }),
         ).toListSequence()
         ListSequence.fromList(toRemove).visitAll(object : IVisitor<Long>() {
             public override fun visit(it: Long) {
@@ -172,7 +173,7 @@ class ProjectBinding(val project: MPSProject, var projectNodeId: Long, initialSy
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x37a0917d689de959L,
-            "org.modelix.model.repositoryconcepts.structure.Project"
+            "org.modelix.model.repositoryconcepts.structure.Project",
         )
     }
 
@@ -183,7 +184,7 @@ class ProjectBinding(val project: MPSProject, var projectNodeId: Long, initialSy
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
     }
 
@@ -194,7 +195,7 @@ class ProjectBinding(val project: MPSProject, var projectNodeId: Long, initialSy
             -0x674e051c70651180L,
             0x37a0917d689de959L,
             0x37a0917d689de9e2L,
-            "modules"
+            "modules",
         )
     }
 

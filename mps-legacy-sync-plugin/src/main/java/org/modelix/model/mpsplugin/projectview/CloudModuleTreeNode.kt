@@ -50,11 +50,14 @@ class CloudModuleTreeNode(module: SModule) : ProjectModuleTreeNode(module) {
 
     protected fun populate() {
         val models: Iterable<SModel> = getModule().getModels()
-        for (model: SModel? in Sequence.fromIterable<SModel>(models).sort(object : ISelector<SModel, String>() {
-            public override fun select(it: SModel): String {
-                return it.getName().getLongName()
-            }
-        }, true)) {
+        for (model: SModel? in Sequence.fromIterable<SModel>(models).sort(
+            object : ISelector<SModel, String>() {
+                public override fun select(it: SModel): String {
+                    return it.getName().getLongName()
+                }
+            },
+            true,
+        )) {
             val tn: SModelTreeNode = SModelTreeNode((model)!!)
             tn.setIcon(CloudProjectViewExtension.Companion.MODEL_ICON)
             tn.setBaseIcon(CloudProjectViewExtension.Companion.MODEL_ICON)
@@ -76,7 +79,7 @@ class CloudModuleTreeNode(module: SModule) : ProjectModuleTreeNode(module) {
     companion object {
         private fun check_7wx4yo_a2a8(
             checkedDotOperand: DefaultTreeModel?,
-            checkedDotThisExpression: CloudModuleTreeNode
+            checkedDotThisExpression: CloudModuleTreeNode,
         ) {
             if (null != checkedDotOperand) {
                 checkedDotOperand.nodeStructureChanged(checkedDotThisExpression)
@@ -85,7 +88,7 @@ class CloudModuleTreeNode(module: SModule) : ProjectModuleTreeNode(module) {
 
         private fun check_7wx4yo_a0c0i(
             checkedDotOperand: JTree?,
-            checkedDotThisExpression: CloudModuleTreeNode
+            checkedDotThisExpression: CloudModuleTreeNode,
         ): DefaultTreeModel? {
             if (null != checkedDotOperand) {
                 return checkedDotOperand.getModel() as DefaultTreeModel?

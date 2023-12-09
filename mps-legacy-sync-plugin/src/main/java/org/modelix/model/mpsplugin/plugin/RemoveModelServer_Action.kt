@@ -60,14 +60,14 @@ class RemoveModelServer_Action() : BaseAction("Remove Model Server", "", ICON) {
             "Remove Model Server",
             "Remove",
             "Keep",
-            CloudIcons.REPOSITORY_ICON
+            CloudIcons.REPOSITORY_ICON,
         )
         if (answer == Messages.OK) {
             ModelServerConnections.instance.removeModelServer(modelServer)
             PersistedBindingConfiguration.Companion.getInstance(
                 event.getData<Project>(
-                    CommonDataKeys.PROJECT
-                )
+                    CommonDataKeys.PROJECT,
+                ),
             )!!.removeModelServer(modelServer)
         }
     }

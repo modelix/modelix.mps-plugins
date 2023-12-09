@@ -3,9 +3,7 @@ package org.modelix.model.mpsplugin
 import jetbrains.mps.internal.collections.runtime.IWhereFilter
 import jetbrains.mps.internal.collections.runtime.Sequence
 import jetbrains.mps.persistence.DefaultModelRoot
-import jetbrains.mps.persistence.ModelCannotBeCreatedException
 import jetbrains.mps.smodel.SModelStereotype
-import org.apache.log4j.Level
 import org.apache.log4j.LogManager
 import org.apache.log4j.Logger
 import org.jetbrains.mps.openapi.model.SModel
@@ -21,7 +19,7 @@ object SModuleUtils {
         val modelRoots: Iterable<ModelRoot> = _this!!.getModelRoots()
         val modelName: SModelName = SModelName((name)!!)
         val modelRoot: DefaultModelRoot = Sequence.fromIterable<ModelRoot>(modelRoots).ofType<DefaultModelRoot>(
-            DefaultModelRoot::class.java
+            DefaultModelRoot::class.java,
         ).findFirst(object : IWhereFilter<DefaultModelRoot>() {
             public override fun accept(it: DefaultModelRoot): Boolean {
                 return it.canCreateModel(modelName)
@@ -31,7 +29,7 @@ object SModuleUtils {
             modelName,
             null,
             null,
-            ModelPersistenceWithFixedId(_this.getModuleReference(), id)
+            ModelPersistenceWithFixedId(_this.getModuleReference(), id),
         )
     }
 

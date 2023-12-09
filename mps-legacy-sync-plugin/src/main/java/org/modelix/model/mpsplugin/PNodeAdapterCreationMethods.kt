@@ -17,9 +17,11 @@ object PNodeAdapterCreationMethods {
         // TODO check the concept of this node is Repository
         return PArea(_this!!.branch).executeWrite<INode>({
             val newModule: INode = _this.addNewChild(
-                LINKS.`modules$jBPn`.getName(), -1, SConceptAdapter.Companion.wrap(
-                    CONCEPTS.`Module$4i`
-                )
+                LINKS.`modules$jBPn`.getName(),
+                -1,
+                SConceptAdapter.Companion.wrap(
+                    CONCEPTS.`Module$4i`,
+                ),
             )
             newModule.setPropertyValue(PROPS.`name$MnvL`.getName(), name)
             newModule.setPropertyValue(PROPS.`id$7MjP`.getName(), UUID.randomUUID().toString())
@@ -31,9 +33,11 @@ object PNodeAdapterCreationMethods {
         // TODO check the concept of this node is Repository
         return PArea(_this!!.branch).executeWrite<INode>({
             val newModule: INode = _this.addNewChild(
-                LINKS.`projects$NW07`.getName(), -1, SConceptAdapter.Companion.wrap(
-                    CONCEPTS.`Project$An`
-                )
+                LINKS.`projects$NW07`.getName(),
+                -1,
+                SConceptAdapter.Companion.wrap(
+                    CONCEPTS.`Project$An`,
+                ),
             )
             newModule.setPropertyValue(PROPS.`name$MnvL`.getName(), name)
             newModule
@@ -47,7 +51,7 @@ object PNodeAdapterCreationMethods {
             -0x674e051c70651180L,
             0x69652614fd1c516L,
             0x69652614fd1c517L,
-            "modules"
+            "modules",
         )
 
         /*package*/
@@ -56,7 +60,7 @@ object PNodeAdapterCreationMethods {
             -0x674e051c70651180L,
             0x69652614fd1c516L,
             0x620a8558361d3e0cL,
-            "projects"
+            "projects",
         )
     }
 
@@ -66,7 +70,7 @@ object PNodeAdapterCreationMethods {
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
-            "org.modelix.model.repositoryconcepts.structure.Module"
+            "org.modelix.model.repositoryconcepts.structure.Module",
         )
 
         /*package*/
@@ -74,7 +78,7 @@ object PNodeAdapterCreationMethods {
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x37a0917d689de959L,
-            "org.modelix.model.repositoryconcepts.structure.Project"
+            "org.modelix.model.repositoryconcepts.structure.Project",
         )
     }
 
@@ -85,7 +89,7 @@ object PNodeAdapterCreationMethods {
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
 
         /*package*/
@@ -94,7 +98,7 @@ object PNodeAdapterCreationMethods {
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x3aa34013f2a802e0L,
-            "id"
+            "id",
         )
     }
 }

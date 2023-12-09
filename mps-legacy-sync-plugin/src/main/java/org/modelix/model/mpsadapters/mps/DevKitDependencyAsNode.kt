@@ -1,11 +1,9 @@
 package org.modelix.model.mpsadapters.mps
 
-import jetbrains.mps.baseLanguage.closures.runtime._FunctionTypes._return_P1_E0
 import jetbrains.mps.internal.collections.runtime.ISelector
 import jetbrains.mps.internal.collections.runtime.ITranslator2
 import jetbrains.mps.internal.collections.runtime.LinkedListSequence
 import jetbrains.mps.internal.collections.runtime.ListSequence
-import jetbrains.mps.internal.collections.runtime.NotNullWhereFilter
 import jetbrains.mps.internal.collections.runtime.Sequence
 import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
@@ -264,7 +262,7 @@ class DevKitDependencyAsNode : INode {
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x7c527144386aca16L,
-            "org.modelix.model.repositoryconcepts.structure.DevkitDependency"
+            "org.modelix.model.repositoryconcepts.structure.DevkitDependency",
         )
     }
 
@@ -275,7 +273,7 @@ class DevKitDependencyAsNode : INode {
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x1e9fde9535299187L,
-            "languageDependencies"
+            "languageDependencies",
         )
 
         /*package*/
@@ -284,7 +282,7 @@ class DevKitDependencyAsNode : INode {
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
             0x4aaf28cf2092e98eL,
-            "usedLanguages"
+            "usedLanguages",
         )
     }
 
@@ -295,7 +293,7 @@ class DevKitDependencyAsNode : INode {
             -0x674e051c70651180L,
             0x7c527144386aca0fL,
             0x7c527144386aca12L,
-            "uuid"
+            "uuid",
         )
 
         /*package*/
@@ -304,14 +302,14 @@ class DevKitDependencyAsNode : INode {
             -0x674e051c70651180L,
             0x7c527144386aca0fL,
             0x7c527144386aca13L,
-            "name"
+            "name",
         )
     }
 
     companion object {
         private fun check_d9amqo_a0a64(
             checkedDotOperand: IConcept?,
-            checkedDotThisExpression: DevKitDependencyAsNode
+            checkedDotThisExpression: DevKitDependencyAsNode,
         ): IConceptReference? {
             if (null != checkedDotOperand) {
                 return checkedDotOperand.getReference()

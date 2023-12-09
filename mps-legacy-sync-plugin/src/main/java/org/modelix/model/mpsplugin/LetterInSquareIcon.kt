@@ -16,7 +16,7 @@ class LetterInSquareIcon @JvmOverloads constructor(
     private val offsetX: Float,
     private val offsetY: Float,
     private val backgroundColor: Color = Color.BLACK,
-    private val foregroundColor: Color = Color(200, 200, 200)
+    private val foregroundColor: Color = Color(200, 200, 200),
 ) : Icon {
     public override fun paintIcon(p0: Component, g_: Graphics, x: Int, y: Int) {
         val g: Graphics2D = g_.create() as Graphics2D
@@ -32,8 +32,8 @@ class LetterInSquareIcon @JvmOverloads constructor(
                     getIconWidth().toDouble(),
                     getIconHeight().toDouble(),
                     5.0,
-                    5.0
-                )
+                    5.0,
+                ),
             )
             g.setFont(Font("Arial", Font.BOLD, fontSize))
             g.setColor(foregroundColor)

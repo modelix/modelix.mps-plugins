@@ -55,8 +55,8 @@ class Unbind_Action : BaseAction("Unbind", "", ICON) {
         val repositoryInModelServer = bindingTreeNode.repositoryInModelServer
         PersistedBindingConfiguration.Companion.getInstance(
             event.getData<Project>(
-                CommonDataKeys.PROJECT
-            )
+                CommonDataKeys.PROJECT,
+            ),
         )!!.removeBoundModule(repositoryInModelServer, moduleBinding)
     }
 

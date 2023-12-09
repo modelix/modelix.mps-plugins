@@ -190,7 +190,8 @@ class NodeToSNodeAdapter protected constructor(val node: INode, repository: SRep
 
     public override fun getContainmentLink(): SContainmentLink? {
         val link: SContainmentLinkAdapter? = as_r4r1yj_a0a0a84(
-            node!!.getContainmentLink(), SContainmentLinkAdapter::class.java
+            node!!.getContainmentLink(),
+            SContainmentLinkAdapter::class.java,
         )
         return (if (link == null) null else link.getLink())
     }
@@ -296,7 +297,7 @@ class NodeToSNodeAdapter protected constructor(val node: INode, repository: SRep
 
     public override fun getProperties(): Iterable<SProperty> {
         val allProperties: Iterable<SProperty> = SConceptAdapter.Companion.unwrap(
-            node!!.concept
+            node!!.concept,
         )!!.getProperties()
         return Sequence.fromIterable(allProperties).where(object : IWhereFilter<SProperty>() {
             public override fun accept(it: SProperty): Boolean {
@@ -352,8 +353,8 @@ class NodeToSNodeAdapter protected constructor(val node: INode, repository: SRep
         }
         val result: List<Any> = ListSequence.fromList(
             ArrayList(
-                userObjects!!.size / 2
-            )
+                userObjects!!.size / 2,
+            ),
         )
         var i: Int = 0
         while (i < userObjects!!.size) {
@@ -456,7 +457,7 @@ class NodeToSNodeAdapter protected constructor(val node: INode, repository: SRep
     public override fun insertChildBefore(role: String, newChild: SNode, anchor: SNode?) {
         val link: SContainmentLink = findChildLink(role)
         val children: Iterable<INode> = IterableUtil.asIterable(
-            node!!.getChildren(role).iterator()
+            node!!.getChildren(role).iterator(),
         )
         var index: Int = -1
         if (anchor != null) {
@@ -588,7 +589,7 @@ class NodeToSNodeAdapter protected constructor(val node: INode, repository: SRep
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
-            "org.modelix.model.repositoryconcepts.structure.Model"
+            "org.modelix.model.repositoryconcepts.structure.Model",
         )
 
         /*package*/
@@ -596,7 +597,7 @@ class NodeToSNodeAdapter protected constructor(val node: INode, repository: SRep
             -0x3154ae6ada15b0deL,
             -0x646defc46a3573f4L,
             0x10802efe25aL,
-            "jetbrains.mps.lang.core.structure.BaseConcept"
+            "jetbrains.mps.lang.core.structure.BaseConcept",
         )
 
         /*package*/
@@ -604,7 +605,7 @@ class NodeToSNodeAdapter protected constructor(val node: INode, repository: SRep
             -0x3154ae6ada15b0deL,
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
-            "jetbrains.mps.lang.core.structure.INamedConcept"
+            "jetbrains.mps.lang.core.structure.INamedConcept",
         )
     }
 
@@ -615,7 +616,7 @@ class NodeToSNodeAdapter protected constructor(val node: INode, repository: SRep
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
     }
 
@@ -672,7 +673,7 @@ class NodeToSNodeAdapter protected constructor(val node: INode, repository: SRep
 
         private fun check_r4r1yj_a0a96(
             checkedDotOperand: SContainmentLink?,
-            checkedDotThisExpression: NodeToSNodeAdapter
+            checkedDotThisExpression: NodeToSNodeAdapter,
         ): String? {
             if (null != checkedDotOperand) {
                 return checkedDotOperand.getName()

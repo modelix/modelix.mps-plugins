@@ -71,7 +71,7 @@ class AddProjectBinding_Action() : BaseAction("Bind to Current Project", "", ICO
         val nodeTreeNode: CloudNodeTreeNode = (event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?)!!
         val expectedProjectName: String? = PArea(nodeTreeNode.branch).executeRead({
             nodeTreeNode.node.getPropertyValue(
-                PROPS.`name$MnvL`.getName()
+                PROPS.`name$MnvL`.getName(),
             )
         })
         if (!(Objects.equals(expectedProjectName, event.getData(MPSCommonDataKeys.MPS_PROJECT)!!.getName()))) {
@@ -79,11 +79,11 @@ class AddProjectBinding_Action() : BaseAction("Bind to Current Project", "", ICO
                 event.getData(MPSCommonDataKeys.MPS_PROJECT)!!
                     .getProject(),
                 "Project names don't match. Do you want to bind '" + expectedProjectName + "' to '" + event.getData(
-                    MPSCommonDataKeys.MPS_PROJECT
+                    MPSCommonDataKeys.MPS_PROJECT,
                 )!!
                     .getName() + "'?",
                 "Bind Project",
-                null
+                null,
             )
             if (dialogResult != Messages.OK) {
                 return
@@ -98,7 +98,7 @@ class AddProjectBinding_Action() : BaseAction("Bind to Current Project", "", ICO
             treeInRepository,
             cloudProjectId,
             event.getData(MPSCommonDataKeys.MPS_PROJECT)!!,
-            SyncDirection.TO_MPS
+            SyncDirection.TO_MPS,
         )
     }
 
@@ -109,7 +109,7 @@ class AddProjectBinding_Action() : BaseAction("Bind to Current Project", "", ICO
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
     }
 

@@ -45,7 +45,7 @@ class ProjectModulesSynchronizer(cloudParentId: Long, val project: MPSProject) :
             public override fun accept(it: Long?): Boolean {
                 val concept: IConcept? = tree.getConcept((it)!!)
                 return concept!!.isExactly(SConceptAdapter.Companion.wrap(CONCEPTS.`Module$4i`)) || concept.isSubConceptOf(
-                    SConceptAdapter.Companion.wrap(CONCEPTS.`Solution$q3`)
+                    SConceptAdapter.Companion.wrap(CONCEPTS.`Solution$q3`),
                 )
             }
         })
@@ -80,7 +80,7 @@ class ProjectModulesSynchronizer(cloudParentId: Long, val project: MPSProject) :
         tree: ITree,
         cloudChildren: List<Long>,
         mpsChildren: List<SModule>,
-        direction: SyncDirection?
+        direction: SyncDirection?,
     ): Map<Long, SModule> {
         val result: Map<Long, SModule> = MapSequence.fromMap(HashMap())
         val availableModules: List<SModule?> = ListSequence.fromListWithValues(ArrayList(), mpsChildren)
@@ -94,7 +94,7 @@ class ProjectModulesSynchronizer(cloudParentId: Long, val project: MPSProject) :
                 val it: SModule? = itr.next()
                 if (id != null && Objects.equals(it!!.getModuleId(), id) || Objects.equals(
                         it!!.getModuleName(),
-                        name
+                        name,
                     )
                 ) {
                     MapSequence.fromMap(result).put(cloudModuleId, it)
@@ -125,7 +125,7 @@ class ProjectModulesSynchronizer(cloudParentId: Long, val project: MPSProject) :
             -0x674e051c70651180L,
             0x37a0917d689de959L,
             0x37a0917d689de9e2L,
-            "modules"
+            "modules",
         )
     }
 
@@ -135,7 +135,7 @@ class ProjectModulesSynchronizer(cloudParentId: Long, val project: MPSProject) :
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
-            "org.modelix.model.repositoryconcepts.structure.Module"
+            "org.modelix.model.repositoryconcepts.structure.Module",
         )
 
         /*package*/
@@ -143,7 +143,7 @@ class ProjectModulesSynchronizer(cloudParentId: Long, val project: MPSProject) :
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x65e0d25ff052e203L,
-            "org.modelix.model.repositoryconcepts.structure.Solution"
+            "org.modelix.model.repositoryconcepts.structure.Solution",
         )
 
         /*package*/
@@ -151,7 +151,7 @@ class ProjectModulesSynchronizer(cloudParentId: Long, val project: MPSProject) :
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x65e0d25ff052e205L,
-            "org.modelix.model.repositoryconcepts.structure.DevKit"
+            "org.modelix.model.repositoryconcepts.structure.DevKit",
         )
 
         /*package*/
@@ -159,7 +159,7 @@ class ProjectModulesSynchronizer(cloudParentId: Long, val project: MPSProject) :
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x65e0d25ff052e204L,
-            "org.modelix.model.repositoryconcepts.structure.Language"
+            "org.modelix.model.repositoryconcepts.structure.Language",
         )
     }
 
@@ -170,7 +170,7 @@ class ProjectModulesSynchronizer(cloudParentId: Long, val project: MPSProject) :
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
 
         /*package*/
@@ -179,7 +179,7 @@ class ProjectModulesSynchronizer(cloudParentId: Long, val project: MPSProject) :
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x3aa34013f2a802e0L,
-            "id"
+            "id",
         )
     }
 
@@ -188,7 +188,7 @@ class ProjectModulesSynchronizer(cloudParentId: Long, val project: MPSProject) :
             t: IWriteTransaction,
             mpsModule: SModule?,
             cloudParentId: Long,
-            cloudRole: String?
+            cloudRole: String?,
         ): Long {
             val modelNodeId: Long =
                 t.addNewChild(cloudParentId, cloudRole, -1, SConceptAdapter.Companion.wrap(CONCEPTS.`Module$4i`))

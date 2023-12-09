@@ -1,7 +1,5 @@
 package org.modelix.model.mpsplugin
 
-import jetbrains.mps.internal.collections.runtime.ISelector
-import jetbrains.mps.internal.collections.runtime.NotNullWhereFilter
 import jetbrains.mps.internal.collections.runtime.Sequence
 import jetbrains.mps.smodel.SNode
 import org.jetbrains.mps.openapi.model.SModel

@@ -31,8 +31,8 @@ open class ModelsSynchronizer(cloudParentId: Long, open val module: SModule) :
         get() {
             return ListSequence.fromList(
                 SModuleUtils.getModelsWithoutDescriptor(
-                    module
-                )
+                    module,
+                ),
             ).where(object : IWhereFilter<SModel>() {
                 public override fun accept(it: SModel): Boolean {
                     return !(it.isReadOnly())
@@ -61,7 +61,7 @@ open class ModelsSynchronizer(cloudParentId: Long, open val module: SModule) :
         tree: ITree,
         cloudChildren: List<Long>,
         mpsChildren: List<SModel>,
-        direction: SyncDirection?
+        direction: SyncDirection?,
     ): Map<Long, SModel> {
         val result: Map<Long, SModel> = MapSequence.fromMap(HashMap())
         val availableModels: List<SModel?> = ListSequence.fromListWithValues(ArrayList(), mpsChildren)
@@ -75,7 +75,7 @@ open class ModelsSynchronizer(cloudParentId: Long, open val module: SModule) :
                 val it: SModel? = itr.next()
                 if (id != null && Objects.equals(it!!.getModelId(), id) || Objects.equals(
                         it!!.getName().getValue(),
-                        name
+                        name,
                     )
                 ) {
                     MapSequence.fromMap(result).put(cloudModelId, it)
@@ -97,9 +97,12 @@ open class ModelsSynchronizer(cloudParentId: Long, open val module: SModule) :
 
     public override fun createCloudChild(t: IWriteTransaction, mpsChild: SModel): Long {
         val modelNodeId: Long = t.addNewChild(
-            cloudParentId, LINKS.`models$h3QT`.getName(), -1, SConceptAdapter.Companion.wrap(
-                CONCEPTS.`Model$2P`
-            )
+            cloudParentId,
+            LINKS.`models$h3QT`.getName(),
+            -1,
+            SConceptAdapter.Companion.wrap(
+                CONCEPTS.`Model$2P`,
+            ),
         )
         val modelAsNode: SModelAsNode = SModelAsNode((mpsChild)!!)
         for (property: IProperty in modelAsNode.concept.getAllProperties()) {
@@ -118,9 +121,9 @@ open class ModelsSynchronizer(cloudParentId: Long, open val module: SModule) :
             val project: Project = ListSequence.fromList(projects).first()
             ModuleDependencyVersions(
                 LanguageRegistry.getInstance(project.getRepository()),
-                project.getRepository()
+                project.getRepository(),
             ).update(
-                (module)!!
+                (module)!!,
             )
         }
         return result
@@ -133,7 +136,7 @@ open class ModelsSynchronizer(cloudParentId: Long, open val module: SModule) :
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x69652614fd1c512L,
-            "models"
+            "models",
         )
     }
 
@@ -144,7 +147,7 @@ open class ModelsSynchronizer(cloudParentId: Long, open val module: SModule) :
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
 
         /*package*/
@@ -153,7 +156,7 @@ open class ModelsSynchronizer(cloudParentId: Long, open val module: SModule) :
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
             0x244b85440ee67212L,
-            "id"
+            "id",
         )
     }
 
@@ -163,7 +166,7 @@ open class ModelsSynchronizer(cloudParentId: Long, open val module: SModule) :
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
-            "org.modelix.model.repositoryconcepts.structure.Model"
+            "org.modelix.model.repositoryconcepts.structure.Model",
         )
     }
 }

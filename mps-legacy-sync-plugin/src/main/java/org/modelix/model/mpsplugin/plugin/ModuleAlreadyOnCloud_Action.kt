@@ -29,7 +29,7 @@ class ModuleAlreadyOnCloud_Action(private val treeInRepository: CloudRepository)
         try {
             return connected && ModelCloudImportUtils.containsModule(
                 treeInRepository,
-                event.getData(MPSCommonDataKeys.MODULE)
+                event.getData(MPSCommonDataKeys.MODULE),
             )
         } catch (e: RuntimeException) {
             // This could happen because of repositories in invalid state. In this case let's ignore those repositories without preventing usage of other repositories

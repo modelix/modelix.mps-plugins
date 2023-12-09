@@ -53,16 +53,16 @@ class ModelImportAsNode(importedModel: SModel, private val importingModel: SMode
         public override fun resolveNode(area: IArea?): INode? {
             val importedModel: SModel? = check_c5rr7l_a0a0f61(
                 SModelAsNode.NodeReference(
-                    importedModelRef
-                ).resolveNode(area)
+                    importedModelRef,
+                ).resolveNode(area),
             )
             if (importedModel == null) {
                 return null
             }
             val importingModel: SModel? = check_c5rr7l_a0c0f61(
                 SModelAsNode.NodeReference(
-                    importingModelRef
-                ).resolveNode(area)
+                    importingModelRef,
+                ).resolveNode(area),
             )
             if (importingModel == null) {
                 return null
@@ -117,7 +117,7 @@ class ModelImportAsNode(importedModel: SModel, private val importingModel: SMode
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x58dbe6e4d4f332a3L,
-            "org.modelix.model.repositoryconcepts.structure.ModelReference"
+            "org.modelix.model.repositoryconcepts.structure.ModelReference",
         )
     }
 
@@ -128,7 +128,7 @@ class ModelImportAsNode(importedModel: SModel, private val importingModel: SMode
             -0x674e051c70651180L,
             0x58dbe6e4d4f332a3L,
             0x58dbe6e4d4f332a4L,
-            "model"
+            "model",
         )
 
         /*package*/
@@ -137,7 +137,7 @@ class ModelImportAsNode(importedModel: SModel, private val importingModel: SMode
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
             0x58dbe6e4d4f32eb8L,
-            "modelImports"
+            "modelImports",
         )
     }
 

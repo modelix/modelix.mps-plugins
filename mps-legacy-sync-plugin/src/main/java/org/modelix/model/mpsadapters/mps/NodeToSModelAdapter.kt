@@ -1,7 +1,5 @@
 package org.modelix.model.mpsadapters.mps
 
-import jetbrains.mps.internal.collections.runtime.ISelector
-import jetbrains.mps.internal.collections.runtime.Sequence
 import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import org.jetbrains.mps.openapi.language.SConcept
@@ -167,7 +165,7 @@ class NodeToSModelAdapter protected constructor(node: INode, repository: SReposi
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
-            "org.modelix.model.repositoryconcepts.structure.Model"
+            "org.modelix.model.repositoryconcepts.structure.Model",
         )
     }
 
@@ -178,7 +176,7 @@ class NodeToSModelAdapter protected constructor(node: INode, repository: SReposi
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
     }
 
@@ -189,7 +187,7 @@ class NodeToSModelAdapter protected constructor(node: INode, repository: SReposi
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
             0x69652614fd1c514L,
-            "rootNodes"
+            "rootNodes",
         )
     }
 

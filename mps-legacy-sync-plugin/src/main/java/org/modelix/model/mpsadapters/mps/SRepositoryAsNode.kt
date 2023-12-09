@@ -99,7 +99,7 @@ class SRepositoryAsNode(repository: SRepository) : TreeElementAsNode<SRepository
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c516L,
-            "org.modelix.model.repositoryconcepts.structure.Repository"
+            "org.modelix.model.repositoryconcepts.structure.Repository",
         )
     }
 
@@ -110,7 +110,7 @@ class SRepositoryAsNode(repository: SRepository) : TreeElementAsNode<SRepository
             -0x674e051c70651180L,
             0x69652614fd1c516L,
             0x69652614fd1c517L,
-            "modules"
+            "modules",
         )
 
         /*package*/
@@ -119,7 +119,7 @@ class SRepositoryAsNode(repository: SRepository) : TreeElementAsNode<SRepository
             -0x674e051c70651180L,
             0x69652614fd1c516L,
             0x72291b7f31486ecaL,
-            "tempModules"
+            "tempModules",
         )
 
         /*package*/
@@ -128,7 +128,7 @@ class SRepositoryAsNode(repository: SRepository) : TreeElementAsNode<SRepository
             -0x674e051c70651180L,
             0x69652614fd1c516L,
             0x620a8558361d3e0cL,
-            "projects"
+            "projects",
         )
     }
 

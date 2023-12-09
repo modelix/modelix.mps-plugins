@@ -60,7 +60,7 @@ class LoadHistoryForBranch_Action() : BaseAction("Show History", "", ICON) {
         val branchName: String = PArea((infoBranch)!!).executeRead({
             SPropertyOperations.getString(
                 branchTNode.branchInfo,
-                PROPS.`name$MnvL`
+                PROPS.`name$MnvL`,
             )
         })
         val repositoryId: RepositoryId? = treeTNode.repositoryId
@@ -81,7 +81,8 @@ class LoadHistoryForBranch_Action() : BaseAction("Show History", "", ICON) {
                                 public override fun invoke(): CLVersion {
                                     return version
                                 }
-                            })
+                            },
+                        )
                     }
                 })
             }
@@ -95,7 +96,7 @@ class LoadHistoryForBranch_Action() : BaseAction("Show History", "", ICON) {
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
     }
 

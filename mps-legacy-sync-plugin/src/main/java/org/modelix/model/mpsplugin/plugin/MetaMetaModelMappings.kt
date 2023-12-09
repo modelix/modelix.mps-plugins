@@ -53,7 +53,7 @@ object MetaMetaModelMappings {
             -0x40020edcf284b8e5L,
             -0x5ad405c2c5fdb99cL,
             0x100c617ef3bce7efL,
-            "org.modelix.model.metametamodel.structure.Language"
+            "org.modelix.model.metametamodel.structure.Language",
         )
 
         /*package*/
@@ -61,7 +61,7 @@ object MetaMetaModelMappings {
             -0x40020edcf284b8e5L,
             -0x5ad405c2c5fdb99cL,
             0x100c617ef3bce7f0L,
-            "org.modelix.model.metametamodel.structure.Concept"
+            "org.modelix.model.metametamodel.structure.Concept",
         )
 
         /*package*/
@@ -69,7 +69,7 @@ object MetaMetaModelMappings {
             -0x40020edcf284b8e5L,
             -0x5ad405c2c5fdb99cL,
             0x100c617ef3bce7f1L,
-            "org.modelix.model.metametamodel.structure.Property"
+            "org.modelix.model.metametamodel.structure.Property",
         )
 
         /*package*/
@@ -77,7 +77,7 @@ object MetaMetaModelMappings {
             -0x40020edcf284b8e5L,
             -0x5ad405c2c5fdb99cL,
             0x100c617ef3bce7f3L,
-            "org.modelix.model.metametamodel.structure.ContainmentLink"
+            "org.modelix.model.metametamodel.structure.ContainmentLink",
         )
 
         /*package*/
@@ -85,7 +85,7 @@ object MetaMetaModelMappings {
             -0x40020edcf284b8e5L,
             -0x5ad405c2c5fdb99cL,
             0x100c617ef3bce7f2L,
-            "org.modelix.model.metametamodel.structure.ReferenceLink"
+            "org.modelix.model.metametamodel.structure.ReferenceLink",
         )
     }
 }

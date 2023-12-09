@@ -1,7 +1,6 @@
 package org.modelix.model.mpsplugin.plugin
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.project.ProjectManager
 import jetbrains.mps.baseLanguage.closures.runtime.Wrappers._T
 import jetbrains.mps.baseLanguage.closures.runtime._FunctionTypes._return_P0_E0
 import jetbrains.mps.baseLanguage.tuples.runtime.Tuples
@@ -81,7 +80,7 @@ class ModelImportExport() {
                                         val modelCloudExporter = ModelCloudExporter(
                                             modelServerURL,
                                             PropertyOrEnv.get(ModelixExportConfiguration.REPOSITORY_ID),
-                                            PropertyOrEnv.get(ModelixExportConfiguration.BRANCH_NAME)
+                                            PropertyOrEnv.get(ModelixExportConfiguration.BRANCH_NAME),
                                         ).setCheckoutMode()
                                         val stuffToDoOnceWeGetAProject: Consumer<Project> =
                                             object : Consumer<Project> {
@@ -112,10 +111,11 @@ class ModelImportExport() {
                                                                                     println("DOWNLOAD TASK WRITING " + "<MODEL EXPORT NOT COMPLETED SUCCESSFULLY>\n")
                                                                                     gradleTaskOut.value.println("<MODEL EXPORT NOT COMPLETED SUCCESSFULLY>")
                                                                                 }
-                                                                            })
+                                                                            },
+                                                                        )
                                                                         System.setProperty(
                                                                             ModelixExportConfiguration.DONE,
-                                                                            "true"
+                                                                            "true",
                                                                         )
                                                                         println("Starting shut down of Application")
                                                                         ApplicationManager.getApplication()
@@ -139,26 +139,28 @@ class ModelImportExport() {
                                                         if ((make == "all")) {
                                                             modulesToBuild = ListSequence.fromListWithValues(
                                                                 ArrayList(),
-                                                                mpsProject.projectModules as Iterable<SModule>
+                                                                mpsProject.projectModules as Iterable<SModule>,
                                                             )
                                                         } else {
                                                             modulesToBuild = ListSequence.fromList(
                                                                 ListSequence.fromListWithValues(
                                                                     ArrayList(),
-                                                                    mpsProject.projectModules as Iterable<SModule>
-                                                                )
+                                                                    mpsProject.projectModules as Iterable<SModule>,
+                                                                ),
                                                             ).where(object : IWhereFilter<SModule>() {
                                                                 override fun accept(it: SModule): Boolean {
                                                                     val virtualFolder =
                                                                         (mpsProject as StandaloneMPSProject).getFolderFor(
-                                                                            it
+                                                                            it,
                                                                         )
                                                                     println("Modelix Application Plugin - Considering module: " + it.moduleName + " virtual folder: " + virtualFolder + ", make is currently: " + make)
                                                                     return Sequence.fromIterable<String>(
                                                                         Sequence.fromArray<String>(
                                                                             *make.split(",".toRegex())
                                                                                 .dropLastWhile { it.isEmpty() }
-                                                                                .toTypedArray()))
+                                                                                .toTypedArray(),
+                                                                        ),
+                                                                    )
                                                                         .any(object : IWhereFilter<String?>() {
                                                                             override fun accept(it: String?): Boolean {
                                                                                 return (virtualFolder == it)
@@ -175,8 +177,8 @@ class ModelImportExport() {
                                                                             return it.moduleName
                                                                         }
                                                                     }),
-                                                                ", "
-                                                            )
+                                                                ", ",
+                                                            ),
                                                         )
                                                         ProjectMakeRunner.execute(
                                                             mpsProject,
@@ -227,12 +229,13 @@ class ModelImportExport() {
                                                                     // We try to export anyway
                                                                     runExport.run()
                                                                 }
-                                                            })
+                                                            },
+                                                        )
                                                     }
                                                 }
                                             }
                                         ProjectManagerExtensions.withTheOnlyProject(
-                                            stuffToDoOnceWeGetAProject
+                                            stuffToDoOnceWeGetAProject,
                                         )
                                     } catch (ex: Exception) {
                                         if (LOG.isEnabledFor(Level.ERROR)) {
@@ -287,8 +290,8 @@ class ModelImportExport() {
                                                     activeBranch!!.switchBranch(
                                                         PropertyOrEnv.getOrElse(
                                                             ModelixImportConfiguration.BRANCH_NAME,
-                                                            RepositoryId.DEFAULT_BRANCH
-                                                        )
+                                                            RepositoryId.DEFAULT_BRANCH,
+                                                        ),
                                                     )
                                                     val projectNodeId =
                                                         activeBranch.branch.computeWriteT<Long> { t: IWriteTransaction ->
@@ -301,8 +304,9 @@ class ModelImportExport() {
                                                                     override fun accept(it: Long?): Boolean {
                                                                         return check_d5jcfl_a0a0a0a2a0a0a6a0a0a0a0a0a0a0a0a0a1a0a0f0a0c(
                                                                             t.getConcept(
-                                                                                (it)!!
-                                                                            ), projectConcept
+                                                                                (it)!!,
+                                                                            ),
+                                                                            projectConcept,
                                                                         )
                                                                     }
                                                                 })
@@ -311,7 +315,7 @@ class ModelImportExport() {
                                                                     ITree.ROOT_ID,
                                                                     "projects",
                                                                     -1,
-                                                                    projectConcept
+                                                                    projectConcept,
                                                                 )
                                                             }
                                                             id
@@ -319,29 +323,35 @@ class ModelImportExport() {
                                                     val binding = ProjectBinding(
                                                         project as MPSProject,
                                                         projectNodeId,
-                                                        SyncDirection.TO_CLOUD
+                                                        SyncDirection.TO_CLOUD,
                                                     )
-                                                    connection.addBinding(repositoryId, binding, object : Runnable {
-                                                        override fun run() {
-                                                            waitForWriteToModelServer(
-                                                                binding,
-                                                                connection.getClient(),
-                                                                object : Runnable {
-                                                                    override fun run() {
-                                                                        println("<MODEL IMPORT COMPLETED SUCCESSFULLY>")
-                                                                        ApplicationManager.getApplication()
-                                                                            .invokeLater(object : Runnable {
-                                                                                override fun run() {
-                                                                                    ApplicationManager.getApplication()
-                                                                                        .exit(true, true, false)
-                                                                                }
-                                                                            })
-                                                                    }
-                                                                })
-                                                        }
-                                                    })
+                                                    connection.addBinding(
+                                                        repositoryId,
+                                                        binding,
+                                                        object : Runnable {
+                                                            override fun run() {
+                                                                waitForWriteToModelServer(
+                                                                    binding,
+                                                                    connection.getClient(),
+                                                                    object : Runnable {
+                                                                        override fun run() {
+                                                                            println("<MODEL IMPORT COMPLETED SUCCESSFULLY>")
+                                                                            ApplicationManager.getApplication()
+                                                                                .invokeLater(object : Runnable {
+                                                                                    override fun run() {
+                                                                                        ApplicationManager.getApplication()
+                                                                                            .exit(true, true, false)
+                                                                                    }
+                                                                                })
+                                                                        }
+                                                                    },
+                                                                )
+                                                            }
+                                                        },
+                                                    )
                                                 }
-                                            })
+                                            },
+                                        )
                                     } catch (ex: Exception) {
                                         if (LOG.isEnabledFor(Level.ERROR)) {
                                             LOG.error("Modelix Application Plugin Failure", ex)
@@ -402,7 +412,7 @@ class ModelImportExport() {
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x37a0917d689de959L,
-            "org.modelix.model.repositoryconcepts.structure.Project"
+            "org.modelix.model.repositoryconcepts.structure.Project",
         )
     }
 
@@ -410,11 +420,13 @@ class ModelImportExport() {
         private val LOG = LogManager.getLogger(ModelImportExport::class.java)
         private fun check_d5jcfl_a0a0a0a2a0a0a6a0a0a0a0a0a0a0a0a0a1a0a0f0a0c(
             checkedDotOperand: IConcept?,
-            projectConcept: IConcept?
+            projectConcept: IConcept?,
         ): Boolean {
             return if (null != checkedDotOperand) {
                 checkedDotOperand.isSubConceptOf(projectConcept)
-            } else false
+            } else {
+                false
+            }
         }
     }
 }

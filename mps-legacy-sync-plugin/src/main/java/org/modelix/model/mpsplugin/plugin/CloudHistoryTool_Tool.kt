@@ -37,7 +37,7 @@ class CloudHistoryTool_Tool() : ToolWindowFactory {
             project: Project?,
             modelServer: ModelServerConnection?,
             repositoryId: RepositoryId?,
-            headVersion: _return_P0_E0<out CLVersion?>?
+            headVersion: _return_P0_E0<out CLVersion?>?,
         ) {
             getInstance(project).loadHistory(modelServer, repositoryId, headVersion)
             getToolWindow(project)!!.show()

@@ -36,7 +36,7 @@ object ReflectionUtil {
         obj: Any?,
         methodName: String,
         argumentTypes: Array<Class<*>?>,
-        arguments: Array<Any?>
+        arguments: Array<Any?>,
     ): Any {
         return try {
             val method = cls.getDeclaredMethod(methodName, *argumentTypes)
@@ -52,7 +52,7 @@ object ReflectionUtil {
         obj: Any?,
         methodName: String,
         argumentTypes: Array<Class<*>?>,
-        arguments: Array<Any?>
+        arguments: Array<Any?>,
     ) {
         callMethod(cls, obj, methodName, argumentTypes, arguments)
     }
@@ -61,7 +61,7 @@ object ReflectionUtil {
         cls: Class<*>,
         methodName: String,
         argumentTypes: Array<Class<*>?>,
-        arguments: Array<Any?>
+        arguments: Array<Any?>,
     ): Any {
         return callMethod(cls, null, methodName, argumentTypes, arguments)
     }
@@ -70,7 +70,7 @@ object ReflectionUtil {
         cls: Class<*>,
         methodName: String,
         argumentTypes: Array<Class<*>?>,
-        arguments: Array<Any?>
+        arguments: Array<Any?>,
     ) {
         callStaticMethod(cls, methodName, argumentTypes, arguments)
     }

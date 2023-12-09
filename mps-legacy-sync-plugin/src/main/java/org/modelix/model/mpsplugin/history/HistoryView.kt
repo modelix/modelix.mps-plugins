@@ -106,8 +106,8 @@ class HistoryView() : JPanel() {
                 t.applyOperation(
                     RevertToOp(
                         KVEntryReference(latestKnownVersion.data!!),
-                        KVEntryReference(versionToRevertTo.data!!)
-                    )
+                        KVEntryReference(versionToRevertTo.data!!),
+                    ),
                 )
                 Unit
             })
@@ -131,7 +131,7 @@ class HistoryView() : JPanel() {
     fun loadHistory(
         modelServer: ModelServerConnection?,
         repositoryId: RepositoryId?,
-        headVersion: _return_P0_E0<out CLVersion?>?
+        headVersion: _return_P0_E0<out CLVersion?>?,
     ) {
         versionGetter = headVersion
         this.modelServer = modelServer
@@ -156,9 +156,11 @@ class HistoryView() : JPanel() {
                         for (v: CLVersion in ListSequence.fromList(
                             LinearHistory(version.baseVersion!!.hash).load(
                                 CLVersion(
-                                    version.data!!.mergedVersion1!!.getValue(store), store
-                                ), CLVersion(version.data!!.mergedVersion2!!.getValue(store), store)
-                            )
+                                    version.data!!.mergedVersion1!!.getValue(store),
+                                    store,
+                                ),
+                                CLVersion(version.data!!.mergedVersion2!!.getValue(store), store),
+                            ),
                         )) {
                             createTableRow(v)
                         }
@@ -181,14 +183,23 @@ class HistoryView() : JPanel() {
                         "merge " + version.getMergedVersion1()!!.id + " + " + version.getMergedVersion2()!!.id + " (base " + version.baseVersion + ")"
                 } else {
                     opsDescription =
-                        "(" + version.numberOfOperations + ") " + ((if (version.operationsInlined()) IterableUtils.join(
-                            Sequence.fromIterable((version.operations as Iterable<IOperation>?))
-                                .select(object : ISelector<IOperation, String>() {
-                                    public override fun select(it: IOperation): String {
-                                        return it.toString()
-                                    }
-                                }), " # "
-                        ) else "..."))
+                        "(" + version.numberOfOperations + ") " + (
+                            (
+                                if (version.operationsInlined()) {
+                                    IterableUtils.join(
+                                        Sequence.fromIterable((version.operations as Iterable<IOperation>?))
+                                            .select(object : ISelector<IOperation, String>() {
+                                                public override fun select(it: IOperation): String {
+                                                    return it.toString()
+                                                }
+                                            }),
+                                        " # ",
+                                    )
+                                } else {
+                                    "..."
+                                }
+                                )
+                            )
                 }
                 tableModel.addRow(
                     Vector(
@@ -198,9 +209,9 @@ class HistoryView() : JPanel() {
                             version.author,
                             version.time,
                             opsDescription,
-                            version.hash
-                        )
-                    )
+                            version.hash,
+                        ),
+                    ),
                 )
                 ListSequence.fromList(versions).addElement(version)
             }

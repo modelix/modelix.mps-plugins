@@ -19,12 +19,12 @@ class TransientModuleBinding(moduleNodeId: Long) : ModuleBinding(moduleNodeId, S
         val branch: IBranch? = this.branch
         var moduleName: String? = PArea((branch)!!).executeRead({
             PNodeAdapter(moduleNodeId, (branch)).getPropertyValue(
-                PROPS.`name$MnvL`.getName()
+                PROPS.`name$MnvL`.getName(),
             )
         })
         val moduleIdStr: String? = PArea((branch)!!).executeRead({
             PNodeAdapter(moduleNodeId, (branch)).getPropertyValue(
-                PROPS.`id$7MjP`.getName()
+                PROPS.`id$7MjP`.getName(),
             )
         })
         if ((moduleName == null || moduleName.length == 0)) {
@@ -39,7 +39,7 @@ class TransientModuleBinding(moduleNodeId: Long) : ModuleBinding(moduleNodeId, S
             if (CloudTransientModules.instance.isModuleIdUsed(temptativeModuleId)) {
                 ModelixNotifications.notifyWarning(
                     "Module ID already used",
-                    "We cannot load the module with the ID " + temptativeModuleId + " as the module id seems to be already used. We will load it with module id " + moduleId + " instead"
+                    "We cannot load the module with the ID " + temptativeModuleId + " as the module id seems to be already used. We will load it with module id " + moduleId + " instead",
                 )
             } else {
                 moduleId = temptativeModuleId
@@ -76,7 +76,7 @@ class TransientModuleBinding(moduleNodeId: Long) : ModuleBinding(moduleNodeId, S
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
 
         /*package*/
@@ -85,7 +85,7 @@ class TransientModuleBinding(moduleNodeId: Long) : ModuleBinding(moduleNodeId, S
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x3aa34013f2a802e0L,
-            "id"
+            "id",
         )
     }
 

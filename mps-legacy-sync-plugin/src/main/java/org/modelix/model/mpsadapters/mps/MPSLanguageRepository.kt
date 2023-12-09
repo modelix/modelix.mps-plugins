@@ -49,7 +49,7 @@ class MPSLanguageRepository() : ILanguageRepository {
                             public override fun select(it: SAbstractConcept?): IConcept? {
                                 return SConceptAdapter.Companion.wrap(it)
                             }
-                        })
+                        }),
                 )
             }
         })

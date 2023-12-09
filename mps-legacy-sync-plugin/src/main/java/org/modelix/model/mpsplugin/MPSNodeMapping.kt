@@ -18,7 +18,7 @@ object MPSNodeMapping {
         } catch (e: RuntimeException) {
             throw RuntimeException(
                 "Failed to retrieve the " + MPS_NODE_ID_PROPERTY_NAME + " property in mappedMpsNodeID. The INode is " + _this + ", concept: " + _this!!.concept,
-                e
+                e,
             )
         }
     }

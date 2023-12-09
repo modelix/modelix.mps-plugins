@@ -28,21 +28,30 @@ class BootstrapConceptMappings() {
     @Synchronized
     fun register(concept: IConcept, sconceptId: SConceptId) {
         val uid: String = concept.getUID()
-        uid2sconcept = modifyCopy<String, SConceptId>(uid2sconcept, object : _void_P1_E0<Map<String, SConceptId>?> {
-            public override fun invoke(copy: Map<String, SConceptId>?) {
-                MapSequence.fromMap(copy).put(uid, sconceptId)
-            }
-        })
-        sconcept2uid = modifyCopy<SConceptId, String>(sconcept2uid, object : _void_P1_E0<Map<SConceptId, String>?> {
-            public override fun invoke(copy: Map<SConceptId, String>?) {
-                MapSequence.fromMap(copy).put(sconceptId, uid)
-            }
-        })
-        concepts = modifyCopy<String, IConcept>(concepts, object : _void_P1_E0<Map<String, IConcept>?> {
-            public override fun invoke(copy: Map<String, IConcept>?) {
-                MapSequence.fromMap(copy).put(uid, concept)
-            }
-        })
+        uid2sconcept = modifyCopy<String, SConceptId>(
+            uid2sconcept,
+            object : _void_P1_E0<Map<String, SConceptId>?> {
+                public override fun invoke(copy: Map<String, SConceptId>?) {
+                    MapSequence.fromMap(copy).put(uid, sconceptId)
+                }
+            },
+        )
+        sconcept2uid = modifyCopy<SConceptId, String>(
+            sconcept2uid,
+            object : _void_P1_E0<Map<SConceptId, String>?> {
+                public override fun invoke(copy: Map<SConceptId, String>?) {
+                    MapSequence.fromMap(copy).put(sconceptId, uid)
+                }
+            },
+        )
+        concepts = modifyCopy<String, IConcept>(
+            concepts,
+            object : _void_P1_E0<Map<String, IConcept>?> {
+                public override fun invoke(copy: Map<String, IConcept>?) {
+                    MapSequence.fromMap(copy).put(uid, concept)
+                }
+            },
+        )
     }
 
     @Synchronized
@@ -51,21 +60,30 @@ class BootstrapConceptMappings() {
         if (!(Objects.equals(getSConceptId(uid), sconceptId))) {
             throw RuntimeException("Attempt to unregister " + uid + " = " + sconceptId + " while " + getSConceptId(uid) + " was registered")
         }
-        uid2sconcept = modifyCopy<String, SConceptId>(uid2sconcept, object : _void_P1_E0<Map<String, SConceptId>?> {
-            public override fun invoke(copy: Map<String, SConceptId>?) {
-                MapSequence.fromMap(copy).removeKey(uid)
-            }
-        })
-        sconcept2uid = modifyCopy(sconcept2uid, object : _void_P1_E0<Map<SConceptId, String>?> {
-            public override fun invoke(copy: Map<SConceptId, String>?) {
-                MapSequence.fromMap(copy).removeKey(sconceptId)
-            }
-        })
-        concepts = modifyCopy<String, IConcept>(concepts, object : _void_P1_E0<Map<String, IConcept>?> {
-            public override fun invoke(copy: Map<String, IConcept>?) {
-                MapSequence.fromMap(copy).removeKey(uid)
-            }
-        })
+        uid2sconcept = modifyCopy<String, SConceptId>(
+            uid2sconcept,
+            object : _void_P1_E0<Map<String, SConceptId>?> {
+                public override fun invoke(copy: Map<String, SConceptId>?) {
+                    MapSequence.fromMap(copy).removeKey(uid)
+                }
+            },
+        )
+        sconcept2uid = modifyCopy(
+            sconcept2uid,
+            object : _void_P1_E0<Map<SConceptId, String>?> {
+                public override fun invoke(copy: Map<SConceptId, String>?) {
+                    MapSequence.fromMap(copy).removeKey(sconceptId)
+                }
+            },
+        )
+        concepts = modifyCopy<String, IConcept>(
+            concepts,
+            object : _void_P1_E0<Map<String, IConcept>?> {
+                public override fun invoke(copy: Map<String, IConcept>?) {
+                    MapSequence.fromMap(copy).removeKey(uid)
+                }
+            },
+        )
     }
 
     fun getSConcept(concept: IConcept?): SAbstractConcept? {

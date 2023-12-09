@@ -41,7 +41,7 @@ object CloudNodeTreeNodeClassification {
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
-            "org.modelix.model.repositoryconcepts.structure.Module"
+            "org.modelix.model.repositoryconcepts.structure.Module",
         )
 
         /*package*/
@@ -49,7 +49,7 @@ object CloudNodeTreeNodeClassification {
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x37a0917d689de959L,
-            "org.modelix.model.repositoryconcepts.structure.Project"
+            "org.modelix.model.repositoryconcepts.structure.Project",
         )
     }
 }

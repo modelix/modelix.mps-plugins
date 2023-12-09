@@ -57,7 +57,7 @@ class ShowAuthenticationInfo_Action() : BaseAction("Show Authentication Info", "
         Messages.showInfoMessage(
             event.getData(CommonDataKeys.PROJECT),
             "Author: " + author + "\nEmail: " + email,
-            "Authentication Info"
+            "Authentication Info",
         )
     }
 

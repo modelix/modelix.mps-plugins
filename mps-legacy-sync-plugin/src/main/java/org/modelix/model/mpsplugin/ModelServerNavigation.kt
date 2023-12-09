@@ -35,7 +35,7 @@ object ModelServerNavigation {
             -0x56adc78bf09cec4cL,
             0x62b7d9b07cecbcbfL,
             0x62b7d9b07cecbcc2L,
-            "repositories"
+            "repositories",
         )
     }
 
@@ -46,7 +46,7 @@ object ModelServerNavigation {
             -0x56adc78bf09cec4cL,
             0x62b7d9b07cecbcc0L,
             0x62b7d9b07cecbcc6L,
-            "id"
+            "id",
         )
     }
 }

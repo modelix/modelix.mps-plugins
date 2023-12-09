@@ -1,11 +1,9 @@
 package org.modelix.model.mpsadapters.mps
 
-import jetbrains.mps.baseLanguage.closures.runtime._FunctionTypes._return_P1_E0
 import jetbrains.mps.internal.collections.runtime.ISelector
 import jetbrains.mps.internal.collections.runtime.ITranslator2
 import jetbrains.mps.internal.collections.runtime.LinkedListSequence
 import jetbrains.mps.internal.collections.runtime.ListSequence
-import jetbrains.mps.internal.collections.runtime.NotNullWhereFilter
 import jetbrains.mps.internal.collections.runtime.Sequence
 import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
@@ -36,7 +34,7 @@ class ModuleDependencyAsNode(
     private val explicit: Boolean,
     private val reexport: Boolean,
     private val importer: SModule?,
-    private val dependencyScope: SDependencyScope?
+    private val dependencyScope: SDependencyScope?,
 ) : INode {
     public override fun getConceptReference(): IConceptReference? {
         return concept!!.getReference()
@@ -229,7 +227,7 @@ class ModuleDependencyAsNode(
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x1e9fde953529916fL,
-            "org.modelix.model.repositoryconcepts.structure.ModuleDependency"
+            "org.modelix.model.repositoryconcepts.structure.ModuleDependency",
         )
     }
 
@@ -240,7 +238,7 @@ class ModuleDependencyAsNode(
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x1e9fde9535299179L,
-            "dependencies"
+            "dependencies",
         )
     }
 
@@ -251,7 +249,7 @@ class ModuleDependencyAsNode(
             -0x674e051c70651180L,
             0x1e9fde953529916fL,
             0x1e9fde9535315265L,
-            "explicit"
+            "explicit",
         )
 
         /*package*/
@@ -260,7 +258,7 @@ class ModuleDependencyAsNode(
             -0x674e051c70651180L,
             0x1e9fde953529916fL,
             0x1e9fde9535299175L,
-            "name"
+            "name",
         )
 
         /*package*/
@@ -269,7 +267,7 @@ class ModuleDependencyAsNode(
             -0x674e051c70651180L,
             0x1e9fde953529916fL,
             0x1e9fde9535299170L,
-            "reexport"
+            "reexport",
         )
 
         /*package*/
@@ -278,7 +276,7 @@ class ModuleDependencyAsNode(
             -0x674e051c70651180L,
             0x1e9fde953529916fL,
             0x1e9fde9535299172L,
-            "uuid"
+            "uuid",
         )
 
         /*package*/
@@ -287,7 +285,7 @@ class ModuleDependencyAsNode(
             -0x674e051c70651180L,
             0x1e9fde953529916fL,
             0x1e9fde953531526aL,
-            "version"
+            "version",
         )
 
         /*package*/
@@ -296,7 +294,7 @@ class ModuleDependencyAsNode(
             -0x674e051c70651180L,
             0x1e9fde953529916fL,
             0x751b3543f508b8f9L,
-            "scope"
+            "scope",
         )
     }
 }

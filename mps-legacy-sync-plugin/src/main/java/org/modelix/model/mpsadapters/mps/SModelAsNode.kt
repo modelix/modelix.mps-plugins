@@ -1,7 +1,6 @@
 package org.modelix.model.mpsadapters.mps
 
 import jetbrains.mps.baseLanguage.closures.runtime.Wrappers._T
-import jetbrains.mps.baseLanguage.closures.runtime._FunctionTypes._return_P1_E0
 import jetbrains.mps.internal.collections.runtime.CollectionSequence
 import jetbrains.mps.internal.collections.runtime.ISelector
 import jetbrains.mps.internal.collections.runtime.ListSequence
@@ -88,7 +87,7 @@ class SModelAsNode(model: SModel) : TreeElementAsNode<SModel>(model), INode {
                     return SingleLanguageDependencyAsNode(
                         entry.getSourceModuleReference(),
                         sdmd.getLanguageImportVersion(entry),
-                        element
+                        element,
                     )
                 }
             }
@@ -168,7 +167,7 @@ class SModelAsNode(model: SModel) : TreeElementAsNode<SModel>(model), INode {
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
-            "org.modelix.model.repositoryconcepts.structure.Model"
+            "org.modelix.model.repositoryconcepts.structure.Model",
         )
     }
 
@@ -179,7 +178,7 @@ class SModelAsNode(model: SModel) : TreeElementAsNode<SModel>(model), INode {
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
             0x69652614fd1c514L,
-            "rootNodes"
+            "rootNodes",
         )
 
         /*package*/
@@ -188,7 +187,7 @@ class SModelAsNode(model: SModel) : TreeElementAsNode<SModel>(model), INode {
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
             0x58dbe6e4d4f32eb8L,
-            "modelImports"
+            "modelImports",
         )
 
         /*package*/
@@ -197,7 +196,7 @@ class SModelAsNode(model: SModel) : TreeElementAsNode<SModel>(model), INode {
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
             0x4aaf28cf2092e98eL,
-            "usedLanguages"
+            "usedLanguages",
         )
 
         /*package*/
@@ -206,7 +205,7 @@ class SModelAsNode(model: SModel) : TreeElementAsNode<SModel>(model), INode {
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x69652614fd1c512L,
-            "models"
+            "models",
         )
     }
 
@@ -217,7 +216,7 @@ class SModelAsNode(model: SModel) : TreeElementAsNode<SModel>(model), INode {
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
 
         /*package*/
@@ -226,7 +225,7 @@ class SModelAsNode(model: SModel) : TreeElementAsNode<SModel>(model), INode {
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
             0x244b85440ee67212L,
-            "id"
+            "id",
         )
 
         /*package*/
@@ -235,7 +234,7 @@ class SModelAsNode(model: SModel) : TreeElementAsNode<SModel>(model), INode {
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
             0x35307994bbd9588dL,
-            "stereotype"
+            "stereotype",
         )
     }
 
@@ -307,8 +306,8 @@ class SModelAsNode(model: SModel) : TreeElementAsNode<SModel>(model), INode {
                             SingleLanguageDependencyAsNode(
                                 languageId.getSourceModuleReference(),
                                 languageVersion,
-                                element
-                            )
+                                element,
+                            ),
                         )
                     }
                     for (devKit: SModuleReference in ListSequence.fromList<SModuleReference>(sdmd.importedDevkits())) {

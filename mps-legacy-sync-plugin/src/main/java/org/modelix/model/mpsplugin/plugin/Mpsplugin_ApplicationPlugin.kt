@@ -60,12 +60,12 @@ class Mpsplugin_ApplicationPlugin() : BaseApplicationPlugin() {
         insertGroupIntoAnother(
             CloudActionsForPhysicalProjects_ActionGroup.Companion.ID,
             ProjectActions_ActionGroup.ID,
-            ProjectActions_ActionGroup.LABEL_ID_projectNew
+            ProjectActions_ActionGroup.LABEL_ID_projectNew,
         )
         insertGroupIntoAnother(
             CloudActionsForPhysicalModules_ActionGroup.Companion.ID,
             SolutionActions_ActionGroup.ID,
-            SolutionActions_ActionGroup.LABEL_ID_contents
+            SolutionActions_ActionGroup.LABEL_ID_contents,
         )
     }
 

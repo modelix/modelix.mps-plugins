@@ -285,6 +285,7 @@ class ANode(private val node: SNode) : jetbrains.mps.smodel.SNode(DummyConcept()
 
     companion object {
         private val USER_OBJECT_KEY: String = ANode::class.java.getName()
+
         @JvmName("wrap_nullable")
         fun wrap(nodeToWrap: SNode?): jetbrains.mps.smodel.SNode? {
             return if (nodeToWrap == null) null else wrap(nodeToWrap)

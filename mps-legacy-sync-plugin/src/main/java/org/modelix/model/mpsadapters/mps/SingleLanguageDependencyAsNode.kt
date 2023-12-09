@@ -1,11 +1,9 @@
 package org.modelix.model.mpsadapters.mps
 
-import jetbrains.mps.baseLanguage.closures.runtime._FunctionTypes._return_P1_E0
 import jetbrains.mps.internal.collections.runtime.ISelector
 import jetbrains.mps.internal.collections.runtime.ITranslator2
 import jetbrains.mps.internal.collections.runtime.LinkedListSequence
 import jetbrains.mps.internal.collections.runtime.ListSequence
-import jetbrains.mps.internal.collections.runtime.NotNullWhereFilter
 import jetbrains.mps.internal.collections.runtime.Sequence
 import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
@@ -285,7 +283,7 @@ class SingleLanguageDependencyAsNode : INode {
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x1e9fde953529917dL,
-            "org.modelix.model.repositoryconcepts.structure.SingleLanguageDependency"
+            "org.modelix.model.repositoryconcepts.structure.SingleLanguageDependency",
         )
     }
 
@@ -296,7 +294,7 @@ class SingleLanguageDependencyAsNode : INode {
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x1e9fde9535299187L,
-            "languageDependencies"
+            "languageDependencies",
         )
 
         /*package*/
@@ -305,7 +303,7 @@ class SingleLanguageDependencyAsNode : INode {
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
             0x4aaf28cf2092e98eL,
-            "usedLanguages"
+            "usedLanguages",
         )
     }
 
@@ -316,7 +314,7 @@ class SingleLanguageDependencyAsNode : INode {
             -0x674e051c70651180L,
             0x7c527144386aca0fL,
             0x7c527144386aca13L,
-            "name"
+            "name",
         )
 
         /*package*/
@@ -325,7 +323,7 @@ class SingleLanguageDependencyAsNode : INode {
             -0x674e051c70651180L,
             0x7c527144386aca0fL,
             0x7c527144386aca12L,
-            "uuid"
+            "uuid",
         )
 
         /*package*/
@@ -334,7 +332,7 @@ class SingleLanguageDependencyAsNode : INode {
             -0x674e051c70651180L,
             0x1e9fde953529917dL,
             0x1e9fde9535299183L,
-            "version"
+            "version",
         )
     }
 }

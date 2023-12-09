@@ -37,25 +37,25 @@ class MPSNodeReferenceSerializer() : INodeReferenceSerializer {
             return SNodeReferenceAdapter(
                 PersistenceFacade.getInstance().createNodeReference(
                     serialized.substring(
-                        NODE_PREFIX.length
-                    )
-                )
+                        NODE_PREFIX.length,
+                    ),
+                ),
             )
         } else if (serialized.startsWith(MODEL_PREFIX)) {
             return SModelAsNode.NodeReference(
                 PersistenceFacade.getInstance().createModelReference(
                     serialized.substring(
-                        MODEL_PREFIX.length
-                    )
-                )
+                        MODEL_PREFIX.length,
+                    ),
+                ),
             )
         } else if (serialized.startsWith(MODULE_PREFIX)) {
             return SModuleAsNode.NodeReference(
                 PersistenceFacade.getInstance().createModuleReference(
                     serialized.substring(
-                        MODULE_PREFIX.length
-                    )
-                )
+                        MODULE_PREFIX.length,
+                    ),
+                ),
             )
         } else if (Objects.equals(serialized, SERIALIZED_GLOBAL_REPOSITORY)) {
             return SRepositoryAsNode(MPSModuleRepository.getInstance()).reference

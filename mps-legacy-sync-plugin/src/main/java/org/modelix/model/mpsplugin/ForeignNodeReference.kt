@@ -29,7 +29,7 @@ class ForeignNodeReference(val modelName: String, val foreignId: String) : INode
 
     private inner class SimpleSNodeReference(
         private val sModelReference: SModelReference?,
-        private val sNodeId: SNodeId
+        private val sNodeId: SNodeId,
     ) : SNodeReference {
         public override fun resolve(repository: SRepository): SNode? {
             val model: SModel = SPointerOperations.resolveModel(getModelReference(), repository)
@@ -88,7 +88,7 @@ class ForeignNodeReference(val modelName: String, val foreignId: String) : INode
         private fun check_e0to5m_a0b0k(
             checkedDotOperand: SNodeReference?,
             repo: MPSModuleRepository,
-            checkedDotThisExpression: ForeignNodeReference
+            checkedDotThisExpression: ForeignNodeReference,
         ): SNode? {
             if (null != checkedDotOperand) {
                 return checkedDotOperand.resolve(repo)

@@ -60,7 +60,7 @@ class SetProperty_Action(private val node: INode, private val role: SProperty) :
         val nodeTreeNode: CloudNodeTreeNode = (event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?)!!
         val currentValue: String? = CloudNodeTreeNodeBinding.getTreeInRepository(nodeTreeNode).computeRead({
             nodeTreeNode.node.getPropertyValue(
-                role.getName()
+                role.getName(),
             )
         })
         val value: String? = Messages.showInputDialog(
@@ -78,7 +78,8 @@ class SetProperty_Action(private val node: INode, private val role: SProperty) :
                 public override fun canClose(s: String): Boolean {
                     return true
                 }
-            })
+            },
+        )
         if (value == null) {
             return
         }

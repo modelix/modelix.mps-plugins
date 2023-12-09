@@ -85,9 +85,11 @@ class JavaModuleFacetAsNode(facet: JavaModuleFacet) : TreeElementAsNode<JavaModu
 
         public override fun resolveNode(area: IArea?): INode? {
             val module: SModule? = check_r9f4ri_a0a0e71(
-                (SModuleAsNode.NodeReference(
-                    moduleReference
-                ).resolveNode(area) as SModuleAsNode?)
+                (
+                    SModuleAsNode.NodeReference(
+                        moduleReference,
+                    ).resolveNode(area) as SModuleAsNode?
+                    ),
             )
             if (module == null) {
                 return null
@@ -132,7 +134,7 @@ class JavaModuleFacetAsNode(facet: JavaModuleFacet) : TreeElementAsNode<JavaModu
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x1e9fde9535299166L,
-            "org.modelix.model.repositoryconcepts.structure.JavaModuleFacet"
+            "org.modelix.model.repositoryconcepts.structure.JavaModuleFacet",
         )
     }
 
@@ -143,7 +145,7 @@ class JavaModuleFacetAsNode(facet: JavaModuleFacet) : TreeElementAsNode<JavaModu
             -0x674e051c70651180L,
             0x1e9fde9535299166L,
             0x1e9fde9535299167L,
-            "generated"
+            "generated",
         )
 
         /*package*/
@@ -152,7 +154,7 @@ class JavaModuleFacetAsNode(facet: JavaModuleFacet) : TreeElementAsNode<JavaModu
             -0x674e051c70651180L,
             0x1e9fde9535299166L,
             0x1e9fde9535299169L,
-            "path"
+            "path",
         )
     }
 
@@ -163,7 +165,7 @@ class JavaModuleFacetAsNode(facet: JavaModuleFacet) : TreeElementAsNode<JavaModu
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
             0x1e9fde953529916cL,
-            "facets"
+            "facets",
         )
     }
 

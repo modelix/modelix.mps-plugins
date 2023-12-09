@@ -12,7 +12,7 @@ class CloudTool_Tool : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         component = CloudView()
         toolWindow.contentManager.addContent(
-            ContentFactory.SERVICE.getInstance().createContent(component, "Modelix Server", false)
+            ContentFactory.SERVICE.getInstance().createContent(component, "Modelix Server", false),
         )
     }
 

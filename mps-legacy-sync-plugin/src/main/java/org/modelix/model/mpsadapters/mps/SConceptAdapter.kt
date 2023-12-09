@@ -46,7 +46,7 @@ class SConceptAdapter(val adapted: SAbstractConcept) : IConcept {
             val c: SConcept = adapted
             val superInterfaces: Iterable<SInterfaceConcept> = c.getSuperInterfaces()
             superConcepts = Sequence.fromIterable(Sequence.singleton<SAbstractConcept?>(c.getSuperConcept())).concat(
-                Sequence.fromIterable(superInterfaces)
+                Sequence.fromIterable(superInterfaces),
             )
         } else if (adapted is SInterfaceConcept) {
             val superInterfaces: Iterable<SInterfaceConcept> = adapted.getSuperInterfaces()
@@ -159,11 +159,11 @@ class SConceptAdapter(val adapted: SAbstractConcept) : IConcept {
                     return Objects.equals(it.getOwner(), adapted)
                 }
             }).select<IChildLink>(object : ISelector<SContainmentLink?, IChildLink>() {
-            public override fun select(it: SContainmentLink?): IChildLink {
-                val l: IChildLink = SContainmentLinkAdapter(it)
-                return l
-            }
-        }).toListSequence()
+                public override fun select(it: SContainmentLink?): IChildLink {
+                    val l: IChildLink = SContainmentLinkAdapter(it)
+                    return l
+                }
+            }).toListSequence()
     }
 
     public override fun getOwnReferenceLinks(): List<IReferenceLink> {

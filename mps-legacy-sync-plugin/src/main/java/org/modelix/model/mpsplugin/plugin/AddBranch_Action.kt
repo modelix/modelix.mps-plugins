@@ -65,16 +65,18 @@ class AddBranch_Action : BaseAction("New Branch", "", ICON) {
                 Messages.showErrorDialog(
                     event.getData(CommonDataKeys.PROJECT),
                     "Branch '$name' already exists",
-                    "Add Branch"
+                    "Add Branch",
                 )
                 return@executeWrite Unit
             }
-            val versionHash = modelServer!!.getClient()[repositoryId!!.getBranchKey(
-                SPropertyOperations.getString(
-                    branchTreeNode.branchInfo,
-                    PROPS.`name$MnvL`
-                )
-            )]
+            val versionHash = modelServer!!.getClient()[
+                repositoryId!!.getBranchKey(
+                    SPropertyOperations.getString(
+                        branchTreeNode.branchInfo,
+                        PROPS.`name$MnvL`,
+                    ),
+                ),
+            ]
             modelServer.getClient().put(repositoryId.getBranchKey(name), versionHash)
             val branchInfo =
                 SNodeOperations.cast(SNodeAPI.addNewChild(treeInfo, LINKS.`branches$b5_g`), CONCEPTS.`BranchInfo$6t`)
@@ -90,7 +92,7 @@ class AddBranch_Action : BaseAction("New Branch", "", ICON) {
             -0x56adc78bf09cec4cL,
             0x62b7d9b07cecbcc0L,
             0x62b7d9b07cecbcc4L,
-            "branches"
+            "branches",
         )
     }
 
@@ -101,7 +103,7 @@ class AddBranch_Action : BaseAction("New Branch", "", ICON) {
             -0x646defc46a3573f4L,
             0x110396eaaa4L,
             0x110396ec041L,
-            "name"
+            "name",
         )
     }
 
@@ -111,7 +113,7 @@ class AddBranch_Action : BaseAction("New Branch", "", ICON) {
             -0x4967f1420fe2ba63L,
             -0x56adc78bf09cec4cL,
             0x62b7d9b07cecbcc1L,
-            "org.modelix.model.runtimelang.structure.BranchInfo"
+            "org.modelix.model.runtimelang.structure.BranchInfo",
         )
     }
 

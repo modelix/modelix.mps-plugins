@@ -31,29 +31,32 @@ class LoadingIcon() : Icon {
 
     private fun ensureTimerRunning() {
         if (timer == null || !(timer!!.isRunning())) {
-            timer = Timer(1000 / 60, object : ActionListener {
-                public override fun actionPerformed(e: ActionEvent) {
-                    rotate()
-                    if (SetSequence.fromSet(activeNodes).isEmpty()) {
-                        if (inactivity > 5000 / 60) {
-                            SetSequence.fromSet(activeNodes).clear()
-                            timer!!.stop()
-                            timer = null
-                        } else {
-                            inactivity++
-                        }
-                        return
-                    }
-                    for (c: MPSTree in SetSequence.fromSet(activeNodes)
-                        .select(object : ISelector<MPSTreeNode, MPSTree>() {
-                            public override fun select(it: MPSTreeNode): MPSTree {
-                                return it.getTree()
+            timer = Timer(
+                1000 / 60,
+                object : ActionListener {
+                    public override fun actionPerformed(e: ActionEvent) {
+                        rotate()
+                        if (SetSequence.fromSet(activeNodes).isEmpty()) {
+                            if (inactivity > 5000 / 60) {
+                                SetSequence.fromSet(activeNodes).clear()
+                                timer!!.stop()
+                                timer = null
+                            } else {
+                                inactivity++
                             }
-                        }).where(NotNullWhereFilter<Any?>() as _return_P1_E0<Boolean?, MPSTree>?).distinct()) {
-                        c.repaint()
+                            return
+                        }
+                        for (c: MPSTree in SetSequence.fromSet(activeNodes)
+                            .select(object : ISelector<MPSTreeNode, MPSTree>() {
+                                public override fun select(it: MPSTreeNode): MPSTree {
+                                    return it.getTree()
+                                }
+                            }).where(NotNullWhereFilter<Any?>() as _return_P1_E0<Boolean?, MPSTree>?).distinct()) {
+                            c.repaint()
+                        }
                     }
-                }
-            })
+                },
+            )
             timer!!.start()
         }
     }

@@ -133,15 +133,18 @@ class CloudProjectViewExtension(private val project: Project?) {
             callback.invoke(tree)
         } else {
             val timer: _T<Timer?> = _T(null)
-            timer.value = Timer(1000, object : ActionListener {
-                public override fun actionPerformed(e: ActionEvent) {
-                    val tree: ProjectTree? = projectTree
-                    if (tree != null) {
-                        callback.invoke(tree)
-                        timer.value!!.stop()
+            timer.value = Timer(
+                1000,
+                object : ActionListener {
+                    public override fun actionPerformed(e: ActionEvent) {
+                        val tree: ProjectTree? = projectTree
+                        if (tree != null) {
+                            callback.invoke(tree)
+                            timer.value!!.stop()
+                        }
                     }
-                }
-            })
+                },
+            )
             timer.value!!.start()
         }
     }
@@ -152,7 +155,7 @@ class CloudProjectViewExtension(private val project: Project?) {
                 return null
             }
             val pane: ProjectPane? = ProjectPane.getInstance(
-                project
+                project,
             )
             if (pane == null) {
                 return null
@@ -167,14 +170,14 @@ class CloudProjectViewExtension(private val project: Project?) {
         }
         MapSequence.fromMap(ourInstances).removeKey(
             ProjectHelper.toIdeaProject(
-                project
-            )
+                project,
+            ),
         )
     }
 
     fun attachCloudRoot() {
         val projectPane: ProjectPane = ProjectPane.getInstance(
-            project
+            project,
         )
         val root: MPSTreeNode? = projectPane.getTree().getRootNode()
         if (root == null) {
@@ -191,7 +194,7 @@ class CloudProjectViewExtension(private val project: Project?) {
         val preferedIndex: Int = 3
         if (cloudTreeNode!!.getParent() != null && cloudTreeNode!!.getParent().getIndex(cloudTreeNode) != min(
                 (cloudTreeNode!!.getParent().getChildCount() - 1),
-                preferedIndex
+                preferedIndex,
             )
         ) {
             model!!.removeNodeFromParent(cloudTreeNode)
@@ -200,8 +203,10 @@ class CloudProjectViewExtension(private val project: Project?) {
             project!!.getRepository().getModelAccess().runReadAction(object : Runnable {
                 public override fun run() {
                     model!!.insertNodeInto(
-                        cloudTreeNode, root, min(root.getChildCount().toDouble(), preferedIndex.toDouble())
-                            .toInt()
+                        cloudTreeNode,
+                        root,
+                        min(root.getChildCount().toDouble(), preferedIndex.toDouble())
+                            .toInt(),
                     )
                 }
             })
@@ -239,7 +244,7 @@ class CloudProjectViewExtension(private val project: Project?) {
                 val module2treeNode: Map<SModule, CloudModuleTreeNode> = MapSequence.fromMap(HashMap())
                 val treeNodesToRemove: Set<CloudModuleTreeNode> = SetSequence.fromSet(HashSet())
                 Sequence.fromIterable<TreeNode>(getChildren(cloudTreeNode)).ofType<CloudModuleTreeNode>(
-                    CloudModuleTreeNode::class.java
+                    CloudModuleTreeNode::class.java,
                 ).visitAll(object : IVisitor<CloudModuleTreeNode>() {
                     public override fun visit(it: CloudModuleTreeNode) {
                         SetSequence.fromSet(treeNodesToRemove).addElement(it)
@@ -249,12 +254,15 @@ class CloudProjectViewExtension(private val project: Project?) {
                 var insertAt: Int = 0
                 for (webModule: CloudTransientModule in Sequence.fromIterable<SModule>(modules)
                     .ofType<CloudTransientModule>(
-                        CloudTransientModule::class.java
-                    ).sort(object : ISelector<CloudTransientModule, String>() {
-                    public override fun select(it: CloudTransientModule): String {
-                        return (it.getModuleName())!!
-                    }
-                }, true)) {
+                        CloudTransientModule::class.java,
+                    ).sort(
+                        object : ISelector<CloudTransientModule, String>() {
+                            public override fun select(it: CloudTransientModule): String {
+                                return (it.getModuleName())!!
+                            }
+                        },
+                        true,
+                    )) {
                     val moduleTreeNode: CloudModuleTreeNode? = MapSequence.fromMap(module2treeNode).get(webModule)
                     if (moduleTreeNode == null) {
                         treeModel!!.insertNodeInto(CloudModuleTreeNode(webModule), cloudTreeNode, insertAt)
@@ -283,7 +291,7 @@ class CloudProjectViewExtension(private val project: Project?) {
         val MODEL_ICON: Icon = LetterInSquareIcon("m", 14, 2.0f, 12.0f, Color.YELLOW, Color.BLACK)
         private val ourInstances: Map<com.intellij.openapi.project.Project, CloudProjectViewExtension> =
             MapSequence.fromMap(
-                HashMap()
+                HashMap(),
             )
 
         fun getInstance(ideaProject: com.intellij.openapi.project.Project): CloudProjectViewExtension {

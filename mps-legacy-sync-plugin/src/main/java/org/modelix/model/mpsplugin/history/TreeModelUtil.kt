@@ -46,7 +46,7 @@ object TreeModelUtil {
     fun getChildren(parent: TreeNode): Iterable<TreeNode> {
         val result: Iterable<TreeNode> = IterableUtil.asIterable(parent.children().asIterator())
         return Sequence.fromIterable(result).ofType(
-            TreeNode::class.java
+            TreeNode::class.java,
         )
     }
 

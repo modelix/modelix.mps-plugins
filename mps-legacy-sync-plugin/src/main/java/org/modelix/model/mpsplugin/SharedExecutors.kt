@@ -22,16 +22,21 @@ object SharedExecutors {
     }
 
     fun fixDelay(milliSeconds: Int, r: Runnable): ScheduledFuture<*> {
-        return SCHEDULED.scheduleWithFixedDelay(object : Runnable {
-            public override fun run() {
-                try {
-                    r.run()
-                } catch (ex: Exception) {
-                    if (LOG.isEnabledFor(Level.ERROR)) {
-                        LOG.error("", ex)
+        return SCHEDULED.scheduleWithFixedDelay(
+            object : Runnable {
+                public override fun run() {
+                    try {
+                        r.run()
+                    } catch (ex: Exception) {
+                        if (LOG.isEnabledFor(Level.ERROR)) {
+                            LOG.error("", ex)
+                        }
                     }
                 }
-            }
-        }, milliSeconds.toLong(), milliSeconds.toLong(), TimeUnit.MILLISECONDS)
+            },
+            milliSeconds.toLong(),
+            milliSeconds.toLong(),
+            TimeUnit.MILLISECONDS,
+        )
     }
 }

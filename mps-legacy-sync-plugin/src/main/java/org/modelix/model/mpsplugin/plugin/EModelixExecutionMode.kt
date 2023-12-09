@@ -7,5 +7,5 @@ enum class EModelixExecutionMode {
     MODEL_EXPORT,
     MODEL_IMPORT,
     CLUSTER,
-    PROJECTOR
+    PROJECTOR,
 }

@@ -77,7 +77,7 @@ object INodeUtils {
     fun getChidlrenAsList(_this: INode?, role: String?): List<INode> {
         val nodes: List<INode> = ListSequence.fromList(LinkedList())
         for (node: INode in Sequence.fromIterable(
-            _this!!.getChildren(role)
+            _this!!.getChildren(role),
         )) {
             ListSequence.fromList(nodes).addElement(node)
         }
@@ -87,7 +87,7 @@ object INodeUtils {
     fun removeAllChildrenWithRole(_this: INode?, role: String?) {
         val nodes: List<INode> = ListSequence.fromList(LinkedList())
         for (node: INode in Sequence.fromIterable(
-            _this!!.getChildren(role)
+            _this!!.getChildren(role),
         )) {
             ListSequence.fromList(nodes).addElement(node)
         }
@@ -110,7 +110,7 @@ object INodeUtils {
         } catch (e: Exception) {
             throw RuntimeException(
                 "Unable to copy property " + property.getName() + " from " + original + " to " + _this,
-                e
+                e,
             )
         }
     }
@@ -130,7 +130,7 @@ object INodeUtils {
             val result: INode =
                 replicateChildHelper(_this, role, original, equivalenceMap, postponedReferencesAssignments)
             for (postponedRefAssignment: Tuples._3<INode, String, INode> in ListSequence.fromList(
-                postponedReferencesAssignments
+                postponedReferencesAssignments,
             )) {
                 var target: INode? = postponedRefAssignment._2()
                 if (MapSequence.fromMap(equivalenceMap).containsKey(target)) {
@@ -142,7 +142,7 @@ object INodeUtils {
         } catch (e: Exception) {
             throw RuntimeException(
                 "Unable to replicate child in role " + role + ". Original: " + original + ", This: " + _this,
-                e
+                e,
             )
         }
     }
@@ -150,7 +150,7 @@ object INodeUtils {
     fun cloneChildren(_this: INode?, original: INode?, role: String) {
         removeAllChildrenWithRole(_this, role)
         for (originalChild: INode? in Sequence.fromIterable(
-            original!!.getChildren(role)
+            original!!.getChildren(role),
         )) {
             replicateChild(_this, role, originalChild)
         }
@@ -161,7 +161,7 @@ object INodeUtils {
         role: String,
         original: INode?,
         equivalenceMap: Map<INode?, INode>?,
-        postponedReferencesAssignments: List<Tuples._3<INode, String, INode>>?
+        postponedReferencesAssignments: List<Tuples._3<INode, String, INode>>?,
     ): INode {
         val concept: IConcept? = original!!.concept
         var copy: INode? = null
@@ -170,7 +170,7 @@ object INodeUtils {
         } catch (e: Exception) {
             throw RuntimeException(
                 "Unable to add child to " + _this + " with role " + role + " and concept " + concept,
-                e
+                e,
             )
         }
         for (property: IProperty in ListSequence.fromList<IProperty>(concept!!.getAllProperties())) {
@@ -197,7 +197,7 @@ object INodeUtils {
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c50fL,
-            "org.modelix.model.repositoryconcepts.structure.Module"
+            "org.modelix.model.repositoryconcepts.structure.Module",
         )
 
         /*package*/
@@ -205,7 +205,7 @@ object INodeUtils {
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
-            "org.modelix.model.repositoryconcepts.structure.Model"
+            "org.modelix.model.repositoryconcepts.structure.Model",
         )
     }
 }

@@ -54,7 +54,8 @@ class LoadHistoryForRepository_Action() : BaseAction("Show History", "", ICON) {
                 public override fun invoke(): CLVersion {
                     return activeBranch!!.version
                 }
-            })
+            },
+        )
     }
 
     companion object {

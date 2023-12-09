@@ -242,9 +242,15 @@ class SNodeToNodeAdapter private constructor(val node: SNode) : INodeEx {
         val instantiatableConcept: SConcept = MetaAdapterByDeclaration.asInstanceConcept(concept)
         val model: SModel? = node.getModel()
         val newChild: SNode =
-            (if (model == null) jetbrains.mps.smodel.SNode(instantiatableConcept) else model.createNode(
-                instantiatableConcept
-            ))
+            (
+                if (model == null) {
+                    jetbrains.mps.smodel.SNode(instantiatableConcept)
+                } else {
+                    model.createNode(
+                        instantiatableConcept,
+                    )
+                }
+                )
         if (index == -1 || index == ListSequence.fromList(children).count()) {
             node.addChild((link)!!, newChild)
         } else {
@@ -331,7 +337,7 @@ class SNodeToNodeAdapter private constructor(val node: SNode) : INodeEx {
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
             0x69652614fd1c514L,
-            "rootNodes"
+            "rootNodes",
         )
     }
 
@@ -353,7 +359,7 @@ class SNodeToNodeAdapter private constructor(val node: SNode) : INodeEx {
 
         private fun check_8812ym_a0a14(
             checkedDotOperand: INode?,
-            checkedDotThisExpression: SNodeToNodeAdapter
+            checkedDotThisExpression: SNodeToNodeAdapter,
         ): INodeReference? {
             if (null != checkedDotOperand) {
                 return checkedDotOperand.reference
@@ -363,7 +369,7 @@ class SNodeToNodeAdapter private constructor(val node: SNode) : INodeEx {
 
         private fun check_8812ym_a0a76(
             checkedDotOperand: INode?,
-            checkedDotThisExpression: SNodeToNodeAdapter
+            checkedDotThisExpression: SNodeToNodeAdapter,
         ): INodeReference? {
             if (null != checkedDotOperand) {
                 return checkedDotOperand.reference

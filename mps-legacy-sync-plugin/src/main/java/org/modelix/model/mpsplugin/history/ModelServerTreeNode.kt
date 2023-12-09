@@ -34,11 +34,14 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
         public override fun treeChanged(oldTree: ITree?, newTree: ITree) {
             SwingUtilities.invokeLater(object : Runnable {
                 public override fun run() {
-                    (getTree() as CloudViewTree).runRebuildAction(object : Runnable {
-                        public override fun run() {
-                            updateChildren()
-                        }
-                    }, true)
+                    (getTree() as CloudViewTree).runRebuildAction(
+                        object : Runnable {
+                            public override fun run() {
+                                updateChildren()
+                            }
+                        },
+                        true,
+                    )
                 }
             })
         }
@@ -98,12 +101,12 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
                     ) {
                         TreeModelUtil.setChildren(
                             this@ModelServerTreeNode,
-                            Sequence.singleton<TreeNode>(LoadingIcon.Companion.apply<TextTreeNode>(TextTreeNode("loading ...")))
+                            Sequence.singleton<TreeNode>(LoadingIcon.Companion.apply<TextTreeNode>(TextTreeNode("loading ..."))),
                         )
                     }
                     for (node: RepositoryTreeNode in Sequence.fromIterable<TreeNode?>(TreeModelUtil.getChildren(this@ModelServerTreeNode))
                         .ofType<RepositoryTreeNode>(
-                            RepositoryTreeNode::class.java
+                            RepositoryTreeNode::class.java,
                         )) {
                         MapSequence.fromMap(existing).put(node.repositoryInfo, node)
                     }
@@ -123,19 +126,25 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
                                         var tn: TreeNode? = null
                                         try {
                                             tn =
-                                                (if (MapSequence.fromMap(existing).containsKey(it)) MapSequence.fromMap(
-                                                    existing
-                                                ).get(it) else RepositoryTreeNode(
-                                                    modelServer, it
-                                                ))
+                                                (
+                                                    if (MapSequence.fromMap(existing).containsKey(it)) {
+                                                        MapSequence.fromMap(
+                                                            existing,
+                                                        ).get(it)
+                                                    } else {
+                                                        RepositoryTreeNode(
+                                                            modelServer, it,
+                                                        )
+                                                    }
+                                                    )
                                         } catch (t: Throwable) {
                                             t.printStackTrace()
                                             ModelixNotifications.notifyError(
                                                 "Repository in invalid state",
                                                 "Repository " + SPropertyOperations.getString(
                                                     it,
-                                                    PROPS.`id$baYB`
-                                                ) + " cannot be loaded: " + t.message
+                                                    PROPS.`id$baYB`,
+                                                ) + " cannot be loaded: " + t.message,
                                             )
                                         }
                                         return tn
@@ -146,7 +155,7 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
                         public override fun run() {
                             TreeModelUtil.setChildren(this@ModelServerTreeNode, newChildren)
                             Sequence.fromIterable(TreeModelUtil.getChildren(this@ModelServerTreeNode)).ofType(
-                                RepositoryTreeNode::class.java
+                                RepositoryTreeNode::class.java,
                             ).visitAll(object : IVisitor<RepositoryTreeNode>() {
                                 public override fun visit(it: RepositoryTreeNode) {
                                     it.updateChildren()
@@ -186,7 +195,7 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
             -0x56adc78bf09cec4cL,
             0x62b7d9b07cecbcbfL,
             0x62b7d9b07cecbcc2L,
-            "repositories"
+            "repositories",
         )
     }
 
@@ -197,7 +206,7 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
             -0x56adc78bf09cec4cL,
             0x62b7d9b07cecbcc0L,
             0x62b7d9b07cecbcc6L,
-            "id"
+            "id",
         )
     }
 }

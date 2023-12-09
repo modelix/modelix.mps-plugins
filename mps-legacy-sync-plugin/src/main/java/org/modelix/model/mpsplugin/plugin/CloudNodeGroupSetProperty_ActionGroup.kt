@@ -49,15 +49,18 @@ class CloudNodeGroupSetProperty_ActionGroup(plugin: ApplicationPlugin) :
         }
         val sconcept: SAbstractConcept? = SConceptAdapter.Companion.unwrap(concept)
         val properties: Iterable<SProperty> = sconcept!!.getProperties()
-        for (role: SProperty in Sequence.fromIterable(properties).sort(object : ISelector<SProperty, String>() {
-            public override fun select(it: SProperty): String {
-                return it.getName()
-            }
-        }, true)) {
+        for (role: SProperty in Sequence.fromIterable(properties).sort(
+            object : ISelector<SProperty, String>() {
+                public override fun select(it: SProperty): String {
+                    return it.getName()
+                }
+            },
+            true,
+        )) {
             this@CloudNodeGroupSetProperty_ActionGroup.addParameterizedAction(
                 SetProperty_Action(node, role),
                 node,
-                role
+                role,
             )
         }
         for (p: Pair<ActionPlace, Condition<BaseAction>?> in myPlaces) {

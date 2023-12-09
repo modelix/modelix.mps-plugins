@@ -7,7 +7,6 @@ import com.intellij.openapi.ui.Messages
 import jetbrains.mps.workbench.action.BaseAction
 import org.apache.log4j.LogManager
 import org.apache.log4j.Logger
-import org.modelix.model.mpsplugin.ModelServerConnection
 import org.modelix.model.mpsplugin.ModelServerConnections
 import java.util.Locale
 import javax.swing.Icon
@@ -43,15 +42,17 @@ class AddModelServer_Action() : BaseAction("Add Model Server", "", ICON) {
             "Add Model Server",
             null,
             "http://",
-            null
+            null,
         )
-        if (!(url!!.lowercase(Locale.getDefault()).startsWith("http://")) && !(url.lowercase(Locale.getDefault())
-                .startsWith("https://"))
+        if (!(url!!.lowercase(Locale.getDefault()).startsWith("http://")) && !(
+                url.lowercase(Locale.getDefault())
+                    .startsWith("https://")
+                )
         ) {
             Messages.showErrorDialog(
                 event.getData(CommonDataKeys.PROJECT),
                 "Invalid URL: it should shart with http:// or https://",
-                "Add Model Server"
+                "Add Model Server",
             )
             return
         }
@@ -80,8 +81,8 @@ class AddModelServer_Action() : BaseAction("Add Model Server", "", ICON) {
                 ModelServerConnections.instance.ensureModelServerIsPresent(finalUrl)
             PersistedBindingConfiguration.Companion.getInstance(
                 event.getData<Project>(
-                    CommonDataKeys.PROJECT
-                )
+                    CommonDataKeys.PROJECT,
+                ),
             )!!.ensureModelServerIsPresent(modelServer)
             //      }
         }

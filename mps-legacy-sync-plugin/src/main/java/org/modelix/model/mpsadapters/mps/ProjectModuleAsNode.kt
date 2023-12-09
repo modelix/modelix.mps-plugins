@@ -1,7 +1,5 @@
 package org.modelix.model.mpsadapters.mps
 
-import jetbrains.mps.baseLanguage.tuples.runtime.MultiTuple
-import jetbrains.mps.baseLanguage.tuples.runtime.Tuples
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.structure.project.ModulePath
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
@@ -71,7 +69,7 @@ class ProjectModuleAsNode(project: MPSProject, module: SModule) :
         get() {
             return NodeReference(
                 parent!!.reference as ProjectAsNode.NodeReference?,
-                element.second.getModuleReference()
+                element.second.getModuleReference(),
             )
         }
 
@@ -82,7 +80,7 @@ class ProjectModuleAsNode(project: MPSProject, module: SModule) :
 
     class NodeReference(
         private val projectRef: ProjectAsNode.NodeReference?,
-        private val moduleRef: SModuleReference?
+        private val moduleRef: SModuleReference?,
     ) : INodeReference {
         public override fun serialize(): String {
             return "mps-project-module:" + moduleRef + "#IN#" + projectRef!!.serialize()
@@ -134,7 +132,7 @@ class ProjectModuleAsNode(project: MPSProject, module: SModule) :
             -0x674e051c70651180L,
             0x5040008087d5d3d4L,
             0x5040008087d5d3edL,
-            "module"
+            "module",
         )
 
         /*package*/
@@ -143,7 +141,7 @@ class ProjectModuleAsNode(project: MPSProject, module: SModule) :
             -0x674e051c70651180L,
             0x37a0917d689de959L,
             0x37a0917d689de9e2L,
-            "modules"
+            "modules",
         )
     }
 
@@ -154,7 +152,7 @@ class ProjectModuleAsNode(project: MPSProject, module: SModule) :
             -0x674e051c70651180L,
             0x3a4fe9e427e83264L,
             0x3a4fe9e427e83265L,
-            "virtualFolder"
+            "virtualFolder",
         )
     }
 
@@ -164,7 +162,7 @@ class ProjectModuleAsNode(project: MPSProject, module: SModule) :
             0xa7577d1d4e5431dL,
             -0x674e051c70651180L,
             0x3a4fe9e427e83264L,
-            "org.modelix.model.repositoryconcepts.structure.ProjectModule"
+            "org.modelix.model.repositoryconcepts.structure.ProjectModule",
         )
     }
 

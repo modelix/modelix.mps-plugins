@@ -70,7 +70,7 @@ object ProjectMakeRunner {
         cleanMake: Boolean,
         modulesToBuild: List<SModule>? = null,
         success: Consumer<Tuples._2<String, List<IMessage>>> = DEFAULT_SUCCESS_CONSUMER,
-        failure: Consumer<Tuples._2<String?, List<IMessage>>> = DEFAULT_FAILURE_CONSUMER
+        failure: Consumer<Tuples._2<String?, List<IMessage>>> = DEFAULT_FAILURE_CONSUMER,
     ) {
         var modulesToBuild: List<SModule?>? = modulesToBuild
         val messageHandler: MyMessageHandler = MyMessageHandler()
@@ -95,11 +95,13 @@ object ProjectMakeRunner {
                     Computable<List<IResource>> {
                     public override fun compute(): List<IResource> {
                         val rv: List<IResource> = Sequence.fromIterable(params.collectInput()).toListSequence()
-                        models.addAll(ListSequence.fromList(rv).translate(object : ITranslator2<IResource, SModel>() {
-                            public override fun translate(it: IResource): Iterable<SModel> {
-                                return (it as MResource).models()
-                            }
-                        }).toListSequence())
+                        models.addAll(
+                            ListSequence.fromList(rv).translate(object : ITranslator2<IResource, SModel>() {
+                                public override fun translate(it: IResource): Iterable<SModel> {
+                                    return (it as MResource).models()
+                                }
+                            }).toListSequence(),
+                        )
                         return rv
                     }
                 })
@@ -121,21 +123,22 @@ object ProjectMakeRunner {
                                         public override fun select(it: IResource): String {
                                             return it.describe()
                                         }
-                                    }), ", "
+                                    }),
+                                ", ",
                             )
                             if (resultValue.isSucessful()) {
                                 success.accept(
                                     MultiTuple.from(
                                         "make succeeded. Resource: " + resDesc,
-                                        messageHandler.messages
-                                    )
+                                        messageHandler.messages,
+                                    ),
                                 )
                             } else {
                                 failure.accept(
                                     MultiTuple.from(
                                         "make failed. Resources: " + resDesc,
-                                        messageHandler.messages
-                                    )
+                                        messageHandler.messages,
+                                    ),
                                 )
                             }
                         } catch (t: Throwable) {

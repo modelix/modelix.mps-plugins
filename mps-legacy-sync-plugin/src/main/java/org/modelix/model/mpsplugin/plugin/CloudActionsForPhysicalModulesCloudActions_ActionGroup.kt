@@ -25,19 +25,19 @@ class CloudActionsForPhysicalModulesCloudActions_ActionGroup(plugin: Application
     public override fun doUpdate(event: AnActionEvent) {
         removeAll()
         for (treeInRepository: CloudRepository in Sequence.fromIterable<CloudRepository>(
-            ModelServerConnections.instance.connectedTreesInRepositories
+            ModelServerConnections.instance.connectedTreesInRepositories,
         )) {
             this@CloudActionsForPhysicalModulesCloudActions_ActionGroup.addParameterizedAction(
                 CopyAndSyncPhysicalModuleOnCloud_Action(treeInRepository),
-                treeInRepository
+                treeInRepository,
             )
             this@CloudActionsForPhysicalModulesCloudActions_ActionGroup.addParameterizedAction(
                 CopyPhysicalModuleOnCloud_Action(treeInRepository),
-                treeInRepository
+                treeInRepository,
             )
             this@CloudActionsForPhysicalModulesCloudActions_ActionGroup.addParameterizedAction(
                 ModuleAlreadyOnCloud_Action(treeInRepository),
-                treeInRepository
+                treeInRepository,
             )
         }
         for (p: Pair<ActionPlace, Condition<BaseAction>?> in myPlaces) {

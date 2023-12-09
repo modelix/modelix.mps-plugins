@@ -13,7 +13,7 @@ class SyncTask(
     val direction: SyncDirection,
     val isInitialSync: Boolean,
     requiredLocks: Set<ELockType>?,
-    private val implementation: Runnable
+    private val implementation: Runnable,
 ) : Runnable {
     val requiredLocks: Set<ELockType>
     private val callbacks: List<Runnable> = ListSequence.fromList(ArrayList())
@@ -81,7 +81,7 @@ class SyncTask(
     private enum class State {
         NEW,
         RUNNING,
-        DONE
+        DONE,
     }
 
     companion object {

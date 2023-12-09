@@ -242,6 +242,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
         public override fun propertyChanged(event: SModelPropertyEvent) {}
         public override fun referenceAdded(event: SModelReferenceEvent) {}
         public override fun referenceRemoved(event: SModelReferenceEvent) {}
+
         @Deprecated("")
         public override fun rootAdded(event: SModelRootEvent) {
         }
@@ -448,7 +449,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
             -0x674e051c70651180L,
             0x69652614fd1c50cL,
             0x69652614fd1c514L,
-            "rootNodes"
+            "rootNodes",
         )
     }
 
