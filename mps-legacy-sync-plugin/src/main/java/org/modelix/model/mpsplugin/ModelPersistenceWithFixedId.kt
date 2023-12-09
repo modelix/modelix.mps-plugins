@@ -31,7 +31,7 @@ import java.io.IOException
 open class ModelPersistenceWithFixedId(private val moduleRef: SModuleReference, private val modelId: SModelId?) :
     DefaultModelPersistence() {
     @Throws(UnsupportedDataSourceException::class)
-    public override fun create(
+    override fun create(
         dataSource: DataSource,
         modelName: SModelName,
         vararg options: ModelLoadingOption,
@@ -43,9 +43,9 @@ open class ModelPersistenceWithFixedId(private val moduleRef: SModuleReference, 
         val modelReference: SModelReference = PersistenceFacade.getInstance().createModelReference(
             moduleRef,
             (modelId)!!,
-            modelName.getValue(),
+            modelName.value,
         )
-        header.setModelReference(modelReference)
+        header.modelReference = modelReference
         val rv: DefaultSModelDescriptor =
             DefaultSModelDescriptor(PersistenceFacility(this, dataSource as StreamDataSource?), header)
         if (dataSource.getTimestamp() != -1L) {
@@ -66,27 +66,27 @@ open class ModelPersistenceWithFixedId(private val moduleRef: SModuleReference, 
             }
 
         @Throws(ModelReadException::class)
-        public override fun readHeader(): SModelHeader {
+        override fun readHeader(): SModelHeader {
             return ModelPersistence.loadDescriptor(source0)
         }
 
         @Throws(ModelReadException::class)
-        public override fun readModel(header: SModelHeader, state: ModelLoadingState): ModelLoadResult {
+        override fun readModel(header: SModelHeader, state: ModelLoadingState): ModelLoadResult {
             return ModelPersistence.readModel(header, source0, state)
         }
 
-        public override fun doesSaveUpgradePersistence(header: SModelHeader): Boolean {
+        override fun doesSaveUpgradePersistence(header: SModelHeader): Boolean {
             // not sure !=-1 is really needed, just left to be ensured about compatibility
-            return header.getPersistenceVersion() != ModelPersistence.LAST_VERSION && header.getPersistenceVersion() != -1
+            return header.persistenceVersion != ModelPersistence.LAST_VERSION && header.persistenceVersion != -1
         }
 
         @Throws(IOException::class)
-        public override fun saveModel(header: SModelHeader, modelData: SModelData) {
+        override fun saveModel(header: SModelHeader, modelData: SModelData) {
             try {
                 ModelPersistence.saveModel(
                     (modelData as jetbrains.mps.smodel.SModel?)!!,
                     source0,
-                    header.getPersistenceVersion(),
+                    header.persistenceVersion,
                 )
             } catch (e: ModelSaveException) {
                 throw RuntimeException(e)

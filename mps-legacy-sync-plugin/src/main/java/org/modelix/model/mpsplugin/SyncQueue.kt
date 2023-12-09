@@ -88,7 +88,7 @@ class SyncQueue(private val owner: RootBinding) {
                 locks2tasks.computeIfAbsent(
                     task.requiredLocks,
                     object : Function<Set<ELockType?>?, List<SyncTask>> {
-                        public override fun apply(k: Set<ELockType?>?): List<SyncTask> {
+                        override fun apply(k: Set<ELockType?>?): List<SyncTask> {
                             return LinkedListSequence.fromLinkedListNew(LinkedList())
                         }
                     },
@@ -96,11 +96,11 @@ class SyncQueue(private val owner: RootBinding) {
             ).addElement(task)
         }
         locks2tasks.values.forEach(object : Consumer<List<SyncTask>?> {
-            public override fun accept(it: List<SyncTask>?) {
+            override fun accept(it: List<SyncTask>?) {
                 Collections.sort(
                     it,
                     object : Comparator<SyncTask> {
-                        public override fun compare(t1: SyncTask, t2: SyncTask): Int {
+                        override fun compare(t1: SyncTask, t2: SyncTask): Int {
                             return t1.binding.depth - t2.binding.depth
                         }
                     },
@@ -123,32 +123,32 @@ class SyncQueue(private val owner: RootBinding) {
                             locks2task,
                         ).values,
                     ).translate<SyncTask>(object : ITranslator2<List<SyncTask>, SyncTask>() {
-                        public override fun translate(it: List<SyncTask>): Iterable<SyncTask> {
+                        override fun translate(it: List<SyncTask>): Iterable<SyncTask> {
                             return it
                         }
-                    }).isNotEmpty()
+                    }).isNotEmpty
                 ) {
                     for (entry: IMapping<Set<ELockType>, List<SyncTask>> in MapSequence.fromMap<Set<ELockType>, List<SyncTask>>(
                         locks2task,
                     ).where(object : IWhereFilter<IMapping<Set<ELockType>, List<SyncTask>>>() {
-                        public override fun accept(it: IMapping<Set<ELockType>, List<SyncTask>>): Boolean {
-                            return ListSequence.fromList(it.value()).isNotEmpty()
+                        override fun accept(it: IMapping<Set<ELockType>, List<SyncTask>>): Boolean {
+                            return ListSequence.fromList(it.value()).isNotEmpty
                         }
                     })) {
                         runWithLocks(
                             SetSequence.fromSet<ELockType?>(entry.key()).sort(
                                 object : ISelector<ELockType, Int>() {
-                                    public override fun select(it: ELockType): Int {
+                                    override fun select(it: ELockType): Int {
                                         return it.ordinal
                                     }
                                 },
                                 true,
                             ).toListSequence(),
                             object : _void_P0_E0 {
-                                public override fun invoke() {
+                                override fun invoke() {
                                     val tasks: List<SyncTask> = entry.value()
-                                    while (ListSequence.fromList<SyncTask>(tasks).isNotEmpty()) {
-                                        while (ListSequence.fromList<SyncTask>(tasks).isNotEmpty()) {
+                                    while (ListSequence.fromList<SyncTask>(tasks).isNotEmpty) {
+                                        while (ListSequence.fromList<SyncTask>(tasks).isNotEmpty) {
                                             val task: SyncTask = ListSequence.fromList(tasks).removeElementAt(0)
                                             if (!(
                                                     Objects.equals(
@@ -192,13 +192,13 @@ class SyncQueue(private val owner: RootBinding) {
     }
 
     private fun runWithLocks(locks: Iterable<ELockType?>, body: _void_P0_E0) {
-        if (Sequence.fromIterable(locks).isEmpty()) {
+        if (Sequence.fromIterable(locks).isEmpty) {
             body.invoke()
         } else {
             runWithLock(
                 Sequence.fromIterable(locks).first(),
                 object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         runWithLocks(Sequence.fromIterable(locks).skip(1), body)
                     }
                 },
@@ -215,7 +215,7 @@ class SyncQueue(private val owner: RootBinding) {
             ListSequence.fromList(activeLocks).addElement(type)
             when (type) {
                 ELockType.MPS_COMMAND -> CommandHelper.runInUndoTransparentCommand(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         val previousSyncThread: Thread? = syncThread
                         try {
                             syncThread = Thread.currentThread()
@@ -226,9 +226,9 @@ class SyncQueue(private val owner: RootBinding) {
                     }
                 })
 
-                ELockType.MPS_READ -> MPSModuleRepository.getInstance().getModelAccess()
+                ELockType.MPS_READ -> MPSModuleRepository.getInstance().modelAccess
                     .runReadAction(object : Runnable {
-                        public override fun run() {
+                        override fun run() {
                             body.run()
                         }
                     })
@@ -240,19 +240,17 @@ class SyncQueue(private val owner: RootBinding) {
                         val t: IWriteTransaction = branch.writeTransaction
                         val detachedNodes: Iterable<Long> = t.getChildren(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE)
                         Sequence.fromIterable(detachedNodes).toListSequence().visitAll(object : IVisitor<Long?>() {
-                            public override fun visit(it: Long?) {
+                            override fun visit(it: Long?) {
                                 t.deleteNode((it)!!)
                             }
                         })
                         lastTreeAfterSync = t.tree
-                        Unit
                     })
                 }
 
                 ELockType.CLOUD_READ -> PArea(owner.branch!!).executeRead({
                     body.run()
                     lastTreeAfterSync = owner.branch!!.transaction.tree
-                    Unit
                 })
 
                 else -> throw RuntimeException("Unknown lock type: " + type)
@@ -262,7 +260,7 @@ class SyncQueue(private val owner: RootBinding) {
         }
     }
 
-    inner class FlushExecutor() {
+    inner class FlushExecutor {
         private val asyncFlushLock: Any = Any()
         private var currentAsyncFlush: Future<*>? = null
         private val flushRequested: AtomicBoolean = AtomicBoolean(false)
@@ -272,13 +270,13 @@ class SyncQueue(private val owner: RootBinding) {
             synchronized(asyncFlushLock, {
                 flushRequested.set(true)
                 if (currentAsyncFlush != null) {
-                    if (currentAsyncFlush!!.isCancelled() || currentAsyncFlush!!.isDone()) {
+                    if (currentAsyncFlush!!.isCancelled || currentAsyncFlush!!.isDone) {
                         currentAsyncFlush = null
                     }
                 }
                 if (currentAsyncFlush == null) {
                     currentAsyncFlush = SharedExecutors.FIXED.submit(object : Runnable {
-                        public override fun run() {
+                        override fun run() {
                             while (flushRequested.getAndSet(false)) {
                                 doFlush()
                             }

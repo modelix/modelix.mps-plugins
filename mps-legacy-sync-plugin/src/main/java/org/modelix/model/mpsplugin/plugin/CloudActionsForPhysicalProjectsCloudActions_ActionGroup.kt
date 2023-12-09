@@ -21,7 +21,7 @@ class CloudActionsForPhysicalProjectsCloudActions_ActionGroup(plugin: Applicatio
 
     init {
         setIsInternal(false)
-        setPopup(true)
+        isPopup = true
     }
 
     public override fun doUpdate(event: AnActionEvent) {
@@ -30,7 +30,7 @@ class CloudActionsForPhysicalProjectsCloudActions_ActionGroup(plugin: Applicatio
             ModelServerConnections.instance.connectedTreesInRepositories,
         )) {
             treeInRepository.processProjects(object : Consumer<SNode> {
-                public override fun accept(pr: SNode) {
+                override fun accept(pr: SNode) {
                     this@CloudActionsForPhysicalProjectsCloudActions_ActionGroup.addParameterizedAction(
                         CopyAndSyncPhysicalProjectOnCloud_Action(treeInRepository, pr),
                         treeInRepository,
@@ -49,7 +49,7 @@ class CloudActionsForPhysicalProjectsCloudActions_ActionGroup(plugin: Applicatio
         }
     }
 
-    public override fun addPlace(place: ActionPlace, cond: Condition<BaseAction>?) {
+    override fun addPlace(place: ActionPlace, cond: Condition<BaseAction>?) {
         SetSequence.fromSet(myPlaces).addElement(Pair(place, cond))
     }
 

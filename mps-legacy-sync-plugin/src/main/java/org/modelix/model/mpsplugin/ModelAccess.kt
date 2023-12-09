@@ -10,18 +10,18 @@ import org.jetbrains.mps.openapi.module.SRepository
 object ModelAccess {
     fun runInWriteActionIfNeeded(_this: SModel?, runnable: Runnable) {
         var repo: SRepository? = null
-        val module: SModule? = _this!!.getModule()
+        val module: SModule? = _this!!.module
         if (module != null) {
             val project: Project? = SModuleOperations.getProjectForModule(module)
             if (project != null) {
-                repo = project.getRepository()
+                repo = project.repository
             }
         }
         if (repo == null) {
             runnable.run()
         } else {
-            repo.getModelAccess().runWriteAction(object : Runnable {
-                public override fun run() {
+            repo.modelAccess.runWriteAction(object : Runnable {
+                override fun run() {
                     runnable.run()
                 }
             })

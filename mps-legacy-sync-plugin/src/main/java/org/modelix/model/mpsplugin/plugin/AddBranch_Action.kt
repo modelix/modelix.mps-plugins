@@ -52,9 +52,9 @@ class AddBranch_Action : BaseAction("New Branch", "", ICON) {
         val treeTreeNode = branchTreeNode!!.getAncestor(RepositoryTreeNode::class.java)
         val repositoryId = treeTreeNode.repositoryId
         val modelServer = treeTreeNode.modelServer
-        val infoBranch = modelServer!!.infoBranch
+        val infoBranch = modelServer.infoBranch
         PArea(infoBranch!!).executeWrite<Unit> {
-            val treeInfo = treeTreeNode.repositoryInfo!!
+            val treeInfo = treeTreeNode.repositoryInfo
             if (ListSequence.fromList<SNode>(SLinkOperations.getChildren(treeInfo, LINKS.`branches$b5_g`))
                     .any(object : IWhereFilter<SNode?>() {
                         override fun accept(it: SNode?): Boolean {
@@ -67,17 +67,17 @@ class AddBranch_Action : BaseAction("New Branch", "", ICON) {
                     "Branch '$name' already exists",
                     "Add Branch",
                 )
-                return@executeWrite Unit
+                return@executeWrite
             }
-            val versionHash = modelServer!!.getClient()[
-                repositoryId!!.getBranchKey(
+            val versionHash = modelServer.getClient()[
+                repositoryId.getBranchReference(
                     SPropertyOperations.getString(
                         branchTreeNode.branchInfo,
                         PROPS.`name$MnvL`,
-                    ),
-                ),
+                    )
+                ).getKey(),
             ]
-            modelServer.getClient().put(repositoryId.getBranchKey(name), versionHash)
+            modelServer.getClient().put(repositoryId.getBranchReference(name).getKey(), versionHash)
             val branchInfo =
                 SNodeOperations.cast(SNodeAPI.addNewChild(treeInfo, LINKS.`branches$b5_g`), CONCEPTS.`BranchInfo$6t`)
             SPropertyOperations.assign(branchInfo, PROPS.`name$MnvL`, name)

@@ -34,112 +34,112 @@ class NodeToSModelAdapter protected constructor(node: INode, repository: SReposi
         }
     }
 
-    public override fun addAccessListener(listener: SNodeAccessListener) {
+    override fun addAccessListener(listener: SNodeAccessListener) {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun addChangeListener(listener: SNodeChangeListener) {
+    override fun addChangeListener(listener: SNodeChangeListener) {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun addModelListener(listener: SModelListener) {
+    override fun addModelListener(listener: SModelListener) {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun addRootNode(node: SNode) {
+    override fun addRootNode(node: SNode) {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun createNode(concept: SConcept): SNode {
+    override fun createNode(concept: SConcept): SNode {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun createNode(concept: SConcept, id: SNodeId?): SNode {
+    override fun createNode(concept: SConcept, id: SNodeId?): SNode {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun getModelId(): SModelId {
+    override fun getModelId(): SModelId {
         throw UnsupportedOperationException("Not implemented")
     }
 
     @Deprecated("")
-    public override fun getModelName(): String {
-        return getName().getValue()
+    override fun getModelName(): String {
+        return name.value
     }
 
-    public override fun getModelRoot(): ModelRoot {
+    override fun getModelRoot(): ModelRoot {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun getModule(): SModule {
+    override fun getModule(): SModule {
         return (NodeToSModuleAdapter.Companion.wrap(node!!.parent, repository))!!
     }
 
-    public override fun getName(): SModelName {
-        return SModelName((node!!.getPropertyValue(PROPS.`name$MnvL`.getName()))!!)
+    override fun getName(): SModelName {
+        return SModelName((node!!.getPropertyValue(PROPS.`name$MnvL`.name))!!)
     }
 
-    public override fun getNode(id: SNodeId): SNode {
+    override fun getNode(id: SNodeId): SNode {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun getProblems(): Iterable<SModel.Problem> {
+    override fun getProblems(): Iterable<SModel.Problem> {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun getReference(): SModelReference {
+    override fun getReference(): SModelReference {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun getRepository(): SRepository {
+    override fun getRepository(): SRepository {
         return (if (repository != null) repository else MPSModuleRepository.getInstance())
     }
 
-    public override fun getRootNodes(): Iterable<SNode> {
-        return node!!.getChildren(LINKS.`rootNodes$jxXY`.getName()).map {
+    override fun getRootNodes(): Iterable<SNode> {
+        return node!!.getChildren(LINKS.`rootNodes$jxXY`.name).map {
             val adapter = NodeToSNodeAdapter.wrap(it)
             (adapter as? NodeToSNodeAdapter)?.setModelMode(EModelMode.ADAPTER)
             adapter
         }
     }
 
-    public override fun getSource(): DataSource {
+    override fun getSource(): DataSource {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun isLoaded(): Boolean {
+    override fun isLoaded(): Boolean {
         return true
     }
 
-    public override fun isReadOnly(): Boolean {
+    override fun isReadOnly(): Boolean {
         return true
     }
 
-    public override fun load() {
+    override fun load() {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun removeAccessListener(listener: SNodeAccessListener) {
+    override fun removeAccessListener(listener: SNodeAccessListener) {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun removeChangeListener(listener: SNodeChangeListener) {
+    override fun removeChangeListener(listener: SNodeChangeListener) {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun removeModelListener(listener: SModelListener) {
+    override fun removeModelListener(listener: SModelListener) {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun removeRootNode(node: SNode) {
+    override fun removeRootNode(node: SNode) {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun unload() {
+    override fun unload() {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun equals(o: Any?): Boolean {
+    override fun equals(o: Any?): Boolean {
         if (this === o) {
             return true
         }
@@ -147,13 +147,10 @@ class NodeToSModelAdapter protected constructor(node: INode, repository: SReposi
             return false
         }
         val that: NodeToSModelAdapter = o as NodeToSModelAdapter
-        if ((if (node != null) !((node == that.node)) else that.node != null)) {
-            return false
-        }
-        return true
+        return !(if (node != null) !((node == that.node)) else that.node != null)
     }
 
-    public override fun hashCode(): Int {
+    override fun hashCode(): Int {
         var result: Int = 0
         result = 31 * result + ((if (node != null) (node as Any).hashCode() else 0))
         return result

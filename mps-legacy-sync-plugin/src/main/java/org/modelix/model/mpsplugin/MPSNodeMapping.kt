@@ -8,7 +8,7 @@ import org.modelix.model.mpsadapters.mps.SNodeToNodeAdapter
 object MPSNodeMapping {
     private val MPS_NODE_ID_PROPERTY_NAME: String = ModelSynchronizer.Companion.MPS_NODE_ID_PROPERTY_NAME
     fun mapToMpsNode(_this: INode, mpsNode: SNode?) {
-        _this.setPropertyValue(MPS_NODE_ID_PROPERTY_NAME, mpsNode!!.getNodeId().toString())
+        _this.setPropertyValue(MPS_NODE_ID_PROPERTY_NAME, mpsNode!!.nodeId.toString())
         _this.setPropertyValue("\$originalId", SNodeToNodeAdapter.Companion.wrap(mpsNode)!!.reference.serialize())
     }
 

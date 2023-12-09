@@ -58,7 +58,7 @@ object TreeModelUtil {
                 model.removeNodeFromParent(model.getChild(parent, 0) as MutableTreeNode?)
             }
         } else {
-            while (parent.getChildCount() > 0) {
+            while (parent.childCount > 0) {
                 (parent as MutableTreeNode).remove(0)
             }
         }
@@ -70,23 +70,23 @@ object TreeModelUtil {
 
     fun getModel(tree: JTree?): DefaultTreeModel? {
         if (tree == null) return null
-        return tree.getModel() as DefaultTreeModel?
+        return tree.model as DefaultTreeModel?
     }
 
     fun getTree(node: TreeNode?): MPSTree? {
-        return (if (node is MPSTreeNode) node.getTree() else null)
+        return (if (node is MPSTreeNode) node.tree else null)
     }
 
     fun repaint(node: TreeNode?) {
         ThreadUtils.runInUIThreadAndWait(object : Runnable {
-            public override fun run() {
+            override fun run() {
                 check_spdlqu_a0a0a0a9(getTree(node))
             }
         })
     }
 
     fun setTextAndRepaint(node: MPSTreeNode, text: String?) {
-        node.setText(text)
+        node.text = text
         repaint(node)
     }
 
@@ -95,10 +95,10 @@ object TreeModelUtil {
     }
 
     fun getPath(node: TreeNode): TreePath {
-        if (node.getParent() == null) {
+        if (node.parent == null) {
             return TreePath(node)
         } else {
-            return getPath(node.getParent()).pathByAddingChild(node)
+            return getPath(node.parent).pathByAddingChild(node)
         }
     }
 

@@ -46,7 +46,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
                     ELockType.CLOUD_WRITE,
                 ),
                 object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         syncToCloud()
                     }
                 },
@@ -64,7 +64,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
                         ELockType.CLOUD_READ,
                     ),
                     object : Runnable {
-                        public override fun run() {
+                        override fun run() {
                             branch?.transaction?.tree?.let { syncToMPS(it) }
                         }
                     },
@@ -120,7 +120,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
         get() {
             return (pendingTask == null || pendingTask!!.isDone) && Sequence.fromIterable(getOwnedBindings())
                 .all(object : IWhereFilter<Binding>() {
-                    public override fun accept(it: Binding): Boolean {
+                    override fun accept(it: Binding): Boolean {
                         return it.isDone
                     }
                 })
@@ -197,7 +197,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
         if (owner != null) {
             SetSequence.fromSet(owner!!.ownedBindings).removeElement(this)
             owner!!.notifyListeners(object : _void_P1_E0<IListener> {
-                public override fun invoke(l: IListener) {
+                override fun invoke(l: IListener) {
                     l.bindingRemoved(this@Binding)
                 }
             })
@@ -209,13 +209,13 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
                 activate(null)
             }
             newOwner.notifyListeners(object : _void_P1_E0<IListener> {
-                public override fun invoke(l: IListener) {
+                override fun invoke(l: IListener) {
                     l.bindingAdded(this@Binding)
                 }
             })
         }
         notifyListeners(object : _void_P1_E0<IListener> {
-            public override fun invoke(l: IListener) {
+            override fun invoke(l: IListener) {
                 l.ownerChanged(newOwner)
             }
         })
@@ -250,7 +250,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
             return Sequence.fromIterable(Sequence.singleton(this))
                 .concat(
                     SetSequence.fromSet(ownedBindings).translate(object : ITranslator2<Binding, Binding>() {
-                        public override fun translate(it: Binding): Iterable<Binding> {
+                        override fun translate(it: Binding): Iterable<Binding> {
                             return it.allBindings
                         }
                     }),
@@ -268,7 +268,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
         if (!(this is RootBinding) && !(owner!!.isActive)) {
             throw IllegalStateException("Activate " + owner + " first, before activating " + this)
         }
-        if (LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled) {
             LOG.debug("Activate: " + this)
         }
         isActive = true
@@ -281,7 +281,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
             )
         }
         notifyListeners(object : _void_P1_E0<IListener> {
-            public override fun invoke(l: IListener) {
+            override fun invoke(l: IListener) {
                 l.bindingActivated()
             }
         })
@@ -292,7 +292,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
         if (!(isActive)) {
             return
         }
-        if (LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled) {
             LOG.debug("Deactivate: " + this)
         }
         isActive = false
@@ -301,7 +301,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
         }
         doDeactivate()
         notifyListeners(object : _void_P1_E0<IListener> {
-            public override fun invoke(l: IListener) {
+            override fun invoke(l: IListener) {
                 l.bindingDeactivated()
             }
         })
@@ -320,7 +320,7 @@ abstract class Binding(protected var initialSyncDirection: SyncDirection?) {
 
     protected fun notifyListeners(notifier: _void_P1_E0<in IListener>) {
         ListSequence.fromList(listeners).visitAll(object : IVisitor<IListener>() {
-            public override fun visit(it: IListener) {
+            override fun visit(it: IListener) {
                 try {
                     notifier.invoke(it)
                 } catch (ex: Exception) {

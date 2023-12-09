@@ -33,29 +33,29 @@ object ProjectMakeRunner {
     private val LOG: Logger = LogManager.getLogger(ProjectMakeRunner::class.java)
     var DEFAULT_SUCCESS_CONSUMER =
         object : Consumer<Tuples._2<String, List<IMessage>>> {
-            public override fun accept(res: Tuples._2<String, List<IMessage>>) {
-                if (LOG.isDebugEnabled()) {
+            override fun accept(res: Tuples._2<String, List<IMessage>>) {
+                if (LOG.isDebugEnabled) {
                     LOG.debug("Make messages:")
                 }
                 for (message: IMessage in ListSequence.fromList(res._1())) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("  <MAKE> " + message.getKind() + " " + message.getText())
+                    if (LOG.isDebugEnabled) {
+                        LOG.debug("  <MAKE> " + message.kind + " " + message.text)
                     }
                 }
-                if (LOG.isInfoEnabled()) {
+                if (LOG.isInfoEnabled) {
                     LOG.info("Make Project Success: " + res._0())
                 }
             }
         }
     var DEFAULT_FAILURE_CONSUMER =
         object : Consumer<Tuples._2<String?, List<IMessage>>> {
-            public override fun accept(res: Tuples._2<String?, List<IMessage>>) {
-                if (LOG.isDebugEnabled()) {
+            override fun accept(res: Tuples._2<String?, List<IMessage>>) {
+                if (LOG.isDebugEnabled) {
                     LOG.debug("Make messages:")
                 }
                 for (message: IMessage in ListSequence.fromList(res._1())) {
-                    if (LOG.isInfoEnabled()) {
-                        LOG.info("  <MAKE> " + message.getKind() + " " + message.getText())
+                    if (LOG.isInfoEnabled) {
+                        LOG.info("  <MAKE> " + message.kind + " " + message.text)
                     }
                 }
                 if (LOG.isEnabledFor(Level.WARN)) {
@@ -77,7 +77,7 @@ object ProjectMakeRunner {
         val session: MakeSession = MakeSession(mpsProject, messageHandler, cleanMake)
         if (modulesToBuild == null) {
             modulesToBuild =
-                ListSequence.fromListWithValues(ArrayList(), mpsProject.getProjectModules() as Iterable<SModule?>?)
+                ListSequence.fromListWithValues(ArrayList(), mpsProject.projectModules as Iterable<SModule?>?)
         }
         val params: MakeActionParameters = MakeActionParameters(mpsProject).modules(modulesToBuild).cleanMake(cleanMake)
         val makeService: IMakeService = mpsProject.getComponent(MakeServiceComponent::class.java).get()
@@ -91,13 +91,13 @@ object ProjectMakeRunner {
             var inputRes: List<IResource>? = null
             val models: ArrayList<SModel> = ArrayList()
             try {
-                inputRes = ModelAccessHelper(mpsProject.getModelAccess()).runReadAction<List<IResource>>(object :
+                inputRes = ModelAccessHelper(mpsProject.modelAccess).runReadAction<List<IResource>>(object :
                     Computable<List<IResource>> {
-                    public override fun compute(): List<IResource> {
+                    override fun compute(): List<IResource> {
                         val rv: List<IResource> = Sequence.fromIterable(params.collectInput()).toListSequence()
                         models.addAll(
                             ListSequence.fromList(rv).translate(object : ITranslator2<IResource, SModel>() {
-                                public override fun translate(it: IResource): Iterable<SModel> {
+                                override fun translate(it: IResource): Iterable<SModel> {
                                     return (it as MResource).models()
                                 }
                             }).toListSequence(),
@@ -114,19 +114,19 @@ object ProjectMakeRunner {
             if (inputRes != null) {
                 val result: Future<IResult> = makeService.make(session, inputRes)
                 val t: Thread = Thread(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         try {
                             val resultValue: IResult = result.get()
                             val resDesc: String = IterableUtils.join(
                                 Sequence.fromIterable(resultValue.output())
                                     .select(object : ISelector<IResource, String>() {
-                                        public override fun select(it: IResource): String {
+                                        override fun select(it: IResource): String {
                                             return it.describe()
                                         }
                                     }),
                                 ", ",
                             )
-                            if (resultValue.isSucessful()) {
+                            if (resultValue.isSucessful) {
                                 success.accept(
                                     MultiTuple.from(
                                         "make succeeded. Resource: " + resDesc,
@@ -155,9 +155,9 @@ object ProjectMakeRunner {
         }
     }
 
-    private class MyMessageHandler() : IMessageHandler {
+    private class MyMessageHandler : IMessageHandler {
         val messages: List<IMessage> = ListSequence.fromList(LinkedList())
-        public override fun handle(message: IMessage) {
+        override fun handle(message: IMessage) {
             ListSequence.fromList(messages).addElement(message)
         }
     }

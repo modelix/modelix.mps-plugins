@@ -58,7 +58,6 @@ internal class ModelPropertiesSynchronizer(
         PArea((branch)!!).executeWrite({
             syncUsedLanguagesAndDevKitsFromMPS()
             syncModelImportsFromMPS()
-            Unit
         })
     }
 
@@ -70,48 +69,48 @@ internal class ModelPropertiesSynchronizer(
         PArea((branch)!!).executeWrite<Unit>({
             // First get the dependencies in MPS
             val mpsModelNode: SModelAsNode? = SModelAsNode.Companion.wrap(model)
-            val dependenciesInMPS: List<INode?>? = IterableOfINodeUtils.toList(
-                mpsModelNode!!.getChildren(LINKS.`usedLanguages$QK4E`.getName()),
+            val dependenciesInMPS: List<INode?> = IterableOfINodeUtils.toList(
+                mpsModelNode!!.getChildren(LINKS.`usedLanguages$QK4E`.name),
             )
 
             //  Then get the dependencies in the cloud
             val branch: IBranch? = branch
             val cloudModelNode: INode = PNodeAdapter(modelNodeId, (branch)!!)
-            val dependenciesInCloud: Iterable<INode> = cloudModelNode.getChildren(LINKS.`usedLanguages$QK4E`.getName())
+            val dependenciesInCloud: Iterable<INode> = cloudModelNode.getChildren(LINKS.`usedLanguages$QK4E`.name)
 
             // For each import in MPS, add it if not present in the cloud, or otherwise ensure all properties are the same
             for (dependencyInMPS: INode? in ListSequence.fromList<INode?>(dependenciesInMPS)) {
                 if (dependencyInMPS is DevKitDependencyAsNode) {
                     val matchingDependencyInCloud: INode? =
                         Sequence.fromIterable<INode>(dependenciesInCloud).findFirst(object : IWhereFilter<INode>() {
-                            public override fun accept(dependencyInCloud: INode): Boolean {
+                            override fun accept(dependencyInCloud: INode): Boolean {
                                 return Objects.equals(
-                                    dependencyInMPS.getPropertyValue(PROPS.`uuid$lpJp`.getName()),
+                                    dependencyInMPS.getPropertyValue(PROPS.`uuid$lpJp`.name),
                                     dependencyInCloud.getPropertyValue(
-                                        PROPS.`uuid$lpJp`.getName(),
+                                        PROPS.`uuid$lpJp`.name,
                                     ),
                                 )
                             }
                         })
                     if (matchingDependencyInCloud == null) {
-                        INodeUtils.replicateChild(cloudModelNode, LINKS.`usedLanguages$QK4E`.getName(), dependencyInMPS)
+                        INodeUtils.replicateChild(cloudModelNode, LINKS.`usedLanguages$QK4E`.name, dependencyInMPS)
                     } else {
                         INodeUtils.copyProperty(cloudModelNode, dependencyInMPS, PROPS.`name$lpYq`)
                     }
                 } else if (dependencyInMPS is SingleLanguageDependencyAsNode) {
                     val matchingDependencyInCloud: INode? =
                         Sequence.fromIterable<INode>(dependenciesInCloud).findFirst(object : IWhereFilter<INode>() {
-                            public override fun accept(dependencyInCloud: INode): Boolean {
+                            override fun accept(dependencyInCloud: INode): Boolean {
                                 return Objects.equals(
-                                    dependencyInMPS.getPropertyValue(PROPS.`uuid$lpJp`.getName()),
+                                    dependencyInMPS.getPropertyValue(PROPS.`uuid$lpJp`.name),
                                     dependencyInCloud.getPropertyValue(
-                                        PROPS.`uuid$lpJp`.getName(),
+                                        PROPS.`uuid$lpJp`.name,
                                     ),
                                 )
                             }
                         })
                     if (matchingDependencyInCloud == null) {
-                        INodeUtils.replicateChild(cloudModelNode, LINKS.`usedLanguages$QK4E`.getName(), dependencyInMPS)
+                        INodeUtils.replicateChild(cloudModelNode, LINKS.`usedLanguages$QK4E`.name, dependencyInMPS)
                     } else {
                         INodeUtils.copyProperty(cloudModelNode, dependencyInMPS, PROPS.`name$lpYq`)
                         INodeUtils.copyProperty(cloudModelNode, dependencyInMPS, PROPS.`version$ApUL`)
@@ -125,11 +124,11 @@ internal class ModelPropertiesSynchronizer(
             for (dependencyInCloud: INode in Sequence.fromIterable<INode>(dependenciesInCloud)) {
                 val matchingDependencyInMPS: INode? =
                     Sequence.fromIterable<INode>(dependenciesInCloud).findFirst(object : IWhereFilter<INode>() {
-                        public override fun accept(dependencyInMPS: INode): Boolean {
+                        override fun accept(dependencyInMPS: INode): Boolean {
                             return Objects.equals(
-                                dependencyInCloud.getPropertyValue(PROPS.`uuid$lpJp`.getName()),
+                                dependencyInCloud.getPropertyValue(PROPS.`uuid$lpJp`.name),
                                 dependencyInMPS.getPropertyValue(
-                                    PROPS.`uuid$lpJp`.getName(),
+                                    PROPS.`uuid$lpJp`.name,
                                 ),
                             )
                         }
@@ -138,7 +137,6 @@ internal class ModelPropertiesSynchronizer(
                     cloudModelNode.removeChild(dependencyInCloud)
                 }
             }
-            Unit
         })
     }
 
@@ -146,35 +144,35 @@ internal class ModelPropertiesSynchronizer(
         PArea((branch)!!).executeWrite<Unit>({
             // First get the dependencies in MPS. Model imports do not include implicit ones
             val mpsModelNode: SModelAsNode? = SModelAsNode.Companion.wrap(model)
-            val dependenciesInMPS: List<ModelImportAsNode?>? = IterableOfINodeUtils.toCastedList(
-                mpsModelNode!!.getChildren(LINKS.`modelImports$8DOI`.getName()),
+            val dependenciesInMPS: List<ModelImportAsNode?> = IterableOfINodeUtils.toCastedList(
+                mpsModelNode!!.getChildren(LINKS.`modelImports$8DOI`.name),
             )
 
             //  Then get the dependencies in the cloud
             val branch: IBranch? = branch
             val cloudModelNode: INode = PNodeAdapter(modelNodeId, (branch)!!)
-            val dependenciesInCloud: Iterable<INode> = cloudModelNode.getChildren(LINKS.`modelImports$8DOI`.getName())
+            val dependenciesInCloud: Iterable<INode> = cloudModelNode.getChildren(LINKS.`modelImports$8DOI`.name)
 
             // For each import in MPS, add it if not present in the cloud, or otherwise ensure all properties are the same
             for (dependencyInMPS: ModelImportAsNode? in ListSequence.fromList<ModelImportAsNode?>(dependenciesInMPS)) {
-                val modelImportedInMps: INode? = dependencyInMPS!!.getReferenceTarget(LINKS.`model$GJHn`.getName())
+                val modelImportedInMps: INode? = dependencyInMPS!!.getReferenceTarget(LINKS.`model$GJHn`.name)
                 if (modelImportedInMps != null) {
-                    val modelIDimportedInMPS: String? = modelImportedInMps.getPropertyValue(PROPS.`id$lDUo`.getName())
+                    val modelIDimportedInMPS: String? = modelImportedInMps.getPropertyValue(PROPS.`id$lDUo`.name)
                     val matchingDependencyInCloud: INode? =
                         Sequence.fromIterable<INode>(dependenciesInCloud).findFirst(object : IWhereFilter<INode>() {
-                            public override fun accept(dependencyInCloud: INode): Boolean {
+                            override fun accept(dependencyInCloud: INode): Boolean {
                                 val modelImportedInCloud: INode? =
-                                    dependencyInCloud.getReferenceTarget(LINKS.`model$GJHn`.getName())
+                                    dependencyInCloud.getReferenceTarget(LINKS.`model$GJHn`.name)
                                 if (modelImportedInCloud == null) {
                                     return false
                                 }
                                 val modelIDimportedInCloud: String? =
-                                    modelImportedInCloud!!.getPropertyValue(PROPS.`id$lDUo`.getName())
+                                    modelImportedInCloud.getPropertyValue(PROPS.`id$lDUo`.name)
                                 return Objects.equals(modelIDimportedInMPS, modelIDimportedInCloud)
                             }
                         })
                     if (matchingDependencyInCloud == null) {
-                        INodeUtils.replicateChild(cloudModelNode, LINKS.`modelImports$8DOI`.getName(), dependencyInMPS)
+                        INodeUtils.replicateChild(cloudModelNode, LINKS.`modelImports$8DOI`.name, dependencyInMPS)
                     } else {
                         // no properties to set here
                     }
@@ -183,20 +181,20 @@ internal class ModelPropertiesSynchronizer(
 
             // For each import not in MPS, remove it
             for (dependencyInCloud: INode in Sequence.fromIterable<INode>(dependenciesInCloud)) {
-                val modelImportedInCloud: INode? = dependencyInCloud.getReferenceTarget(LINKS.`model$GJHn`.getName())
+                val modelImportedInCloud: INode? = dependencyInCloud.getReferenceTarget(LINKS.`model$GJHn`.name)
                 if (modelImportedInCloud != null) {
                     val modelIDimportedInCloud: String? =
-                        modelImportedInCloud.getPropertyValue(PROPS.`id$lDUo`.getName())
+                        modelImportedInCloud.getPropertyValue(PROPS.`id$lDUo`.name)
                     val matchingDependencyInMPS: INode? =
                         Sequence.fromIterable<INode>(dependenciesInCloud).findFirst(object : IWhereFilter<INode>() {
-                            public override fun accept(dependencyInMPS: INode): Boolean {
+                            override fun accept(dependencyInMPS: INode): Boolean {
                                 val modelImportedInMPS: INode? =
-                                    dependencyInMPS.getReferenceTarget(LINKS.`model$GJHn`.getName())
+                                    dependencyInMPS.getReferenceTarget(LINKS.`model$GJHn`.name)
                                 if (modelImportedInMPS == null) {
                                     return false
                                 }
                                 val modelIDimportedInMPS: String? =
-                                    modelImportedInMPS!!.getPropertyValue(PROPS.`id$lDUo`.getName())
+                                    modelImportedInMPS.getPropertyValue(PROPS.`id$lDUo`.name)
                                 return Objects.equals(modelIDimportedInCloud, modelIDimportedInMPS)
                             }
                         })
@@ -205,7 +203,6 @@ internal class ModelPropertiesSynchronizer(
                     }
                 }
             }
-            Unit
         })
     }
 
@@ -325,20 +322,20 @@ internal class ModelPropertiesSynchronizer(
             syncUsedLanguagesAndDevKitsToMPS(tree, model, modelNodeId, cloudRepository)
             syncModelImportsToMPS(tree, model, modelNodeId, cloudRepository)
             try {
-                val projects: List<Project> = ProjectManager.getInstance().getOpenedProjects()
-                if (ListSequence.fromList(projects).isNotEmpty()) {
+                val projects: List<Project> = ProjectManager.getInstance().openedProjects
+                if (ListSequence.fromList(projects).isNotEmpty) {
                     val project: Project = ListSequence.fromList(projects).first()
                     ModuleDependencyVersions(
-                        LanguageRegistry.getInstance(project.getRepository()),
-                        project.getRepository(),
+                        LanguageRegistry.getInstance(project.repository),
+                        project.repository,
                     ).update(
-                        model!!.getModule(),
+                        model!!.module,
                     )
                 }
             } catch (ex: Exception) {
                 if (LOG.isEnabledFor(Level.ERROR)) {
                     LOG.error(
-                        "Failed to update language version after change in model " + model!!.getName().getValue(),
+                        "Failed to update language version after change in model " + model!!.name.value,
                         ex,
                     )
                 }
@@ -351,32 +348,32 @@ internal class ModelPropertiesSynchronizer(
             modelNodeId: Long,
             cloudRepository: ICloudRepository,
         ) {
-            PArea(cloudRepository.branch!!).executeRead<Unit>({
+            PArea(cloudRepository.branch).executeRead<Unit>({
                 ModelAccess.runInWriteActionIfNeeded(
                     model,
                     object : Runnable {
-                        public override fun run() {
+                        override fun run() {
                             // First get the dependencies in MPS
                             val mpsModelNode: SModelAsNode? = SModelAsNode.Companion.wrap(model)
-                            val dependenciesInMPS: List<INode?>? = IterableOfINodeUtils.toList(
-                                mpsModelNode!!.getChildren(LINKS.`usedLanguages$QK4E`.getName()),
+                            val dependenciesInMPS: List<INode?> = IterableOfINodeUtils.toList(
+                                mpsModelNode!!.getChildren(LINKS.`usedLanguages$QK4E`.name),
                             )
 
                             //  Then get the dependencies in the cloud
-                            val branch: IBranch? = cloudRepository.branch
+                            val branch: IBranch = cloudRepository.branch
                             val cloudModelNode: INode = PNodeAdapter(modelNodeId, (branch)!!)
                             val dependenciesInCloud: Iterable<INode> =
-                                cloudModelNode.getChildren(LINKS.`usedLanguages$QK4E`.getName())
+                                cloudModelNode.getChildren(LINKS.`usedLanguages$QK4E`.name)
 
                             // For each import in the cloud add it if not present in MPS or otherwise ensure all properties are the same
                             for (dependencyInCloud: INode in Sequence.fromIterable<INode>(dependenciesInCloud)) {
                                 val matchingDependencyInMPS: INode? = ListSequence.fromList<INode?>(dependenciesInMPS)
                                     .findFirst(object : IWhereFilter<INode>() {
-                                        public override fun accept(dependencyInMPS: INode): Boolean {
+                                        override fun accept(dependencyInMPS: INode): Boolean {
                                             return Objects.equals(
-                                                dependencyInCloud.getPropertyValue(PROPS.`uuid$lpJp`.getName()),
+                                                dependencyInCloud.getPropertyValue(PROPS.`uuid$lpJp`.name),
                                                 dependencyInMPS.getPropertyValue(
-                                                    PROPS.`uuid$lpJp`.getName(),
+                                                    PROPS.`uuid$lpJp`.name,
                                                 ),
                                             )
                                         }
@@ -385,38 +382,38 @@ internal class ModelPropertiesSynchronizer(
                                     if (Objects.equals(
                                             dependencyInCloud.concept!!.getLongName(),
                                             (
-                                                CONCEPTS.`DevkitDependency$Ns`.getLanguage()
-                                                    .getQualifiedName() + "." + CONCEPTS.`DevkitDependency$Ns`.getName()
+                                                CONCEPTS.`DevkitDependency$Ns`.language
+                                                    .qualifiedName + "." + CONCEPTS.`DevkitDependency$Ns`.name
                                                 ),
                                         )
                                     ) {
-                                        val repo: SRepository = model!!.getRepository()
+                                        val repo: SRepository = model!!.repository
                                         val devKitUUID: String? =
-                                            dependencyInCloud.getPropertyValue(PROPS.`uuid$lpJp`.getName())
+                                            dependencyInCloud.getPropertyValue(PROPS.`uuid$lpJp`.name)
                                         val devKit: DevKit? =
                                             (repo.getModule(ModuleId.regular(UUID.fromString(devKitUUID))) as DevKit?)
-                                        val devKitModuleReference: SModuleReference = devKit!!.getModuleReference()
+                                        val devKitModuleReference: SModuleReference = devKit!!.moduleReference
                                         SModelUtils.addDevKit(mpsModelNode.element, devKitModuleReference)
                                     } else if (Objects.equals(
                                             dependencyInCloud.concept!!.getLongName(),
                                             (
-                                                CONCEPTS.`SingleLanguageDependency$_9`.getLanguage()
-                                                    .getQualifiedName() + "." + CONCEPTS.`SingleLanguageDependency$_9`.getName()
+                                                CONCEPTS.`SingleLanguageDependency$_9`.language
+                                                    .qualifiedName + "." + CONCEPTS.`SingleLanguageDependency$_9`.name
                                                 ),
                                         )
                                     ) {
-                                        val repo: SRepository = model!!.getRepository()
+                                        val repo: SRepository = model!!.repository
                                         val languageUUID: String? =
-                                            dependencyInCloud.getPropertyValue(PROPS.`uuid$lpJp`.getName())
+                                            dependencyInCloud.getPropertyValue(PROPS.`uuid$lpJp`.name)
                                         val language: Language? =
                                             (repo.getModule(ModuleId.regular(UUID.fromString(languageUUID))) as Language?)
                                         val sLanguage: SLanguage =
-                                            MetaAdapterFactory.getLanguage(language!!.getModuleReference())
+                                            MetaAdapterFactory.getLanguage(language!!.moduleReference)
                                         SModelUtils.addLanguageImport(
                                             mpsModelNode.element,
                                             sLanguage,
                                             dependencyInCloud.getPropertyValue(
-                                                PROPS.`version$ApUL`.getName(),
+                                                PROPS.`version$ApUL`.name,
                                             )!!
                                                 .toInt(),
                                         )
@@ -444,9 +441,9 @@ internal class ModelPropertiesSynchronizer(
                                     var matchingDependencyInCloud: INode? = null
                                     for (dependencyInCloud: INode in Sequence.fromIterable<INode>(dependenciesInCloud)) {
                                         if (Objects.equals(
-                                                dependencyInMPS.getPropertyValue(PROPS.`uuid$lpJp`.getName()),
+                                                dependencyInMPS.getPropertyValue(PROPS.`uuid$lpJp`.name),
                                                 dependencyInCloud.getPropertyValue(
-                                                    PROPS.`uuid$lpJp`.getName(),
+                                                    PROPS.`uuid$lpJp`.name,
                                                 ),
                                             )
                                         ) {
@@ -471,9 +468,9 @@ internal class ModelPropertiesSynchronizer(
                                     var matchingDependencyInCloud: INode? = null
                                     for (dependencyInCloud: INode in Sequence.fromIterable<INode>(dependenciesInCloud)) {
                                         if (Objects.equals(
-                                                dependencyInMPS.getPropertyValue(PROPS.`uuid$lpJp`.getName()),
+                                                dependencyInMPS.getPropertyValue(PROPS.`uuid$lpJp`.name),
                                                 dependencyInCloud.getPropertyValue(
-                                                    PROPS.`uuid$lpJp`.getName(),
+                                                    PROPS.`uuid$lpJp`.name,
                                                 ),
                                             )
                                         ) {
@@ -483,7 +480,7 @@ internal class ModelPropertiesSynchronizer(
                                     if (matchingDependencyInCloud == null) {
                                         val dsmd: DefaultSModelDescriptor? =
                                             (mpsModelNode.element as DefaultSModelDescriptor?)
-                                        val moduleReference: SModuleReference? = dependencyInMPS.getModuleReference()
+                                        val moduleReference: SModuleReference = dependencyInMPS.getModuleReference()
                                         val languageToRemove: SLanguage =
                                             MetaAdapterFactory.getLanguage((moduleReference)!!)
                                         dsmd!!.deleteLanguageId(languageToRemove)
@@ -495,7 +492,6 @@ internal class ModelPropertiesSynchronizer(
                         }
                     },
                 )
-                Unit
             })
         }
 
@@ -516,37 +512,37 @@ internal class ModelPropertiesSynchronizer(
                 ModelAccess.runInWriteActionIfNeeded(
                     model,
                     object : Runnable {
-                        public override fun run() {
+                        override fun run() {
                             // First get the dependencies in MPS
                             val mpsModelNode: SModelAsNode? = SModelAsNode.Companion.wrap(model)
-                            val dependenciesInMPS: List<ModelImportAsNode?>? = IterableOfINodeUtils.toCastedList(
-                                mpsModelNode!!.getChildren(LINKS.`modelImports$8DOI`.getName()),
+                            val dependenciesInMPS: List<ModelImportAsNode?> = IterableOfINodeUtils.toCastedList(
+                                mpsModelNode!!.getChildren(LINKS.`modelImports$8DOI`.name),
                             )
 
                             //  Then get the dependencies in the cloud
                             val branch = cloudRepository.branch
                             val cloudModelNode: INode = PNodeAdapter(modelNodeId, branch)
                             val dependenciesInCloud: Iterable<INode> =
-                                cloudModelNode.getChildren(LINKS.`modelImports$8DOI`.getName())
+                                cloudModelNode.getChildren(LINKS.`modelImports$8DOI`.name)
 
                             // For each import in Cloud add it if not present in MPS or otherwise ensure all properties are the same
                             for (dependencyInCloud: INode in Sequence.fromIterable<INode>(dependenciesInCloud)) {
                                 val modelImportedInCloud: INode? =
-                                    dependencyInCloud.getReferenceTarget(LINKS.`model$GJHn`.getName())
+                                    dependencyInCloud.getReferenceTarget(LINKS.`model$GJHn`.name)
                                 if (!(isNullModel(modelImportedInCloud))) {
                                     val modelIDimportedInCloud: String? =
-                                        modelImportedInCloud!!.getPropertyValue(PROPS.`id$lDUo`.getName())
+                                        modelImportedInCloud!!.getPropertyValue(PROPS.`id$lDUo`.name)
                                     val matchingDependencyInMps: INode? =
                                         ListSequence.fromList<ModelImportAsNode?>(dependenciesInMPS)
                                             .findFirst(object : IWhereFilter<ModelImportAsNode>() {
-                                                public override fun accept(dependencyInMPS: ModelImportAsNode): Boolean {
+                                                override fun accept(dependencyInMPS: ModelImportAsNode): Boolean {
                                                     val modelImportedInMPS: INode? =
-                                                        dependencyInMPS.getReferenceTarget(LINKS.`model$GJHn`.getName())
+                                                        dependencyInMPS.getReferenceTarget(LINKS.`model$GJHn`.name)
                                                     if (modelImportedInMPS == null) {
                                                         return false
                                                     }
                                                     val modelIDimportedInMPS: String? =
-                                                        modelImportedInMPS!!.getPropertyValue(PROPS.`id$lDUo`.getName())
+                                                        modelImportedInMPS.getPropertyValue(PROPS.`id$lDUo`.name)
                                                     return Objects.equals(
                                                         modelIDimportedInCloud,
                                                         modelIDimportedInMPS,
@@ -560,11 +556,11 @@ internal class ModelPropertiesSynchronizer(
                                         val moduleContainingModelImportedInCloud: INode? = modelImportedInCloud.parent
                                         val nameOfModuleContainingModelImportedInCloud: String? =
                                             moduleContainingModelImportedInCloud!!.getPropertyValue(
-                                                PROPS.`name$MnvL`.getName(),
+                                                PROPS.`name$MnvL`.name,
                                             )
                                         val idOfModuleContainingModelImportedInCloud: String? =
                                             moduleContainingModelImportedInCloud.getPropertyValue(
-                                                PROPS.`id$7MjP`.getName(),
+                                                PROPS.`id$7MjP`.name,
                                             )
                                         val moduleRef: SModuleReference = ModuleReference(
                                             nameOfModuleContainingModelImportedInCloud,
@@ -577,7 +573,7 @@ internal class ModelPropertiesSynchronizer(
                                         val modelID: SModelId =
                                             jetbrains.mps.smodel.SModelId.fromString(modelIDimportedInCloud)
                                         val modelName: String? =
-                                            modelImportedInCloud.getPropertyValue(PROPS.`name$MnvL`.getName())
+                                            modelImportedInCloud.getPropertyValue(PROPS.`name$MnvL`.name)
                                         val refToModelToImport: SModelReference =
                                             SModelReference(moduleRef, modelID, (modelName)!!)
 
@@ -595,21 +591,21 @@ internal class ModelPropertiesSynchronizer(
                                 dependenciesInMPS,
                             )) {
                                 val modelImportedInMPS: INode? =
-                                    dependencyInMPS!!.getReferenceTarget(LINKS.`model$GJHn`.getName())
+                                    dependencyInMPS!!.getReferenceTarget(LINKS.`model$GJHn`.name)
                                 if (modelImportedInMPS != null) {
                                     val modelIDimportedInMPS: String? =
-                                        modelImportedInMPS.getPropertyValue(PROPS.`id$lDUo`.getName())
+                                        modelImportedInMPS.getPropertyValue(PROPS.`id$lDUo`.name)
                                     val matchingDependencyInCloud: INode? =
                                         Sequence.fromIterable<INode>(dependenciesInCloud)
                                             .findFirst(object : IWhereFilter<INode>() {
-                                                public override fun accept(dependencyInCloud: INode): Boolean {
+                                                override fun accept(dependencyInCloud: INode): Boolean {
                                                     val modelImportedInCloud: INode? =
-                                                        dependencyInCloud.getReferenceTarget(LINKS.`model$GJHn`.getName())
+                                                        dependencyInCloud.getReferenceTarget(LINKS.`model$GJHn`.name)
                                                     if (isNullModel(modelImportedInCloud)) {
                                                         return false
                                                     }
                                                     val modelIDimportedInCloud: String? =
-                                                        modelImportedInCloud!!.getPropertyValue(PROPS.`id$lDUo`.getName())
+                                                        modelImportedInCloud!!.getPropertyValue(PROPS.`id$lDUo`.name)
                                                     return Objects.equals(
                                                         modelIDimportedInMPS,
                                                         modelIDimportedInCloud,
@@ -621,7 +617,7 @@ internal class ModelPropertiesSynchronizer(
                                             (mpsModelNode.element as SModelDescriptorStub?)
                                         val depToRemove = dependencyInMPS
                                         val modelReferenceToRemove: org.jetbrains.mps.openapi.model.SModelReference =
-                                            depToRemove.element.getReference()
+                                            depToRemove.element.reference
                                         dsmd!!.deleteModelImport(modelReferenceToRemove)
                                     }
                                 }
@@ -629,7 +625,6 @@ internal class ModelPropertiesSynchronizer(
                         }
                     },
                 )
-                Unit
             })
         }
     }

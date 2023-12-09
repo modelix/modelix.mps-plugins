@@ -27,13 +27,13 @@ object CloudNodeTreeNodeCreationMethods {
         // TODO check this represent a module
         return PArea(_this.branch).executeWrite<INode>({
             val newModel: INode = _this.node.addNewChild(
-                LINKS.`models$h3QT`.getName(),
+                LINKS.`models$h3QT`.name,
                 -1,
                 SConceptAdapter.Companion.wrap(
                     CONCEPTS.`Model$2P`,
                 ),
             )
-            newModel.setPropertyValue(PROPS.`name$MnvL`.getName(), modelName)
+            newModel.setPropertyValue(PROPS.`name$MnvL`.name, modelName)
             newModel
         })
     }

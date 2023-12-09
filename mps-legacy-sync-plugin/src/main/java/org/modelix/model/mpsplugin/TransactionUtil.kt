@@ -30,7 +30,7 @@ object TransactionUtil {
         } else if (obj is ANode) {
             return extractArea(ANode.Companion.unwrap((obj as ANode?)))
         } else if (obj is SNode) {
-            val repository: SRepository? = check_276zg0_a0a0f0a1(obj.getModel())
+            val repository: SRepository? = check_276zg0_a0a0f0a1(obj.model)
             return (if (repository == null) MPSArea() else MPSArea(repository))
         } else {
             return null
@@ -46,12 +46,11 @@ object TransactionUtil {
     }
 
     fun runWriteOnAreas(areasToRead: Iterable<IArea>, r: Runnable) {
-        if (Sequence.fromIterable(areasToRead).isEmpty()) {
+        if (Sequence.fromIterable(areasToRead).isEmpty) {
             r.run()
         } else {
             Sequence.fromIterable(areasToRead).first().executeWrite({
                 runReadOnAreas(Sequence.fromIterable(areasToRead).skip(1), r)
-                Unit
             })
         }
     }
@@ -65,19 +64,18 @@ object TransactionUtil {
     }
 
     fun runReadOnAreas(areasToRead: Iterable<IArea>?, r: Runnable) {
-        if (Sequence.fromIterable(areasToRead).isEmpty()) {
+        if (Sequence.fromIterable(areasToRead).isEmpty) {
             r.run()
         } else {
             Sequence.fromIterable(areasToRead).first().executeRead({
                 runReadOnAreas(Sequence.fromIterable(areasToRead).skip(1), r)
-                Unit
             })
         }
     }
 
     private fun check_276zg0_a0a0f0a1(checkedDotOperand: SModel?): SRepository? {
         if (null != checkedDotOperand) {
-            return checkedDotOperand.getRepository()
+            return checkedDotOperand.repository
         }
         return null
     }

@@ -40,11 +40,11 @@ class NodeMap(private val branchProvider: BranchProvider) : AbstractArea(), IAre
      * Map from Node to Cloud ID
      */
     private val node2id: TObjectLongMap<SNode?> = TObjectLongHashMap()
-    public override fun resolveConcept(reference: IConceptReference): IConcept? {
+    override fun resolveConcept(reference: IConceptReference): IConcept? {
         return null
     }
 
-    public override fun getReference(): IAreaReference {
+    override fun getReference(): IAreaReference {
         return this
     }
 
@@ -127,9 +127,9 @@ class NodeMap(private val branchProvider: BranchProvider) : AbstractArea(), IAre
         return node
     }
 
-    public override fun resolveOriginalNode(reference: INodeReference): INode? {
+    override fun resolveOriginalNode(reference: INodeReference): INode? {
         if (reference is SNodeReferenceAdapter) {
-            val targetNodeId: SNodeId? = reference.getReference()!!.getNodeId()
+            val targetNodeId: SNodeId? = reference.getReference()!!.nodeId
             val sNode = node2id.keySet().firstOrNull { it?.nodeId == targetNodeId }
             if (sNode != null) {
                 return SNodeToNodeAdapter.Companion.wrap(sNode)
@@ -140,7 +140,7 @@ class NodeMap(private val branchProvider: BranchProvider) : AbstractArea(), IAre
         return null
     }
 
-    public override fun getRoot(): INode {
+    override fun getRoot(): INode {
         throw UnsupportedOperationException()
     }
 }

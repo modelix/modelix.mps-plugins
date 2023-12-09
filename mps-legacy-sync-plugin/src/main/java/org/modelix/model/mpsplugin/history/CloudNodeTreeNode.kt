@@ -44,17 +44,16 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
         PArea(branch).executeRead({
             concept = node.concept
             val nodeId: Long = (node as PNodeAdapter).nodeId
-            setNodeIdentifier(nodeId.toString())
+            nodeIdentifier = nodeId.toString()
             updateText()
-            Unit
         })
     }
 
-    public override fun isInitialized(): Boolean {
+    override fun isInitialized(): Boolean {
         return initialized
     }
 
-    public override fun update() {
+    override fun update() {
         doUpdate()
     }
 
@@ -63,7 +62,7 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
         initialized = false
     }
 
-    public override fun isLeaf(): Boolean {
+    override fun isLeaf(): Boolean {
         if (!(initialized)) {
             return false
         }
@@ -93,33 +92,33 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
 
     fun updateText() {
         ThreadUtils.runInUIThreadAndWait(object : Runnable {
-            public override fun run() {
+            override fun run() {
                 LoadingIcon.Companion.apply<CloudNodeTreeNode>(this@CloudNodeTreeNode)
             }
         })
         SharedExecutors.FIXED.execute(
             _Adapters._return_P0_E0_to_Runnable_adapter(object : _return_P0_E0<Unit> {
-                public override fun invoke() {
+                override fun invoke() {
                     return PArea(branch).executeRead({
                         val newText: _T<String> = _T("")
                         var mappedMPSNodeID: String? = null
                         val nodeId: Long = (node as PNodeAdapter).nodeId
                         if (nodeId == ITree.ROOT_ID) {
                             newText.value = "ROOT #1"
-                            setIcon(AllIcons.Nodes.Folder)
+                            icon = AllIcons.Nodes.Folder
                         } else {
                             val concept: IConcept? = node.concept
                             if (concept != null) {
                                 mappedMPSNodeID = MPSNodeMapping.mappedMpsNodeID(node)
-                                val snode: SNode? = NodeToSNodeAdapter.wrap(node)
-                                val mpsRepo: SRepository? = CommandHelper.sRepository
+                                val snode: SNode = NodeToSNodeAdapter.wrap(node)
+                                val mpsRepo: SRepository = CommandHelper.sRepository
                                 if (mpsRepo == null) {
                                     throw IllegalStateException("repository should not be null")
                                 }
-                                mpsRepo.getModelAccess().runReadAction(
+                                mpsRepo.modelAccess.runReadAction(
                                     _Adapters._return_P0_E0_to_Runnable_adapter(object :
                                         _return_P0_E0<Unit> {
-                                        public override fun invoke() {
+                                        override fun invoke() {
                                             return withAdditionalContext<Unit>(MPSArea(mpsRepo), {
                                                 try {
                                                     newText.value =
@@ -133,13 +132,12 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
                                                     newText.value = "!!!" + ex.message
                                                 }
                                                 try {
-                                                    setIcon(GlobalIconManager.getInstance().getIconFor((snode)!!))
+                                                    icon = GlobalIconManager.getInstance().getIconFor((snode)!!)
                                                 } catch (ex: Exception) {
                                                     if (LOG.isEnabledFor(Level.ERROR)) {
                                                         LOG.error("Failed to update the icon", ex)
                                                     }
                                                 }
-                                                Unit
                                             })
                                         }
                                     }),
@@ -156,11 +154,10 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
                             newText.value = newText.value + " -> MPS(" + mappedMPSNodeID + ")"
                         }
                         ThreadUtils.runInUIThreadNoWait(object : Runnable {
-                            public override fun run() {
+                            override fun run() {
                                 setTextAndRepaint(newText.value)
                             }
                         })
-                        Unit
                     })
                 }
             }),
@@ -173,8 +170,8 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
         }
         val existing: Map<INode, CloudNodeTreeNode> = MapSequence.fromMap(LinkedHashMap(16, 0.75.toFloat(), false))
         ThreadUtils.runInUIThreadAndWait(object : Runnable {
-            public override fun run() {
-                if (Sequence.fromIterable<TreeNode?>(TreeModelUtil.getChildren(this@CloudNodeTreeNode)).isEmpty()) {
+            override fun run() {
+                if (Sequence.fromIterable<TreeNode?>(TreeModelUtil.getChildren(this@CloudNodeTreeNode)).isEmpty) {
                     TreeModelUtil.setChildren(
                         this@CloudNodeTreeNode,
                         Sequence.singleton<TreeNode>(LoadingIcon.Companion.apply<TextTreeNode>(TextTreeNode("loading ..."))),
@@ -184,7 +181,7 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
                     .ofType<CloudNodeTreeNode>(
                         CloudNodeTreeNode::class.java,
                     ).visitAll(object : IVisitor<CloudNodeTreeNode>() {
-                        public override fun visit(it: CloudNodeTreeNode) {
+                        override fun visit(it: CloudNodeTreeNode) {
                             MapSequence.fromMap(existing).put(it.node, it)
                         }
                     })
@@ -192,12 +189,12 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
         })
         SharedExecutors.FIXED.execute(
             _Adapters._return_P0_E0_to_Runnable_adapter(object : _return_P0_E0<Unit> {
-                public override fun invoke() {
+                override fun invoke() {
                     return PArea(branch).executeRead<Unit>({
                         val allChildren: Iterable<INode> = node.allChildren
                         val newChildren: List<CloudNodeTreeNode> = Sequence.fromIterable<INode>(allChildren)
                             .select<CloudNodeTreeNode>(object : ISelector<INode, CloudNodeTreeNode>() {
-                                public override fun select(it: INode): CloudNodeTreeNode? {
+                                override fun select(it: INode): CloudNodeTreeNode? {
                                     return (
                                         if (MapSequence.fromMap<INode, CloudNodeTreeNode>(existing).containsKey(it)) {
                                             MapSequence.fromMap<INode, CloudNodeTreeNode>(existing).get(it)
@@ -208,7 +205,7 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
                                 }
                             }).toListSequence()
                         ThreadUtils.runInUIThreadNoWait(object : Runnable {
-                            public override fun run() {
+                            override fun run() {
                                 TreeModelUtil.setChildren(
                                     this@CloudNodeTreeNode,
                                     ListSequence.fromList(newChildren).ofType(
@@ -216,13 +213,12 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
                                     ),
                                 )
                                 ListSequence.fromList(newChildren).visitAll(object : IVisitor<CloudNodeTreeNode>() {
-                                    public override fun visit(it: CloudNodeTreeNode) {
+                                    override fun visit(it: CloudNodeTreeNode) {
                                         it.update()
                                     }
                                 })
                             }
                         })
-                        Unit
                     })
                 }
             }),

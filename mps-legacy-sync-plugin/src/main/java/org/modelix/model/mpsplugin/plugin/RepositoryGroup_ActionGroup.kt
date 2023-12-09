@@ -7,7 +7,7 @@ import jetbrains.mps.workbench.action.ApplicationPlugin
 class RepositoryGroup_ActionGroup(plugin: ApplicationPlugin) : GeneratedActionGroup("RepositoryGroup", ID, plugin) {
     init {
         setIsInternal(false)
-        setPopup(false)
+        isPopup = false
         this@RepositoryGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.LoadHistoryForRepository_Action")
         this@RepositoryGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.RemoveRepository_Action")
         this@RepositoryGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.GetCloudRepositorySize_Action")

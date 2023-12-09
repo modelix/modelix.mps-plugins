@@ -18,29 +18,29 @@ class CloudTransientModule(name: String?, id: ModuleId?) :
 
     init {
         myDescriptor = ModuleDescriptor()
-        myDescriptor.setId(id)
-        myDescriptor.setNamespace(name)
-        setModuleReference(myDescriptor.getModuleReference())
+        myDescriptor.id = id
+        myDescriptor.namespace = name
+        moduleReference = myDescriptor.moduleReference
     }
 
-    public override fun <T> getUserObject(key: UserObjectKey<T>): T {
-        return userObjects!!.get(key) as T
+    override fun <T> getUserObject(key: UserObjectKey<T>): T {
+        return userObjects.get(key) as T
     }
 
-    public override fun <T> putUserObject(key: UserObjectKey<T>, value: T) {
-        userObjects = userObjects!!.put(key, value) ?: empty()
+    override fun <T> putUserObject(key: UserObjectKey<T>, value: T) {
+        userObjects = userObjects.put(key, value) ?: empty()
     }
 
-    public override fun getModuleDescriptor(): ModuleDescriptor? {
+    override fun getModuleDescriptor(): ModuleDescriptor {
         return myDescriptor
     }
 
     override fun collectMandatoryFacetTypes(types: Set<String>) {}
-    public override fun isPackaged(): Boolean {
+    override fun isPackaged(): Boolean {
         return false
     }
 
-    public override fun isReadOnly(): Boolean {
+    override fun isReadOnly(): Boolean {
         return false
     }
 }

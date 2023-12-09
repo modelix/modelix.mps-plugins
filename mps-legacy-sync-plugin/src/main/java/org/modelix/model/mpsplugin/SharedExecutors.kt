@@ -24,7 +24,7 @@ object SharedExecutors {
     fun fixDelay(milliSeconds: Int, r: Runnable): ScheduledFuture<*> {
         return SCHEDULED.scheduleWithFixedDelay(
             object : Runnable {
-                public override fun run() {
+                override fun run() {
                     try {
                         r.run()
                     } catch (ex: Exception) {

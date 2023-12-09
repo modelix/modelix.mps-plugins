@@ -47,7 +47,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
     private var modelPropertiesSyncToMPSRequired: Boolean = true
     private var synchronizer: ModelSynchronizer? = null
     private val nodeChangeListener: SNodeChangeListener = object : SNodeChangeListener {
-        public override fun propertyChanged(e: SPropertyChangeEvent) {
+        override fun propertyChanged(e: SPropertyChangeEvent) {
             try {
                 if (isSynchronizing) {
                     return
@@ -55,15 +55,14 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
                 val branch: IBranch? = this@ModelBinding.branch
                 PArea((branch)!!).executeWrite({
                     synchronizer!!.runAndFlushReferences(object : Runnable {
-                        public override fun run() {
+                        override fun run() {
                             val t: IWriteTransaction = branch.writeTransaction
-                            val id: Long = synchronizer!!.getOrSyncToCloud(e.getNode(), t)
+                            val id: Long = synchronizer!!.getOrSyncToCloud(e.node, t)
                             if (id != 0L && t.containsNode(id)) {
-                                t.setProperty(id, e.getProperty().getName(), e.getNewValue())
+                                t.setProperty(id, e.property.name, e.newValue)
                             }
                         }
                     })
-                    Unit
                 })
             } catch (ex: Exception) {
                 if (LOG.isEnabledFor(Level.ERROR)) {
@@ -72,13 +71,13 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
             }
         }
 
-        public override fun referenceChanged(e: SReferenceChangeEvent) {
+        override fun referenceChanged(e: SReferenceChangeEvent) {
             try {
                 if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         synchronizer!!.handleReferenceChanged(e)
                     }
                 })
@@ -89,13 +88,13 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
             }
         }
 
-        public override fun nodeAdded(e: SNodeAddEvent) {
+        override fun nodeAdded(e: SNodeAddEvent) {
             try {
                 if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         synchronizer!!.handleMPSNodeAdded(e)
                     }
                 })
@@ -106,13 +105,13 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
             }
         }
 
-        public override fun nodeRemoved(e: SNodeRemoveEvent) {
+        override fun nodeRemoved(e: SNodeRemoveEvent) {
             try {
                 if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         synchronizer!!.handleMPSNodeRemoved(e)
                     }
                 })
@@ -124,13 +123,13 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
         }
     }
     private val modelListener: SModelListener = object : SModelListener {
-        public override fun languageAdded(event: SModelLanguageEvent) {
+        override fun languageAdded(event: SModelLanguageEvent) {
             try {
                 if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         synchronizer!!.syncUsedLanguagesAndDevKitsFromMPS()
                     }
                 })
@@ -141,13 +140,13 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
             }
         }
 
-        public override fun languageRemoved(event: SModelLanguageEvent) {
+        override fun languageRemoved(event: SModelLanguageEvent) {
             try {
                 if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         synchronizer!!.syncUsedLanguagesAndDevKitsFromMPS()
                     }
                 })
@@ -158,13 +157,13 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
             }
         }
 
-        public override fun devkitAdded(event: SModelDevKitEvent) {
+        override fun devkitAdded(event: SModelDevKitEvent) {
             try {
                 if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         synchronizer!!.syncUsedLanguagesAndDevKitsFromMPS()
                     }
                 })
@@ -175,13 +174,13 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
             }
         }
 
-        public override fun devkitRemoved(event: SModelDevKitEvent) {
+        override fun devkitRemoved(event: SModelDevKitEvent) {
             try {
                 if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         synchronizer!!.syncUsedLanguagesAndDevKitsFromMPS()
                     }
                 })
@@ -192,23 +191,23 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
             }
         }
 
-        public override fun beforeChildRemoved(event: SModelChildEvent) {}
-        public override fun beforeModelDisposed(model: SModel) {}
-        public override fun beforeModelRenamed(event: SModelRenamedEvent) {}
-        public override fun beforeRootRemoved(event: SModelRootEvent) {}
-        public override fun childAdded(event: SModelChildEvent) {}
-        public override fun childRemoved(event: SModelChildEvent) {}
-        public override fun getPriority(): SModelListenerPriority {
+        override fun beforeChildRemoved(event: SModelChildEvent) {}
+        override fun beforeModelDisposed(model: SModel) {}
+        override fun beforeModelRenamed(event: SModelRenamedEvent) {}
+        override fun beforeRootRemoved(event: SModelRootEvent) {}
+        override fun childAdded(event: SModelChildEvent) {}
+        override fun childRemoved(event: SModelChildEvent) {}
+        override fun getPriority(): SModelListenerPriority {
             return SModelListenerPriority.CLIENT
         }
 
-        public override fun importAdded(event: SModelImportEvent) {
+        override fun importAdded(event: SModelImportEvent) {
             try {
                 if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         synchronizer!!.syncModelImportsFromMPS()
                     }
                 })
@@ -219,13 +218,13 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
             }
         }
 
-        public override fun importRemoved(event: SModelImportEvent) {
+        override fun importRemoved(event: SModelImportEvent) {
             try {
                 if (isSynchronizing) {
                     return
                 }
                 synchronizer!!.runAndFlushReferences(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         synchronizer!!.syncModelImportsFromMPS()
                     }
                 })
@@ -236,24 +235,24 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
             }
         }
 
-        public override fun modelLoadingStateChanged(model: SModel, state: ModelLoadingState) {}
-        public override fun modelRenamed(event: SModelRenamedEvent) {}
-        public override fun modelSaved(model: SModel) {}
-        public override fun propertyChanged(event: SModelPropertyEvent) {}
-        public override fun referenceAdded(event: SModelReferenceEvent) {}
-        public override fun referenceRemoved(event: SModelReferenceEvent) {}
+        override fun modelLoadingStateChanged(model: SModel, state: ModelLoadingState) {}
+        override fun modelRenamed(event: SModelRenamedEvent) {}
+        override fun modelSaved(model: SModel) {}
+        override fun propertyChanged(event: SModelPropertyEvent) {}
+        override fun referenceAdded(event: SModelReferenceEvent) {}
+        override fun referenceRemoved(event: SModelReferenceEvent) {}
 
         @Deprecated("")
-        public override fun rootAdded(event: SModelRootEvent) {
+        override fun rootAdded(event: SModelRootEvent) {
         }
 
         @Deprecated("")
-        public override fun rootRemoved(event: SModelRootEvent) {
+        override fun rootRemoved(event: SModelRootEvent) {
         }
     }
 
-    public override fun toString(): String {
-        return "Model: " + java.lang.Long.toHexString(modelNodeId) + " -> " + model!!.getName().getValue()
+    override fun toString(): String {
+        return "Model: " + java.lang.Long.toHexString(modelNodeId) + " -> " + model!!.name.value
     }
 
     override fun doActivate() {
@@ -268,15 +267,15 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
         synchronizer = null
     }
 
-    public override fun doSyncToCloud(t: IWriteTransaction) {
+    override fun doSyncToCloud(t: IWriteTransaction) {
         synchronizer!!.fullSyncFromMPS()
     }
 
     override fun doSyncToMPS(tree: ITree) {
         if (runningTask!!.isInitialSync) {
-            val mpsRootNodes: Iterable<SNode> = model!!.getRootNodes()
-            val cloudRootNodes: Iterable<Long> = tree.getChildren(modelNodeId, LINKS.`rootNodes$jxXY`.getName())
-            if (Sequence.fromIterable(mpsRootNodes).isNotEmpty() && Sequence.fromIterable(cloudRootNodes).isEmpty()) {
+            val mpsRootNodes: Iterable<SNode> = model!!.rootNodes
+            val cloudRootNodes: Iterable<Long> = tree.getChildren(modelNodeId, LINKS.`rootNodes$jxXY`.name)
+            if (Sequence.fromIterable(mpsRootNodes).isNotEmpty && Sequence.fromIterable(cloudRootNodes).isEmpty) {
                 // TODO remove this workaround
                 forceEnqueueSyncTo(SyncDirection.TO_CLOUD, true, null)
             } else {
@@ -284,7 +283,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
             }
         } else {
             synchronizer!!.runAndFlushReferences(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     for (roleInNode: RoleInNode in SetSequence.fromSet(childrenSyncToMPSRequired)) {
                         try {
                             if (tree.containsNode(roleInNode.nodeId)) {
@@ -322,7 +321,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
                     }
                     SetSequence.fromSet(propertySyncToMPSRequired).clear()
                     fullNodeSyncToMPSRequired.forEach(object : TLongProcedure {
-                        public override fun execute(nodeId: Long): Boolean {
+                        override fun execute(nodeId: Long): Boolean {
                             try {
                                 if (tree.containsNode(nodeId)) {
                                     synchronizer!!.syncNodeToMPS(nodeId, tree, true)
@@ -351,7 +350,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
         }
     }
 
-    override fun getTreeChangeVisitor(oldTree: ITree?, newTree: ITree): ITreeChangeVisitor? {
+    override fun getTreeChangeVisitor(oldTree: ITree?, newTree: ITree): ITreeChangeVisitor {
         return object : ITreeChangeVisitorEx {
             fun isInsideModel(nodeId: Long): Boolean {
                 assertSyncThread()
@@ -360,7 +359,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
                     return false
                 }
                 if (parent == modelNodeId) {
-                    return Objects.equals(newTree.getRole(nodeId), LINKS.`rootNodes$jxXY`.getName())
+                    return Objects.equals(newTree.getRole(nodeId), LINKS.`rootNodes$jxXY`.name)
                 }
                 return isInsideModel(parent)
             }
@@ -380,16 +379,16 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
                     return false
                 }
                 if (parent == modelNodeId) {
-                    return !(Objects.equals(newTree.getRole(nodeId), LINKS.`rootNodes$jxXY`.getName()))
+                    return !(Objects.equals(newTree.getRole(nodeId), LINKS.`rootNodes$jxXY`.name))
                 }
                 return isModelProperties(parent)
             }
 
-            public override fun containmentChanged(nodeId: Long) {}
-            public override fun childrenChanged(nodeId: Long, role: String?) {
+            override fun containmentChanged(nodeId: Long) {}
+            override fun childrenChanged(nodeId: Long, role: String?) {
                 assertSyncThread()
                 if (modelNodeId == nodeId) {
-                    if (Objects.equals(role, LINKS.`rootNodes$jxXY`.getName())) {
+                    if (Objects.equals(role, LINKS.`rootNodes$jxXY`.name)) {
                         SetSequence.fromSet(childrenSyncToMPSRequired).addElement(RoleInNode(nodeId, role))
                     } else {
                         modelPropertiesSyncToMPSRequired = true
@@ -402,7 +401,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
                 enqueueSync(SyncDirection.TO_MPS, false, null)
             }
 
-            public override fun referenceChanged(nodeId: Long, role: String) {
+            override fun referenceChanged(nodeId: Long, role: String) {
                 assertSyncThread()
                 if (isModelProperties(nodeId)) {
                     modelPropertiesSyncToMPSRequired = true
@@ -416,7 +415,7 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
                 enqueueSync(SyncDirection.TO_MPS, false, null)
             }
 
-            public override fun propertyChanged(nodeId: Long, role: String) {
+            override fun propertyChanged(nodeId: Long, role: String) {
                 assertSyncThread()
                 if (isModelProperties(nodeId)) {
                     modelPropertiesSyncToMPSRequired = true
@@ -430,8 +429,8 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
                 enqueueSync(SyncDirection.TO_MPS, false, null)
             }
 
-            public override fun nodeRemoved(nodeId: Long) {}
-            public override fun nodeAdded(nodeId: Long) {
+            override fun nodeRemoved(nodeId: Long) {}
+            override fun nodeAdded(nodeId: Long) {
                 assertSyncThread()
                 if (!(isInsideModel(nodeId))) {
                     return

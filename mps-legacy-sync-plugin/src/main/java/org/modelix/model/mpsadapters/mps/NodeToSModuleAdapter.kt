@@ -30,73 +30,73 @@ class NodeToSModuleAdapter protected constructor(private val node: INode, privat
         }
     }
 
-    public override fun addModuleListener(listener: SModuleListener) {
+    override fun addModuleListener(listener: SModuleListener) {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun getDeclaredDependencies(): Iterable<SDependency> {
+    override fun getDeclaredDependencies(): Iterable<SDependency> {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun <T : SModuleFacet?> getFacet(aClass: Class<T>): T? {
+    override fun <T : SModuleFacet?> getFacet(aClass: Class<T>): T? {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun getFacets(): Iterable<SModuleFacet> {
+    override fun getFacets(): Iterable<SModuleFacet> {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun getModel(id: SModelId): SModel? {
+    override fun getModel(id: SModelId): SModel? {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun getModelRoots(): Iterable<ModelRoot> {
+    override fun getModelRoots(): Iterable<ModelRoot> {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun getModels(): Iterable<SModel> {
-        val models: Iterable<INode> = node.getChildren(LINKS.`models$h3QT`.getName())
+    override fun getModels(): Iterable<SModel> {
+        val models: Iterable<INode> = node.getChildren(LINKS.`models$h3QT`.name)
         return Sequence.fromIterable<INode>(models).select<SModel>(object : ISelector<INode?, SModel?>() {
-            public override fun select(it: INode?): SModel? {
+            override fun select(it: INode?): SModel? {
                 val adapter: SModel? = NodeToSModelAdapter.Companion.wrap(it, repository)
                 return adapter
             }
         })
     }
 
-    public override fun getModuleId(): SModuleId {
+    override fun getModuleId(): SModuleId {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun getModuleName(): String? {
-        return node.getPropertyValue(PROPS.`name$MnvL`.getName())
+    override fun getModuleName(): String? {
+        return node.getPropertyValue(PROPS.`name$MnvL`.name)
     }
 
-    public override fun getModuleReference(): SModuleReference {
+    override fun getModuleReference(): SModuleReference {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun getRepository(): SRepository? {
+    override fun getRepository(): SRepository? {
         return (if (repository != null) repository else MPSModuleRepository.getInstance())
     }
 
-    public override fun getUsedLanguages(): Set<SLanguage> {
+    override fun getUsedLanguages(): Set<SLanguage> {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun getUsedLanguageVersion(language: SLanguage): Int {
+    override fun getUsedLanguageVersion(language: SLanguage): Int {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    public override fun isPackaged(): Boolean {
+    override fun isPackaged(): Boolean {
         return false
     }
 
-    public override fun isReadOnly(): Boolean {
+    override fun isReadOnly(): Boolean {
         return true
     }
 
-    public override fun removeModuleListener(listener: SModuleListener) {
+    override fun removeModuleListener(listener: SModuleListener) {
         throw UnsupportedOperationException("Not implemented")
     }
 

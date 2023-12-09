@@ -18,15 +18,15 @@ import org.jetbrains.mps.openapi.module.SModuleId
 class CloudTransientModules(private val mpsRepository: SRepositoryExt) {
     private val modules: List<CloudTransientModule?> = ListSequence.fromList(ArrayList())
     private val moduleOwner: MPSModuleOwner = object : MPSModuleOwner {
-        public override fun isHidden(): Boolean {
+        override fun isHidden(): Boolean {
             return false
         }
     }
 
     fun isModuleIdUsed(moduleId: SModuleId?): Boolean {
         val result: Wrappers._boolean = Wrappers._boolean()
-        mpsRepository.getModelAccess().runReadAction(object : Runnable {
-            public override fun run() {
+        mpsRepository.modelAccess.runReadAction(object : Runnable {
+            override fun run() {
                 result.value = mpsRepository.getModule((moduleId)!!) != null
             }
         })
@@ -35,11 +35,11 @@ class CloudTransientModules(private val mpsRepository: SRepositoryExt) {
 
     fun createModule(name: String?, id: ModuleId): CloudTransientModule? {
         val module: _T<CloudTransientModule?> = _T(null)
-        mpsRepository.getModelAccess().runWriteAction(object : Runnable {
-            public override fun run() {
+        mpsRepository.modelAccess.runWriteAction(object : Runnable {
+            override fun run() {
                 module.value = CloudTransientModule(name, id)
                 ListSequence.fromList(modules).addElement(module.value)
-                if (LOG.isDebugEnabled()) {
+                if (LOG.isDebugEnabled) {
                     LOG.debug("Register module " + id)
                 }
                 mpsRepository.registerModule(module.value!!, moduleOwner)
@@ -49,8 +49,8 @@ class CloudTransientModules(private val mpsRepository: SRepositoryExt) {
     }
 
     fun disposeModule(module: CloudTransientModule?) {
-        mpsRepository.getModelAccess().runWriteAction(object : Runnable {
-            public override fun run() {
+        mpsRepository.modelAccess.runWriteAction(object : Runnable {
+            override fun run() {
                 doDisposeModule(module)
                 ListSequence.fromList(modules).removeElement(module)
             }
@@ -58,13 +58,13 @@ class CloudTransientModules(private val mpsRepository: SRepositoryExt) {
     }
 
     protected fun doDisposeModule(module: CloudTransientModule?) {
-        if (module!!.getRepository() != null) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Unregister module " + module.getModuleId())
+        if (module!!.repository != null) {
+            if (LOG.isDebugEnabled) {
+                LOG.debug("Unregister module " + module.moduleId)
             }
             mpsRepository.unregisterModule((module), moduleOwner)
         }
-        val models: Iterable<SModel> = module.getModels()
+        val models: Iterable<SModel> = module.models
         for (model: CloudTransientModel in Sequence.fromIterable(models).ofType(
             CloudTransientModel::class.java,
         )) {
@@ -76,7 +76,7 @@ class CloudTransientModules(private val mpsRepository: SRepositoryExt) {
         WriteAccessUtil.runWrite(
             mpsRepository,
             object : Runnable {
-                public override fun run() {
+                override fun run() {
                     try {
                         for (module: CloudTransientModule? in ListSequence.fromList(modules)) {
                             doDisposeModule(module)

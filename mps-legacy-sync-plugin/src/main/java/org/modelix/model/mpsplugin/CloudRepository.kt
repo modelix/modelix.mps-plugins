@@ -65,7 +65,7 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
         return modelServer.baseUrl + "/" + repositoryId
     }
 
-    public override fun completeId(): String {
+    override fun completeId(): String {
         if (modelServer.baseUrl.endsWith("/")) {
             return modelServer.baseUrl + repositoryId
         }
@@ -83,12 +83,10 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
     fun runRead(r: Runnable) {
         PArea(modelServer.infoBranch!!).executeRead({
             val activeBranch = modelServer.getActiveBranch(repositoryId)
-            val branch: IBranch = activeBranch!!.branch
+            val branch: IBranch = activeBranch.branch
             PArea(branch).executeRead({
                 r.run()
-                Unit
             })
-            Unit
         })
     }
 
@@ -101,7 +99,6 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
         val rootNode = PNodeAdapter(ITree.ROOT_ID, branch)
         PArea(branch).executeRead<Unit>({
             consumer.accept(rootNode)
-            Unit
         })
     }
 
@@ -113,7 +110,7 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
      * @return
      </T> */
     fun <T> computeWrite(computer: Function1<PNodeAdapter, T>): T {
-        val activeBranch: ActiveBranch? = modelServer.getActiveBranch(repositoryId)
+        val activeBranch: ActiveBranch = modelServer.getActiveBranch(repositoryId)
         val branch: IBranch = activeBranch!!.branch
         val rootNode: PNodeAdapter = PNodeAdapter(ITree.ROOT_ID, branch)
         return PArea(branch).executeWrite({ computer.invoke(rootNode) })
@@ -123,18 +120,17 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
      * Consuter receives the root node
      */
     fun runWrite(consumer: Consumer<PNodeAdapter?>) {
-        val activeBranch: ActiveBranch? = modelServer.getActiveBranch(repositoryId)
+        val activeBranch: ActiveBranch = modelServer.getActiveBranch(repositoryId)
         val branch: IBranch = activeBranch!!.branch
         val rootNode: PNodeAdapter = PNodeAdapter(ITree.ROOT_ID, branch)
         PArea(branch).executeWrite<Unit>({
             consumer.accept(rootNode)
-            Unit
         })
     }
 
     fun processProjects(consumer: Consumer<SNode>) {
         processRepoRoots(object : Consumer<INode> {
-            public override fun accept(iNode: INode) {
+            override fun accept(iNode: INode) {
                 val sNode = NodeToSNodeAdapter.wrap(iNode)
                 if (SNodeOperations.isInstanceOf(sNode, CONCEPTS.`Project$An`)) {
                     consumer.accept(SNodeOperations.cast(sNode, CONCEPTS.`Project$An`))
@@ -146,7 +142,7 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
     fun repoRoots(): List<INode> {
         val roots: List<INode> = ListSequence.fromList(ArrayList())
         processRepoRoots(object : Consumer<INode> {
-            public override fun accept(it: INode) {
+            override fun accept(it: INode) {
                 ListSequence.fromList(roots).addElement(it)
             }
         })
@@ -162,17 +158,15 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
                 for (child in rootNode.allChildren) {
                     consumer.accept(child)
                 }
-                Unit
             })
-            Unit
         })
     }
 
     val readTransaction: IReadTransaction
         get() {
-            return activeBranch!!.branch.readTransaction
+            return activeBranch.branch.readTransaction
         }
-    val rootBinding: RootBinding?
+    val rootBinding: RootBinding
         get() {
             return modelServer.getRootBinding(repositoryId)
         }
@@ -198,22 +192,20 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
             val rootNode = PNodeAdapter(ITree.ROOT_ID, branch)
             PArea(branch).executeWrite<Unit>({
                 rootNode.removeChild((root)!!)
-                Unit
             })
-            Unit
         })
     }
 
     fun createProject(name: String?): INode {
         return computeWrite<INode>({ rootNode: PNodeAdapter ->
             val newProject: INode = rootNode.addNewChild(
-                LINKS.`projects$NW07`.getName(),
+                LINKS.`projects$NW07`.name,
                 -1,
                 SConceptAdapter.Companion.wrap(
                     CONCEPTS.`Project$An`,
                 ),
             )
-            newProject.setPropertyValue(PROPS.`name$MnvL`.getName(), name)
+            newProject.setPropertyValue(PROPS.`name$MnvL`.name, name)
             newProject
         })
     }
@@ -221,11 +213,11 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
     fun getProject(name: String?): INode? {
         return computeRead({
             var project: INode? = null
-            val activeBranch: ActiveBranch? = modelServer.getActiveBranch(repositoryId)
+            val activeBranch: ActiveBranch = modelServer.getActiveBranch(repositoryId)
             val branch: IBranch = activeBranch!!.branch
             val rootNode: PNodeAdapter = PNodeAdapter(ITree.ROOT_ID, branch)
-            for (child: INode in Sequence.fromIterable(rootNode.getChildren(LINKS.`projects$NW07`.getName()))) {
-                val projectName: String? = child.getPropertyValue(PROPS.`name$MnvL`.getName())
+            for (child: INode in Sequence.fromIterable(rootNode.getChildren(LINKS.`projects$NW07`.name))) {
+                val projectName: String? = child.getPropertyValue(PROPS.`name$MnvL`.name)
                 if (Objects.equals(projectName, name)) {
                     project = child
                 }
@@ -236,14 +228,14 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
 
     fun hasModuleUnderProject(projectNodeId: Long, moduleId: String?): Boolean {
         return computeRead({
-            val activeBranch: ActiveBranch? = modelServer.getActiveBranch(repositoryId)
+            val activeBranch: ActiveBranch = modelServer.getActiveBranch(repositoryId)
             val branch: IBranch = activeBranch!!.branch
             val rootNode: PNodeAdapter = PNodeAdapter(ITree.ROOT_ID, branch)
             val projectNode: PNodeAdapter = PNodeAdapter(projectNodeId, rootNode.branch)
-            ListSequence.fromList(INodeUtils.getChidlrenAsList(projectNode, LINKS.`modules$Bi3g`.getName()))
+            ListSequence.fromList(INodeUtils.getChidlrenAsList(projectNode, LINKS.`modules$Bi3g`.name))
                 .any(object : IWhereFilter<INode>() {
-                    public override fun accept(it: INode): Boolean {
-                        return Objects.equals(it.getPropertyValue(PROPS.`id$7MjP`.getName()), moduleId)
+                    override fun accept(it: INode): Boolean {
+                        return Objects.equals(it.getPropertyValue(PROPS.`id$7MjP`.name), moduleId)
                     }
                 })
         })
@@ -251,13 +243,13 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
 
     fun hasModuleInRepository(moduleId: String?): Boolean {
         return computeRead({
-            val activeBranch: ActiveBranch? = modelServer.getActiveBranch(repositoryId)
+            val activeBranch: ActiveBranch = modelServer.getActiveBranch(repositoryId)
             val branch: IBranch = activeBranch!!.branch
             val rootNode: PNodeAdapter = PNodeAdapter(ITree.ROOT_ID, branch)
-            ListSequence.fromList(INodeUtils.getChidlrenAsList(rootNode, LINKS.`modules$jBPn`.getName()))
+            ListSequence.fromList(INodeUtils.getChidlrenAsList(rootNode, LINKS.`modules$jBPn`.name))
                 .any(object : IWhereFilter<INode>() {
-                    public override fun accept(it: INode): Boolean {
-                        return Objects.equals(it.getPropertyValue(PROPS.`id$7MjP`.getName()), moduleId)
+                    override fun accept(it: INode): Boolean {
+                        return Objects.equals(it.getPropertyValue(PROPS.`id$7MjP`.name), moduleId)
                     }
                 })
         })
@@ -267,14 +259,14 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
         return computeWrite<INode>({ rootNode: PNodeAdapter ->
             val projectNode: PNodeAdapter = PNodeAdapter(projectNodeId, rootNode.branch)
             val newModule: INode = projectNode.addNewChild(
-                LINKS.`modules$Bi3g`.getName(),
+                LINKS.`modules$Bi3g`.name,
                 -1,
                 SConceptAdapter.Companion.wrap(
                     CONCEPTS.`Module$4i`,
                 ),
             )
-            newModule.setPropertyValue(PROPS.`id$7MjP`.getName(), moduleId)
-            newModule.setPropertyValue(PROPS.`name$MnvL`.getName(), moduleName)
+            newModule.setPropertyValue(PROPS.`id$7MjP`.name, moduleId)
+            newModule.setPropertyValue(PROPS.`name$MnvL`.name, moduleName)
             newModule
         })
     }
@@ -290,7 +282,7 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
         initializer: Consumer<INode>,
     ): INode {
         return computeWrite({ rootNode: PNodeAdapter? ->
-            val newNode: INode = parent!!.addNewChild(containmentLink.getName(), -1, concept)
+            val newNode: INode = parent!!.addNewChild(containmentLink.name, -1, concept)
             initializer.accept(newNode)
             newNode
         })
@@ -305,7 +297,7 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
         return createNode(parent, containmentLink, SConceptAdapter.Companion.wrap(concept), initializer)
     }
 
-    fun createModule(moduleName: String?): INode? {
+    fun createModule(moduleName: String?): INode {
         return computeWrite({ rootNode: PNodeAdapter? ->
             PNodeAdapterCreationMethods.createModuleInRepository(
                 rootNode,
@@ -314,11 +306,11 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
         })
     }
 
-    public override fun hashCode(): Int {
+    override fun hashCode(): Int {
         return modelServer.hashCode() + 7 * repositoryId.hashCode()
     }
 
-    public override fun equals(obj: Any?): Boolean {
+    override fun equals(obj: Any?): Boolean {
         if (obj is CloudRepository) {
             val other: CloudRepository = obj
             return Objects.equals(modelServer, other.modelServer) && Objects.equals(repositoryId, other.repositoryId)
@@ -399,7 +391,7 @@ class CloudRepository(modelServer: ModelServerConnection?, repositoryId: Reposit
             val lastSlash: Int = presentation.lastIndexOf("/")
             val url: String = presentation.substring(0, lastSlash)
             val repositoryId: RepositoryId = RepositoryId(presentation.substring(lastSlash + 1))
-            val modelServer: ModelServerConnection? =
+            val modelServer: ModelServerConnection =
                 ModelServerConnections.instance.ensureModelServerIsPresent(url)
             return CloudRepository(modelServer, repositoryId)
         }

@@ -19,21 +19,21 @@ import org.modelix.model.api.IWriteTransaction
 abstract class ModuleBinding(var moduleNodeId: Long, initialSyncDirection: SyncDirection?) :
     Binding(initialSyncDirection) {
     private val treeChangeVisitor: ITreeChangeVisitor = object : ITreeChangeVisitor {
-        public override fun childrenChanged(nodeId: Long, role: String?) {
+        override fun childrenChanged(nodeId: Long, role: String?) {
             assertSyncThread()
             if (nodeId == moduleNodeId) {
                 enqueueSync(SyncDirection.TO_MPS, false, null)
             }
         }
 
-        public override fun containmentChanged(nodeId: Long) {}
-        public override fun referenceChanged(nodeId: Long, role: String) {}
-        public override fun propertyChanged(nodeId: Long, role: String) {}
+        override fun containmentChanged(nodeId: Long) {}
+        override fun referenceChanged(nodeId: Long, role: String) {}
+        override fun propertyChanged(nodeId: Long, role: String) {}
     }
 
     @Suppress("removal")
     private val moduleListener = object : org.jetbrains.mps.openapi.module.SModuleListenerBase() {
-        public override fun modelAdded(module: SModule, model: SModel) {
+        override fun modelAdded(module: SModule, model: SModel) {
             try {
                 enqueueSync(SyncDirection.TO_CLOUD, false, null)
             } catch (ex: Exception) {
@@ -43,7 +43,7 @@ abstract class ModuleBinding(var moduleNodeId: Long, initialSyncDirection: SyncD
             }
         }
 
-        public override fun modelRemoved(module: SModule, ref: SModelReference) {
+        override fun modelRemoved(module: SModule, ref: SModelReference) {
             try {
                 enqueueSync(SyncDirection.TO_CLOUD, false, null)
             } catch (ex: Exception) {
@@ -53,7 +53,7 @@ abstract class ModuleBinding(var moduleNodeId: Long, initialSyncDirection: SyncD
             }
         }
 
-        public override fun modelRenamed(module: SModule, model: SModel, oldRef: SModelReference) {
+        override fun modelRenamed(module: SModule, model: SModel, oldRef: SModelReference) {
             try {
                 enqueueSync(SyncDirection.TO_CLOUD, false, null)
             } catch (ex: Exception) {
@@ -64,7 +64,7 @@ abstract class ModuleBinding(var moduleNodeId: Long, initialSyncDirection: SyncD
         }
     }
 
-    public override fun toString(): String {
+    override fun toString(): String {
         return "Module: " + java.lang.Long.toHexString(moduleNodeId) + " -> " + check_rpydrg_a0a0g(
             module, this,
         )
@@ -93,9 +93,9 @@ abstract class ModuleBinding(var moduleNodeId: Long, initialSyncDirection: SyncD
     override fun doSyncToMPS(tree: ITree) {
         if (runningTask!!.isInitialSync && Sequence.fromIterable(
                 modelsSynchronizer.mPSChildren,
-            ).isNotEmpty() && Sequence.fromIterable(
+            ).isNotEmpty && Sequence.fromIterable(
                 modelsSynchronizer.getCloudChildren(tree),
-            ).isEmpty()
+            ).isEmpty
         ) {
             // TODO remove this workaround
             forceEnqueueSyncTo(SyncDirection.TO_CLOUD, true, null)
@@ -105,7 +105,7 @@ abstract class ModuleBinding(var moduleNodeId: Long, initialSyncDirection: SyncD
         updateBindings(mappings, SyncDirection.TO_MPS)
     }
 
-    public override fun doSyncToCloud(t: IWriteTransaction) {
+    override fun doSyncToCloud(t: IWriteTransaction) {
         if (moduleNodeId == 0L) {
             moduleNodeId = ProjectModulesSynchronizer.Companion.createModuleOnCloud(t, module, ITree.ROOT_ID, "modules")
         }
@@ -118,7 +118,7 @@ abstract class ModuleBinding(var moduleNodeId: Long, initialSyncDirection: SyncD
         Sequence.fromIterable<Binding?>(getOwnedBindings()).ofType<ModelBinding>(
             ModelBinding::class.java,
         ).visitAll(object : IVisitor<ModelBinding>() {
-            public override fun visit(it: ModelBinding) {
+            override fun visit(it: ModelBinding) {
                 MapSequence.fromMap(bindings).put(it.modelNodeId, it)
             }
         })
@@ -127,14 +127,14 @@ abstract class ModuleBinding(var moduleNodeId: Long, initialSyncDirection: SyncD
         val toRemove: List<Long> = SetSequence.fromSet(MapSequence.fromMap(bindings).keys)
             .subtract(SetSequence.fromSet(MapSequence.fromMap(mappings).keys)).toListSequence()
         ListSequence.fromList(toRemove).visitAll(object : IVisitor<Long>() {
-            public override fun visit(it: Long) {
+            override fun visit(it: Long) {
                 val binding: ModelBinding? = MapSequence.fromMap(bindings).get(it)
                 binding!!.deactivate(null)
                 binding.setOwner(null)
             }
         })
         ListSequence.fromList(toAdd).visitAll(object : IVisitor<Long>() {
-            public override fun visit(it: Long) {
+            override fun visit(it: Long) {
                 val binding: ModelBinding = ModelBinding(it, MapSequence.fromMap(mappings).get(it), syncDirection)
                 binding.setOwner(this@ModuleBinding)
                 binding.activate(null)
@@ -151,7 +151,7 @@ abstract class ModuleBinding(var moduleNodeId: Long, initialSyncDirection: SyncD
         private val LOG: Logger = LogManager.getLogger(ModuleBinding::class.java)
         private fun check_rpydrg_a0a0g(checkedDotOperand: SModule?, checkedDotThisExpression: ModuleBinding): String? {
             if (null != checkedDotOperand) {
-                return checkedDotOperand.getModuleName()
+                return checkedDotOperand.moduleName
             }
             return null
         }

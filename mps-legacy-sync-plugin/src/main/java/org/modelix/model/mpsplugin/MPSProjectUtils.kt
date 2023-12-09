@@ -27,12 +27,12 @@ object MPSProjectUtils {
         }
 
         // A module may already exist in the global repository, but is just not part of the project yet.
-        val existingModule: SModule? = mpsProject!!.getRepository().getModule((moduleId)!!)
+        val existingModule: SModule? = mpsProject!!.repository.getModule((moduleId)!!)
         if (existingModule != null) {
             mpsProject.addModule(existingModule)
             return existingModule
         }
-        val moduleFolder: File = File(mpsProject.getProjectFile(), nameSpace)
+        val moduleFolder: File = File(mpsProject.projectFile, nameSpace)
         val moduleFolder_: VirtualFile? = LocalFileSystem.getInstance().findFileByIoFile(moduleFolder)
         if (moduleFolder_ != null && moduleFolder_.exists()) {
             try {
@@ -41,19 +41,19 @@ object MPSProjectUtils {
                 throw RuntimeException("Failed to delete " + moduleFolder_, e)
             }
         }
-        val descriptorFile: IFile? = mpsProject.getFileSystem().getFile((mpsProject.getProject().getBasePath())!!)
+        val descriptorFile: IFile = mpsProject.fileSystem.getFile((mpsProject.project.basePath)!!)
             .findChild(nameSpace).findChild(nameSpace + MPSExtentions.DOT_SOLUTION)
         if (descriptorFile == null) {
             throw IllegalStateException("descriptor file should not be null")
         }
         val descriptor: SolutionDescriptor = createNewSolutionDescriptor(nameSpace, descriptorFile)
-        descriptor.setId(moduleId)
-        descriptor.setId(moduleId)
+        descriptor.id = moduleId
+        descriptor.id = moduleId
         val module: Solution = GeneralModuleFactory().instantiate(descriptor, descriptorFile) as Solution
         mpsProject.addModule(module)
         ModuleDependencyVersions(
-            LanguageRegistry.getInstance(mpsProject.getRepository()),
-            mpsProject.getRepository(),
+            LanguageRegistry.getInstance(mpsProject.repository),
+            mpsProject.repository,
         ).update(module)
         module.save()
         return module
@@ -61,18 +61,18 @@ object MPSProjectUtils {
 
     private fun createNewSolutionDescriptor(namespace: String, descriptorFile: IFile): SolutionDescriptor {
         val descriptor: SolutionDescriptor = SolutionDescriptor()
-        descriptor.setNamespace(namespace)
-        descriptor.setId(ModuleId.regular())
-        val moduleLocation: IFile? = descriptorFile.getParent()
+        descriptor.namespace = namespace
+        descriptor.id = ModuleId.regular()
+        val moduleLocation: IFile? = descriptorFile.parent
         val modelsDir: IFile = moduleLocation!!.findChild("models")
-        if (modelsDir.exists() && modelsDir.getChildren()!!.size != 0) {
+        if (modelsDir.exists() && modelsDir.children!!.size != 0) {
             throw IllegalStateException("Trying to create a solution in an existing solution's directory: " + moduleLocation)
         } else {
             modelsDir.mkdirs()
-            descriptor.getModelRootDescriptors()
-                .add(DefaultModelRoot.createDescriptor((modelsDir.getParent())!!, *arrayOf(modelsDir)))
-            descriptor.getModuleFacetDescriptors().add(ModuleFacetDescriptor("java", MementoImpl()))
-            ProjectPathUtil.setGeneratorOutputPath(descriptor, moduleLocation.findChild("source_gen").getPath())
+            descriptor.modelRootDescriptors
+                .add(DefaultModelRoot.createDescriptor((modelsDir.parent)!!, *arrayOf(modelsDir)))
+            descriptor.moduleFacetDescriptors.add(ModuleFacetDescriptor("java", MementoImpl()))
+            ProjectPathUtil.setGeneratorOutputPath(descriptor, moduleLocation.findChild("source_gen").path)
             return descriptor
         }
     }

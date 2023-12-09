@@ -11,14 +11,14 @@ class CloudActionsForPhysicalModules_ActionGroup(plugin: ApplicationPlugin) :
     GeneratedActionGroup("CloudActionsForPhysicalModules", ID, plugin) {
     init {
         setIsInternal(false)
-        setPopup(false)
+        isPopup = false
         run({
             val newAction: GeneratedActionGroup =
-                CloudActionsForPhysicalModulesCloudActions_ActionGroup(getApplicationPlugin())
+                CloudActionsForPhysicalModulesCloudActions_ActionGroup(applicationPlugin)
             val manager: ActionManagerEx = ActionManagerEx.getInstanceEx()
-            var oldAction: AnAction? = manager.getAction(newAction.getId())
+            var oldAction: AnAction? = manager.getAction(newAction.id)
             if (oldAction == null) {
-                manager.registerAction(newAction.getId(), newAction, PluginId.getId("org.modelix.model.mpsplugin"))
+                manager.registerAction(newAction.id, newAction, PluginId.getId("org.modelix.model.mpsplugin"))
                 oldAction = newAction
             }
             this@CloudActionsForPhysicalModules_ActionGroup.addAction(oldAction)

@@ -16,13 +16,13 @@ import javax.swing.tree.DefaultTreeModel
 class CloudModuleTreeNode(module: SModule) : ProjectModuleTreeNode(module) {
     private var myInitialized: Boolean = false
     private val moduleListener: SModuleListenerBase = object : SModuleListenerBase() {
-        public override fun modelAdded(module: SModule, model: SModel) {
+        override fun modelAdded(module: SModule, model: SModel) {
             update()
         }
 
-        public override fun modelRemoved(module: SModule, ref: SModelReference) {
+        override fun modelRemoved(module: SModule, ref: SModelReference) {
             SwingUtilities.invokeLater(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     update()
                 }
             })
@@ -30,16 +30,16 @@ class CloudModuleTreeNode(module: SModule) : ProjectModuleTreeNode(module) {
     }
 
     init {
-        setNodeIdentifier(module.getModuleId().toString())
-        setIcon(CloudProjectViewExtension.Companion.MODULE_ICON)
+        nodeIdentifier = module.moduleId.toString()
+        icon = CloudProjectViewExtension.Companion.MODULE_ICON
         module.addModuleListener(moduleListener)
     }
 
-    public override fun getModuleText(): String {
-        return (getModule().getModuleName())!!
+    override fun getModuleText(): String {
+        return (module.moduleName)!!
     }
 
-    public override fun isInitialized(): Boolean {
+    override fun isInitialized(): Boolean {
         return myInitialized
     }
 
@@ -49,21 +49,21 @@ class CloudModuleTreeNode(module: SModule) : ProjectModuleTreeNode(module) {
     }
 
     protected fun populate() {
-        val models: Iterable<SModel> = getModule().getModels()
+        val models: Iterable<SModel> = module.models
         for (model: SModel? in Sequence.fromIterable<SModel>(models).sort(
             object : ISelector<SModel, String>() {
-                public override fun select(it: SModel): String {
-                    return it.getName().getLongName()
+                override fun select(it: SModel): String {
+                    return it.name.longName
                 }
             },
             true,
         )) {
             val tn: SModelTreeNode = SModelTreeNode((model)!!)
-            tn.setIcon(CloudProjectViewExtension.Companion.MODEL_ICON)
-            tn.setBaseIcon(CloudProjectViewExtension.Companion.MODEL_ICON)
+            tn.icon = CloudProjectViewExtension.Companion.MODEL_ICON
+            tn.baseIcon = CloudProjectViewExtension.Companion.MODEL_ICON
             add(tn)
         }
-        check_7wx4yo_a2a8(check_7wx4yo_a0c0i(getTree(), this), this)
+        check_7wx4yo_a2a8(check_7wx4yo_a0c0i(tree, this), this)
     }
 
     override fun doUpdate() {
@@ -73,7 +73,7 @@ class CloudModuleTreeNode(module: SModule) : ProjectModuleTreeNode(module) {
     }
 
     fun dispose() {
-        getModule().removeModuleListener(moduleListener)
+        module.removeModuleListener(moduleListener)
     }
 
     companion object {
@@ -91,7 +91,7 @@ class CloudModuleTreeNode(module: SModule) : ProjectModuleTreeNode(module) {
             checkedDotThisExpression: CloudModuleTreeNode,
         ): DefaultTreeModel? {
             if (null != checkedDotOperand) {
-                return checkedDotOperand.getModel() as DefaultTreeModel?
+                return checkedDotOperand.model as DefaultTreeModel?
             }
             return null
         }

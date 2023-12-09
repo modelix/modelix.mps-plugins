@@ -30,11 +30,11 @@ class ProjectBinding(val project: MPSProject, var projectNodeId: Long, initialSy
     Binding(initialSyncDirection) {
     @Suppress("removal")
     private val repositoryListener = object : org.jetbrains.mps.openapi.module.SRepositoryListenerBase() {
-        public override fun moduleAdded(p1: SModule) {
+        override fun moduleAdded(p1: SModule) {
             enqueueSyncToCloud()
         }
 
-        public override fun moduleRemoved(p1: SModuleReference) {
+        override fun moduleRemoved(p1: SModuleReference) {
             enqueueSyncToCloud()
         }
 
@@ -44,23 +44,23 @@ class ProjectBinding(val project: MPSProject, var projectNodeId: Long, initialSy
     }
 
     init {
-        if (LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled) {
             LOG.debug("Project binding created: " + this)
         }
     }
 
-    public override fun toString(): String {
-        return "Project: " + java.lang.Long.toHexString(projectNodeId) + " -> " + project!!.getName()
+    override fun toString(): String {
+        return "Project: " + java.lang.Long.toHexString(projectNodeId) + " -> " + project.name
     }
 
     override fun doActivate() {
-        if (LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled) {
             LOG.debug("Activating: " + this)
         }
         val branch: IBranch? = this.branch
         if (projectNodeId == 0L) {
-            project!!.getRepository().getModelAccess().runReadAction(object : Runnable {
-                public override fun run() {
+            project.repository.modelAccess.runReadAction(object : Runnable {
+                override fun run() {
                     branch!!.runWriteT({ t: IWriteTransaction ->
                         projectNodeId = t.addNewChild(
                             ITree.ROOT_ID, "projects", -1,
@@ -68,16 +68,15 @@ class ProjectBinding(val project: MPSProject, var projectNodeId: Long, initialSy
                                 CONCEPTS.`Project$An`,
                             ),
                         )
-                        t.setProperty(projectNodeId, PROPS.`name$MnvL`.getName(), project.getName())
-                        Unit
+                        t.setProperty(projectNodeId, PROPS.`name$MnvL`.name, project.name)
                     })
                     enqueueSync(SyncDirection.TO_CLOUD, true, null)
                 }
             })
         } else {
             val cloudProjectIsEmpty: Boolean = branch!!.computeReadT({ t: IReadTransaction ->
-                val children: Iterable<Long> = t.getChildren(projectNodeId, LINKS.`modules$Bi3g`.getName())
-                Sequence.fromIterable(children).isEmpty()
+                val children: Iterable<Long> = t.getChildren(projectNodeId, LINKS.`modules$Bi3g`.name)
+                Sequence.fromIterable(children).isEmpty
             })
             if (cloudProjectIsEmpty) {
                 enqueueSync(SyncDirection.TO_CLOUD, true, null)
@@ -85,29 +84,29 @@ class ProjectBinding(val project: MPSProject, var projectNodeId: Long, initialSy
                 enqueueSync(SyncDirection.TO_MPS, true, null)
             }
         }
-        project!!.getRepository().addRepositoryListener(repositoryListener)
-        if (LOG.isDebugEnabled()) {
+        project.repository.addRepositoryListener(repositoryListener)
+        if (LOG.isDebugEnabled) {
             LOG.debug("Activated: " + this)
         }
     }
 
     override fun doDeactivate() {
-        project!!.getRepository().removeRepositoryListener(repositoryListener)
+        project.repository.removeRepositoryListener(repositoryListener)
     }
 
-    override fun getTreeChangeVisitor(oldTree: ITree?, newTree: ITree): ITreeChangeVisitor? {
+    override fun getTreeChangeVisitor(oldTree: ITree?, newTree: ITree): ITreeChangeVisitor {
         assertSyncThread()
         return object : ITreeChangeVisitor {
-            public override fun containmentChanged(nodeId: Long) {}
-            public override fun childrenChanged(parentId: Long, role: String?) {
+            override fun containmentChanged(nodeId: Long) {}
+            override fun childrenChanged(parentId: Long, role: String?) {
                 assertSyncThread()
-                if (parentId == projectNodeId && Objects.equals(role, LINKS.`modules$Bi3g`.getName())) {
+                if (parentId == projectNodeId && Objects.equals(role, LINKS.`modules$Bi3g`.name)) {
                     enqueueSync(SyncDirection.TO_MPS, false, null)
                 }
             }
 
-            public override fun referenceChanged(nodeId: Long, role: String) {}
-            public override fun propertyChanged(nodeId: Long, role: String) {}
+            override fun referenceChanged(nodeId: Long, role: String) {}
+            override fun propertyChanged(nodeId: Long, role: String) {}
         }
     }
 
@@ -116,7 +115,7 @@ class ProjectBinding(val project: MPSProject, var projectNodeId: Long, initialSy
         updateBindings(mappings, SyncDirection.TO_MPS)
     }
 
-    public override fun doSyncToCloud(t: IWriteTransaction) {
+    override fun doSyncToCloud(t: IWriteTransaction) {
         val mappings = ProjectModulesSynchronizer(projectNodeId, project).syncToCloud(t)
         updateBindings(mappings, SyncDirection.TO_CLOUD)
     }
@@ -124,41 +123,41 @@ class ProjectBinding(val project: MPSProject, var projectNodeId: Long, initialSy
     private fun updateBindings(mappings: Map<Long, SModule>, syncDirection: SyncDirection) {
         val mappingsWithoutReadonly: Iterable<IMapping<Long, SModule>> =
             MapSequence.fromMap(mappings).where(object : IWhereFilter<IMapping<Long?, SModule>>() {
-                public override fun accept(it: IMapping<Long?, SModule>): Boolean {
-                    return !(it.value().isPackaged()) && !(it.value().isReadOnly())
+                override fun accept(it: IMapping<Long?, SModule>): Boolean {
+                    return !(it.value().isPackaged) && !(it.value().isReadOnly)
                 }
             })
         val bindings: Map<Long, ProjectModuleBinding> = MapSequence.fromMap(HashMap())
         Sequence.fromIterable<Binding?>(getOwnedBindings()).ofType<ProjectModuleBinding>(
             ProjectModuleBinding::class.java,
         ).visitAll(object : IVisitor<ProjectModuleBinding>() {
-            public override fun visit(it: ProjectModuleBinding) {
+            override fun visit(it: ProjectModuleBinding) {
                 MapSequence.fromMap(bindings).put(it.moduleNodeId, it)
             }
         })
         val toAdd: List<Long> = Sequence.fromIterable(mappingsWithoutReadonly)
             .select(object : ISelector<IMapping<Long, SModule>, Long>() {
-                public override fun select(it: IMapping<Long, SModule>): Long {
+                override fun select(it: IMapping<Long, SModule>): Long {
                     return it.key()
                 }
             }).subtract(SetSequence.fromSet(MapSequence.fromMap(bindings).keys)).toListSequence()
         val toRemove: List<Long?> = SetSequence.fromSet(MapSequence.fromMap(bindings).keys).subtract(
             Sequence.fromIterable(mappingsWithoutReadonly)
                 .select(object : ISelector<IMapping<Long, SModule>, Long?>() {
-                    public override fun select(it: IMapping<Long, SModule>): Long? {
+                    override fun select(it: IMapping<Long, SModule>): Long? {
                         return it.key()
                     }
                 }),
         ).toListSequence()
         ListSequence.fromList(toRemove).visitAll(object : IVisitor<Long>() {
-            public override fun visit(it: Long) {
+            override fun visit(it: Long) {
                 val binding: ProjectModuleBinding? = MapSequence.fromMap(bindings).get(it)
                 binding!!.deactivate(null)
                 binding.setOwner(null)
             }
         })
         ListSequence.fromList(toAdd).visitAll(object : IVisitor<Long>() {
-            public override fun visit(it: Long) {
+            override fun visit(it: Long) {
                 val binding: ProjectModuleBinding =
                     ProjectModuleBinding(it, MapSequence.fromMap(mappings).getValue(it), syncDirection)
                 binding.setOwner(this@ProjectBinding)

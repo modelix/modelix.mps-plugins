@@ -7,7 +7,7 @@ import jetbrains.mps.workbench.action.ApplicationPlugin
 class ModelServerGroup_ActionGroup(plugin: ApplicationPlugin) : GeneratedActionGroup("ModelServerGroup", ID, plugin) {
     init {
         setIsInternal(false)
-        setPopup(false)
+        isPopup = false
         this@ModelServerGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.RemoveModelServer_Action")
         this@ModelServerGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.AddRepository_Action")
         this@ModelServerGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.ShowAuthenticationInfo_Action")

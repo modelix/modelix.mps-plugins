@@ -16,16 +16,16 @@ class ModuleAlreadyOnCloud_Action(private val treeInRepository: CloudRepository)
     BaseAction("Copy on Cloud & Sync", "", ICON) {
     init {
         setIsAlwaysVisible(false)
-        setActionAccess(ActionAccess.UNDO_PROJECT)
+        actionAccess = ActionAccess.UNDO_PROJECT
     }
 
-    public override fun isDumbAware(): Boolean {
+    override fun isDumbAware(): Boolean {
         return true
     }
 
-    public override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
+    override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
         val connected: Boolean = treeInRepository.isConnected
-        event.getPresentation().setText(event.getData(MPSCommonDataKeys.MODULE)!!.getModuleName() + " already in Cloud")
+        event.presentation.text = event.getData(MPSCommonDataKeys.MODULE)!!.moduleName + " already in Cloud"
         try {
             return connected && ModelCloudImportUtils.containsModule(
                 treeInRepository,
@@ -38,7 +38,7 @@ class ModuleAlreadyOnCloud_Action(private val treeInRepository: CloudRepository)
     }
 
     public override fun doUpdate(event: AnActionEvent, _params: Map<String, Any>) {
-        setEnabledState(event.getPresentation(), isApplicable(event, _params))
+        setEnabledState(event.presentation, isApplicable(event, _params))
     }
 
     override fun collectActionData(event: AnActionEvent, _params: Map<String, Any>): Boolean {
@@ -64,7 +64,7 @@ class ModuleAlreadyOnCloud_Action(private val treeInRepository: CloudRepository)
         // noop
     }
 
-    public override fun getActionId(): String {
+    override fun getActionId(): String {
         val res: StringBuilder = StringBuilder()
         res.append(super.getActionId())
         res.append("#")
@@ -75,7 +75,7 @@ class ModuleAlreadyOnCloud_Action(private val treeInRepository: CloudRepository)
 
     companion object {
         private val ICON: Icon? = null
-        fun treeInRepository_State(`object`: CloudRepository): String? {
+        fun treeInRepository_State(`object`: CloudRepository): String {
             return `object`.presentation()
         }
     }

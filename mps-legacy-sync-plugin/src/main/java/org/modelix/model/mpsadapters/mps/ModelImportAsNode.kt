@@ -16,19 +16,11 @@ class ModelImportAsNode(importedModel: SModel, private val importingModel: SMode
     TreeElementAsNode<SModel>(importedModel) {
     override val concept: IConcept
         get() {
-            return (SConceptAdapter.Companion.wrap(CONCEPTS.`ModelReference$sV`))!!
+            return (SConceptAdapter.Companion.wrap(CONCEPTS.`ModelReference$sV`))
         }
 
-    override fun getChildAccessor(role: String?): IChildAccessor<SModel>? {
-        return super.getChildAccessor(role)
-    }
-
-    override fun getPropertyAccessor(role: String): IPropertyAccessor<SModel>? {
-        return super.getPropertyAccessor(role)
-    }
-
     override fun getReferenceAccessor(role: String): IReferenceAccessor<SModel>? {
-        if ((role == LINKS.`model$GJHn`.getName())) {
+        if ((role == LINKS.`model$GJHn`.name)) {
             return modelAccessor
         }
         return super.getReferenceAccessor(role)
@@ -40,17 +32,17 @@ class ModelImportAsNode(importedModel: SModel, private val importingModel: SMode
         }
     override val roleInParent: String
         get() {
-            return LINKS.`modelImports$8DOI`.getName()
+            return LINKS.`modelImports$8DOI`.name
         }
     override val reference: INodeReference
         get() {
-            return NodeReference(element.getReference(), importingModel.getReference())
+            return NodeReference(element.reference, importingModel.reference)
         }
 
     class NodeReference(val importedModelRef: SModelReference, val importingModelRef: SModelReference) :
         INodeReference {
 
-        public override fun resolveNode(area: IArea?): INode? {
+        override fun resolveNode(area: IArea?): INode? {
             val importedModel: SModel? = check_c5rr7l_a0a0f61(
                 SModelAsNode.NodeReference(
                     importedModelRef,
@@ -70,7 +62,7 @@ class ModelImportAsNode(importedModel: SModel, private val importingModel: SMode
             return ModelImportAsNode(importedModel, importingModel)
         }
 
-        public override fun equals(o: Any?): Boolean {
+        override fun equals(o: Any?): Boolean {
             if (this === o) {
                 return true
             }
@@ -87,7 +79,7 @@ class ModelImportAsNode(importedModel: SModel, private val importingModel: SMode
             return true
         }
 
-        public override fun hashCode(): Int {
+        override fun hashCode(): Int {
             var result: Int = 0
             result = 31 * result + ((if (importedModelRef != null) (importedModelRef as Any).hashCode() else 0))
             result = 31 * result + ((if (importingModelRef != null) (importingModelRef as Any).hashCode() else 0))
@@ -143,11 +135,11 @@ class ModelImportAsNode(importedModel: SModel, private val importingModel: SMode
 
     companion object {
         private val modelAccessor: IReferenceAccessor<SModel> = object : IReferenceAccessor<SModel> {
-            public override fun get(element: SModel): INode? {
+            override fun get(element: SModel): INode? {
                 return SModelAsNode.wrap(element)
             }
 
-            public override fun set(element: SModel, target: INode?): INode? {
+            override fun set(element: SModel, target: INode?): INode? {
                 throw UnsupportedOperationException("Read only")
             }
         }

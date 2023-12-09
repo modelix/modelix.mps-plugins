@@ -17,22 +17,20 @@ class CopyAndSyncPhysicalProjectOnCloud_Action(
 ) : BaseAction("Copy on Cloud & Sync", "", ICON) {
     init {
         setIsAlwaysVisible(false)
-        setActionAccess(ActionAccess.UNDO_PROJECT)
+        actionAccess = ActionAccess.UNDO_PROJECT
     }
 
-    public override fun isDumbAware(): Boolean {
+    override fun isDumbAware(): Boolean {
         return true
     }
 
-    public override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
+    override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
         if (cloudProject == null) {
-            event.getPresentation()
-                .setText("Copy on Cloud and Sync -> " + treeInRepository.presentation() + " as new project")
+            event.presentation.text = "Copy on Cloud and Sync -> " + treeInRepository.presentation() + " as new project"
         } else {
             treeInRepository.runRead(object : Runnable {
-                public override fun run() {
-                    event.getPresentation()
-                        .setText("Sync to Cloud Repo " + treeInRepository.presentation() + " to project " + cloudProject)
+                override fun run() {
+                    event.presentation.text = "Sync to Cloud Repo " + treeInRepository.presentation() + " to project " + cloudProject
                 }
             })
         }
@@ -41,7 +39,7 @@ class CopyAndSyncPhysicalProjectOnCloud_Action(
     }
 
     public override fun doUpdate(event: AnActionEvent, _params: Map<String, Any>) {
-        setEnabledState(event.getPresentation(), isApplicable(event, _params))
+        setEnabledState(event.presentation, isApplicable(event, _params))
     }
 
     override fun collectActionData(event: AnActionEvent, _params: Map<String, Any>): Boolean {
@@ -65,7 +63,7 @@ class CopyAndSyncPhysicalProjectOnCloud_Action(
         )
     }
 
-    public override fun getActionId(): String {
+    override fun getActionId(): String {
         val res: StringBuilder = StringBuilder()
         res.append(super.getActionId())
         res.append("#")
@@ -78,7 +76,7 @@ class CopyAndSyncPhysicalProjectOnCloud_Action(
 
     companion object {
         private val ICON: Icon? = null
-        fun treeInRepository_State(`object`: CloudRepository): String? {
+        fun treeInRepository_State(`object`: CloudRepository): String {
             return `object`.presentation()
         }
 

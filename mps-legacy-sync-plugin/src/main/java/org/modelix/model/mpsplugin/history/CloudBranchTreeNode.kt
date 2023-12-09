@@ -25,13 +25,13 @@ class CloudBranchTreeNode(private val modelServer: ModelServerConnection, val br
     }
 
     fun updateChildren() {}
-    public override fun doubleClick() {
+    override fun doubleClick() {
         switchBranch()
     }
 
     fun switchBranch() {
         val treeTreeNode: RepositoryTreeNode = this.getAncestor(RepositoryTreeNode::class.java)
-        val repositoryId: RepositoryId? = treeTreeNode.repositoryId
+        val repositoryId: RepositoryId = treeTreeNode.repositoryId
         val infoBranch: IBranch? = modelServer.infoBranch
         val branchName: String = PArea((infoBranch)!!).executeRead({
             SPropertyOperations.getString(

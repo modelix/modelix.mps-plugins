@@ -19,16 +19,16 @@ class CopyAndSyncPhysicalModuleOnCloud_Action(private val treeInRepository: Clou
     BaseAction("Copy on Cloud & Sync", "", ICON) {
     init {
         setIsAlwaysVisible(false)
-        setActionAccess(ActionAccess.UNDO_PROJECT)
+        actionAccess = ActionAccess.UNDO_PROJECT
     }
 
-    public override fun isDumbAware(): Boolean {
+    override fun isDumbAware(): Boolean {
         return true
     }
 
-    public override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
+    override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
         val connected: Boolean = treeInRepository.isConnected
-        event.getPresentation().setText("Copy on Cloud and Sync -> " + treeInRepository.presentation())
+        event.presentation.text = "Copy on Cloud and Sync -> " + treeInRepository.presentation()
         try {
             return connected && !(
                 ModelCloudImportUtils.containsModule(
@@ -43,7 +43,7 @@ class CopyAndSyncPhysicalModuleOnCloud_Action(private val treeInRepository: Clou
     }
 
     public override fun doUpdate(event: AnActionEvent, _params: Map<String, Any>) {
-        setEnabledState(event.getPresentation(), isApplicable(event, _params))
+        setEnabledState(event.presentation, isApplicable(event, _params))
     }
 
     override fun collectActionData(event: AnActionEvent, _params: Map<String, Any>): Boolean {
@@ -67,7 +67,7 @@ class CopyAndSyncPhysicalModuleOnCloud_Action(private val treeInRepository: Clou
 
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
         object : Task.Modal(event.getData(CommonDataKeys.PROJECT), "Copy on Cloud", false) {
-            public override fun run(indicator: ProgressIndicator) {
+            override fun run(indicator: ProgressIndicator) {
                 ModelCloudImportUtils.copyAndSyncInModelixAsIndependentModule(
                     treeInRepository,
                     event.getData(MPSCommonDataKeys.MODULE)!!,
@@ -78,7 +78,7 @@ class CopyAndSyncPhysicalModuleOnCloud_Action(private val treeInRepository: Clou
         }.queue()
     }
 
-    public override fun getActionId(): String {
+    override fun getActionId(): String {
         val res: StringBuilder = StringBuilder()
         res.append(super.getActionId())
         res.append("#")
@@ -89,7 +89,7 @@ class CopyAndSyncPhysicalModuleOnCloud_Action(private val treeInRepository: Clou
 
     companion object {
         private val ICON: Icon? = null
-        fun treeInRepository_State(`object`: CloudRepository): String? {
+        fun treeInRepository_State(`object`: CloudRepository): String {
             return `object`.presentation()
         }
     }

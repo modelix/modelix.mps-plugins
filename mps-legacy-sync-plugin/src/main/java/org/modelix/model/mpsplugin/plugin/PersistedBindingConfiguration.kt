@@ -90,7 +90,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
 
     fun clear() {
         modifyState(object : Consumer<CloudResourcesConfigurationComponent.State> {
-            public override fun accept(state: CloudResourcesConfigurationComponent.State) {
+            override fun accept(state: CloudResourcesConfigurationComponent.State) {
                 state.modelServers.clear()
                 state.mappedModules.clear()
                 state.transientModules.clear()
@@ -104,7 +104,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
         val cloudResourcesConfigurationComponent: CloudResourcesConfigurationComponent = project!!.getService(
             CloudResourcesConfigurationComponent::class.java,
         )
-        val state: CloudResourcesConfigurationComponent.State = cloudResourcesConfigurationComponent.getState()
+        val state: CloudResourcesConfigurationComponent.State = cloudResourcesConfigurationComponent.state
         return state
     }
 
@@ -119,7 +119,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
 
     fun addModelServer(modelServer: ModelServerConnection) {
         modifyState(object : Consumer<CloudResourcesConfigurationComponent.State> {
-            public override fun accept(state: CloudResourcesConfigurationComponent.State) {
+            override fun accept(state: CloudResourcesConfigurationComponent.State) {
                 state.modelServers.add(modelServer.baseUrl)
             }
         })
@@ -132,7 +132,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
     fun ensureModelServerIsPresent(modelServer: ModelServerConnection) {
         if (!(isModelServerPresent(modelServer.baseUrl))) {
             modifyState(object : Consumer<CloudResourcesConfigurationComponent.State> {
-                public override fun accept(state: CloudResourcesConfigurationComponent.State) {
+                override fun accept(state: CloudResourcesConfigurationComponent.State) {
                     state.modelServers.add(modelServer.baseUrl)
                 }
             })
@@ -141,14 +141,14 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
 
     fun removeModelServer(modelServer: ModelServerConnection) {
         modifyState(object : Consumer<CloudResourcesConfigurationComponent.State> {
-            public override fun accept(state: CloudResourcesConfigurationComponent.State) {
+            override fun accept(state: CloudResourcesConfigurationComponent.State) {
                 state.modelServers.removeIf(object : Predicate<String?> {
-                    public override fun test(url: String?): Boolean {
+                    override fun test(url: String?): Boolean {
                         return Objects.equals(url, modelServer.baseUrl)
                     }
                 })
                 state.transientModules.removeIf(object : Predicate<String?> {
-                    public override fun test(moduleStr: String?): Boolean {
+                    override fun test(moduleStr: String?): Boolean {
                         return moduleStr?.startsWith(modelServer.baseUrl + "#") == true
                     }
                 })
@@ -182,7 +182,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
         modifyState(
             _return_P1_E0_to_Consumer_adapter(object :
                 _return_P1_E0<Unit, CloudResourcesConfigurationComponent.State> {
-                public override fun invoke(state: CloudResourcesConfigurationComponent.State) {
+                override fun invoke(state: CloudResourcesConfigurationComponent.State) {
                     return PArea((branch)!!).executeRead({
                         val moduleName: String? = (cloudNode as PNodeAdapter?)!!.getPropertyValue("name")
                         state.transientModules.add(repositoryInModelServer.completeId() + "#" + moduleName)
@@ -197,7 +197,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
         modifyState(
             _return_P1_E0_to_Consumer_adapter(object :
                 _return_P1_E0<Unit, CloudResourcesConfigurationComponent.State> {
-                public override fun invoke(state: CloudResourcesConfigurationComponent.State) {
+                override fun invoke(state: CloudResourcesConfigurationComponent.State) {
                     return PArea((branch)!!).executeRead({
                         val moduleName: String? = (cloudNode as PNodeAdapter?)!!.getPropertyValue("name")
                         val transientModuleDesc: String = repositoryInModelServer.completeId() + "#" + moduleName
@@ -213,7 +213,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
         modifyState(
             _return_P1_E0_to_Consumer_adapter(object :
                 _return_P1_E0<Unit, CloudResourcesConfigurationComponent.State> {
-                public override fun invoke(state: CloudResourcesConfigurationComponent.State) {
+                override fun invoke(state: CloudResourcesConfigurationComponent.State) {
                     return PArea(branch).executeRead({
                         val moduleName: String? = branch.readTransaction.getProperty(nodeId, "name")
                         val transientModuleDesc: String = repositoryInModelServer.completeId() + "#" + moduleName
@@ -230,7 +230,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
         modifyState(
             _return_P1_E0_to_Consumer_adapter<CloudResourcesConfigurationComponent.State>(object :
                 _return_P1_E0<Unit, CloudResourcesConfigurationComponent.State> {
-                public override fun invoke(state: CloudResourcesConfigurationComponent.State) {
+                override fun invoke(state: CloudResourcesConfigurationComponent.State) {
                     return PArea(branch).executeRead({
                         val moduleName: String? = branch.readTransaction.getProperty(nodeId, "name")
                         val moduleDesc: String = repositoryInModelServer.completeId() + "#" + moduleName
@@ -248,9 +248,9 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
 
     fun addTransientBoundProject(repositoryInModelServer: CloudRepository, cloudProject: SNode?) {
         modifyState(object : Consumer<CloudResourcesConfigurationComponent.State> {
-            public override fun accept(state: CloudResourcesConfigurationComponent.State) {
+            override fun accept(state: CloudResourcesConfigurationComponent.State) {
                 repositoryInModelServer.runRead(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         state.transientProjects.add(repositoryInModelServer.completeId())
                     }
                 })
@@ -262,7 +262,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
         modifyState(
             _return_P1_E0_to_Consumer_adapter(object :
                 _return_P1_E0<Unit, CloudResourcesConfigurationComponent.State> {
-                public override fun invoke(state: CloudResourcesConfigurationComponent.State) {
+                override fun invoke(state: CloudResourcesConfigurationComponent.State) {
                     return PArea(nodeTreeNode.branch).executeRead({
                         val moduleName: String? = nodeTreeNode.getPropertyValue("name")
                         state.transientModules.add(repositoryInModelServer.completeId() + "#" + moduleName)
@@ -280,10 +280,10 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
         modifyState(
             _return_P1_E0_to_Consumer_adapter(object :
                 _return_P1_E0<Unit, CloudResourcesConfigurationComponent.State> {
-                public override fun invoke(state: CloudResourcesConfigurationComponent.State) {
+                override fun invoke(state: CloudResourcesConfigurationComponent.State) {
                     return PArea(nodeTreeNode!!.branch).executeRead({
                         val moduleName: String? =
-                            (nodeTreeNode as PNodeAdapter?)!!.getPropertyValue(PROPS.`name$MnvL`.getName())
+                            (nodeTreeNode as PNodeAdapter?)!!.getPropertyValue(PROPS.`name$MnvL`.name)
                         if (moduleName == null) {
                             throw IllegalStateException("module should not have null name")
                         }
@@ -323,7 +323,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
             withConnectedCloudRepo(
                 modelServer,
                 object : Consumer<ModelServerConnection?> {
-                    public override fun accept(msc: ModelServerConnection?) {
+                    override fun accept(msc: ModelServerConnection?) {
                         bindToTransientModules(
                             repositoryInModelServer,
                             SetSequence.fromSetAndArray(HashSet(), parts.get(1)),
@@ -354,7 +354,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
             withConnectedCloudRepo(
                 modelServer,
                 object : Consumer<ModelServerConnection?> {
-                    public override fun accept(msc: ModelServerConnection?) {
+                    override fun accept(msc: ModelServerConnection?) {
                         bindToMappedModules(repositoryInModelServer, SetSequence.fromSetAndArray(HashSet(), parts.get(1)))
                     }
                 },
@@ -370,9 +370,9 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
      */
     private fun bindToMappedModules(repositoryInModelServer: CloudRepository, modulesToBind: Set<String?>) {
         SharedExecutors.FIXED.execute(object : Runnable {
-            public override fun run() {
+            override fun run() {
                 repositoryInModelServer.runRead(object : Consumer<PNodeAdapter> {
-                    public override fun accept(rootNode: PNodeAdapter) {
+                    override fun accept(rootNode: PNodeAdapter) {
                         for (child: INode in Sequence.fromIterable(rootNode.allChildren)) {
                             val name: String? = child.getPropertyValue("name")
                             if (SetSequence.fromSet(modulesToBind).contains(name)) {
@@ -406,9 +406,9 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
         for (physicalModule: SModule in ListSequence.fromList(
             ProjectHelper.toMPSProject(
                 project,
-            )!!.getProjectModules(),
+            )!!.projectModules,
         )) {
-            if (Objects.equals(physicalModule.getModuleName(), moduleName)) {
+            if (Objects.equals(physicalModule.moduleName, moduleName)) {
                 return physicalModule
             }
         }
@@ -447,7 +447,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
             }
         }
 
-        private fun ensureModelServerIsPresent(url: String?): ModelServerConnection? {
+        private fun ensureModelServerIsPresent(url: String?): ModelServerConnection {
             return ModelServerConnections.instance.ensureModelServerIsPresent(url)
         }
 
@@ -465,7 +465,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
                 }
                 modelServer.reconnect()
                 Thread(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         try {
                             Thread.sleep(250)
                         } catch (e: InterruptedException) {
@@ -494,9 +494,9 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
          */
         private fun bindToTransientModules(repositoryInModelServer: CloudRepository, modulesToBind: Set<String?>) {
             SharedExecutors.FIXED.execute(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     repositoryInModelServer.runRead(object : Consumer<PNodeAdapter> {
-                        public override fun accept(rootNode: PNodeAdapter) {
+                        override fun accept(rootNode: PNodeAdapter) {
                             for (child: INode in Sequence.fromIterable(rootNode.allChildren)) {
                                 val name: String? = child.getPropertyValue("name")
                                 if (SetSequence.fromSet(modulesToBind).contains(name)) {

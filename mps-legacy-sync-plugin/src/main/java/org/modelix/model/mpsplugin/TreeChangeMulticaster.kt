@@ -10,31 +10,31 @@ import org.modelix.model.api.ITreeChangeVisitorEx
  */
 class TreeChangeMulticaster(val visitors: List<ITreeChangeVisitor>) : ITreeChangeVisitorEx {
 
-    public override fun childrenChanged(parent: Long, role: String?) {
+    override fun childrenChanged(parent: Long, role: String?) {
         for (visitor: ITreeChangeVisitor in ListSequence.fromList(visitors)) {
             visitor.childrenChanged(parent, role)
         }
     }
 
-    public override fun containmentChanged(node: Long) {
+    override fun containmentChanged(node: Long) {
         for (visitor: ITreeChangeVisitor in ListSequence.fromList(visitors)) {
             visitor.containmentChanged(node)
         }
     }
 
-    public override fun propertyChanged(node: Long, role: String) {
+    override fun propertyChanged(node: Long, role: String) {
         for (visitor: ITreeChangeVisitor in ListSequence.fromList(visitors)) {
             visitor.propertyChanged(node, role)
         }
     }
 
-    public override fun referenceChanged(node: Long, role: String) {
+    override fun referenceChanged(node: Long, role: String) {
         for (visitor: ITreeChangeVisitor in ListSequence.fromList(visitors)) {
             visitor.referenceChanged(node, role)
         }
     }
 
-    public override fun nodeAdded(node: Long) {
+    override fun nodeAdded(node: Long) {
         for (visitor: ITreeChangeVisitorEx in ListSequence.fromList(visitors).ofType(
             ITreeChangeVisitorEx::class.java,
         )) {
@@ -42,7 +42,7 @@ class TreeChangeMulticaster(val visitors: List<ITreeChangeVisitor>) : ITreeChang
         }
     }
 
-    public override fun nodeRemoved(node: Long) {
+    override fun nodeRemoved(node: Long) {
         for (visitor: ITreeChangeVisitorEx in ListSequence.fromList(visitors).ofType(
             ITreeChangeVisitorEx::class.java,
         )) {

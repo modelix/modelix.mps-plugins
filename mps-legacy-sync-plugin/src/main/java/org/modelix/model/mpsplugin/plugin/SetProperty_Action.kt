@@ -21,20 +21,20 @@ class SetProperty_Action(private val node: INode, private val role: SProperty) :
     BaseAction("Set Property '...'", "", ICON) {
     init {
         setIsAlwaysVisible(false)
-        setActionAccess(ActionAccess.NONE)
+        actionAccess = ActionAccess.NONE
     }
 
-    public override fun isDumbAware(): Boolean {
+    override fun isDumbAware(): Boolean {
         return true
     }
 
-    public override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
-        event.getPresentation().setText("Set Property '" + role.getName() + "' (" + role.getOwner().getName() + ")")
+    override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
+        event.presentation.text = "Set Property '" + role.name + "' (" + role.owner.name + ")"
         return true
     }
 
     public override fun doUpdate(event: AnActionEvent, _params: Map<String, Any>) {
-        setEnabledState(event.getPresentation(), isApplicable(event, _params))
+        setEnabledState(event.presentation, isApplicable(event, _params))
     }
 
     override fun collectActionData(event: AnActionEvent, _params: Map<String, Any>): Boolean {
@@ -60,22 +60,22 @@ class SetProperty_Action(private val node: INode, private val role: SProperty) :
         val nodeTreeNode: CloudNodeTreeNode = (event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?)!!
         val currentValue: String? = CloudNodeTreeNodeBinding.getTreeInRepository(nodeTreeNode).computeRead({
             nodeTreeNode.node.getPropertyValue(
-                role.getName(),
+                role.name,
             )
         })
         val value: String? = Messages.showInputDialog(
             event.getData(CommonDataKeys.PROJECT),
             "Value",
-            "Set Property '" + role.getName() + "'",
+            "Set Property '" + role.name + "'",
             null,
             currentValue,
             object : InputValidator {
-                public override fun checkInput(s: String): Boolean {
+                override fun checkInput(s: String): Boolean {
                     // TODO perhaps look into the type of the property to authorize it or not
                     return true
                 }
 
-                public override fun canClose(s: String): Boolean {
+                override fun canClose(s: String): Boolean {
                     return true
                 }
             },
@@ -84,12 +84,11 @@ class SetProperty_Action(private val node: INode, private val role: SProperty) :
             return
         }
         PArea(nodeTreeNode.branch).executeWrite<Unit>({
-            node.setPropertyValue(role.getName(), value)
-            Unit
+            node.setPropertyValue(role.name, value)
         })
     }
 
-    public override fun getActionId(): String {
+    override fun getActionId(): String {
         val res: StringBuilder = StringBuilder()
         res.append(super.getActionId())
         res.append("#")
@@ -107,7 +106,7 @@ class SetProperty_Action(private val node: INode, private val role: SProperty) :
         }
 
         fun role_State(`object`: SProperty): String {
-            return `object`.getName()
+            return `object`.name
         }
     }
 }

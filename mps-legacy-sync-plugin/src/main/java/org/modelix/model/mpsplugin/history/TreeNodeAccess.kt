@@ -16,21 +16,21 @@ object TreeNodeAccess {
     fun getName(_this: TreeNode?): String? {
         val nodeTreeNode: CloudNodeTreeNode = ((as_ps3aya_a0a0a1(_this, CloudNodeTreeNode::class.java))!!)
         return PArea(nodeTreeNode.branch).executeRead({
-            nodeTreeNode.node.getPropertyValue(PROPS.`name$MnvL`.getName())
+            nodeTreeNode.node.getPropertyValue(PROPS.`name$MnvL`.name)
         })
     }
 
     fun delete(_this: TreeNode?) {
         val nodeTreeNode: CloudNodeTreeNode = ((as_ps3aya_a0a0a2(_this, CloudNodeTreeNode::class.java))!!)
-        val parent: TreeNode? = nodeTreeNode.getParent()
+        val parent: TreeNode? = nodeTreeNode.parent
         PArea(nodeTreeNode.branch).executeWrite({
-            val nodeIN: INode? = nodeTreeNode.node
+            val nodeIN: INode = nodeTreeNode.node
             val parent: INode? = nodeIN!!.parent
             if (parent == null) {
                 val found: Wrappers._boolean = Wrappers._boolean(false)
                 ListSequence.fromList(ModelServerNavigation.trees(nodeTreeNode.modelServer!!))
                     .visitAll(object : IVisitor<CloudRepository>() {
-                        public override fun visit(tree: CloudRepository) {
+                        override fun visit(tree: CloudRepository) {
                             if (ListSequence.fromList(tree.repoRoots()).contains(nodeIN)) {
                                 tree.deleteRoot(nodeIN)
                                 found.value = true
@@ -38,14 +38,13 @@ object TreeNodeAccess {
                         }
                     })
                 if (found.value) {
-                    return@executeWrite Unit
+                    return@executeWrite
                 }
                 if (!(found.value)) {
                     throw RuntimeException("Unable to remove node without parent, not found as root of any tree")
                 }
             }
             parent!!.removeChild((nodeIN))
-            Unit
         })
         if (parent == null) {
             throw RuntimeException("Cannot remove node without parent")

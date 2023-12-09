@@ -7,7 +7,7 @@ import jetbrains.mps.workbench.action.ApplicationPlugin
 class CloudBindingGroup_ActionGroup(plugin: ApplicationPlugin) : GeneratedActionGroup("CloudBindingGroup", ID, plugin) {
     init {
         setIsInternal(false)
-        setPopup(false)
+        isPopup = false
         this@CloudBindingGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.Unbind_Action")
     }
 

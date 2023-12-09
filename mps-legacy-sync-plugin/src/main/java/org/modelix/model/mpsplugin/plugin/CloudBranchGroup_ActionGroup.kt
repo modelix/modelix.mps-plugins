@@ -7,7 +7,7 @@ import jetbrains.mps.workbench.action.ApplicationPlugin
 class CloudBranchGroup_ActionGroup(plugin: ApplicationPlugin) : GeneratedActionGroup("CloudBranchGroup", ID, plugin) {
     init {
         setIsInternal(false)
-        setPopup(false)
+        isPopup = false
         this@CloudBranchGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.AddBranch_Action")
         this@CloudBranchGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.SwitchBranch_Action")
         this@CloudBranchGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.LoadHistoryForBranch_Action")

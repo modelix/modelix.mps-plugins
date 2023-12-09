@@ -1,6 +1,7 @@
 package org.modelix.model.mpsplugin.projectview
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.ui.JBColor
 import jetbrains.mps.baseLanguage.closures.runtime.Wrappers._T
 import jetbrains.mps.baseLanguage.closures.runtime._FunctionTypes._void_P1_E0
 import jetbrains.mps.ide.project.ProjectHelper
@@ -47,19 +48,19 @@ class CloudProjectViewExtension(private val project: Project?) {
     private var cloudTreeNode: TextTreeNode? = null
     private val treeListener: TreeModelListener = object : TreeModelListener {
         private var handling: Boolean = false
-        public override fun treeNodesChanged(p0: TreeModelEvent) {
+        override fun treeNodesChanged(p0: TreeModelEvent) {
             handle()
         }
 
-        public override fun treeNodesInserted(p0: TreeModelEvent) {
+        override fun treeNodesInserted(p0: TreeModelEvent) {
             handle()
         }
 
-        public override fun treeNodesRemoved(p0: TreeModelEvent) {
+        override fun treeNodesRemoved(p0: TreeModelEvent) {
             handle()
         }
 
-        public override fun treeStructureChanged(p0: TreeModelEvent) {
+        override fun treeStructureChanged(p0: TreeModelEvent) {
             handle()
         }
 
@@ -82,21 +83,21 @@ class CloudProjectViewExtension(private val project: Project?) {
     private var treeModel: DefaultTreeModel? = null
     private val repositoryListener: SRepositoryListener = object : SRepositoryListenerBase() {
         private val modulesDirty: AtomicBoolean = AtomicBoolean(true)
-        public override fun moduleAdded(m: SModule) {
+        override fun moduleAdded(m: SModule) {
             if (m is CloudTransientModule) {
                 m.addModuleListener(moduleListener)
                 queueUpdate()
             }
         }
 
-        public override fun moduleRemoved(m: SModuleReference) {
+        override fun moduleRemoved(m: SModuleReference) {
             queueUpdate()
         }
 
         fun queueUpdate() {
             modulesDirty.set(true)
             ApplicationManager.getApplication().invokeLater(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     if (modulesDirty.getAndSet(false)) {
                         updateModules()
                     }
@@ -105,23 +106,23 @@ class CloudProjectViewExtension(private val project: Project?) {
         }
     }
     private val moduleListener: SModuleListener = object : SModuleListenerBase() {
-        public override fun modelAdded(module: SModule, model: SModel) {
+        override fun modelAdded(module: SModule, model: SModel) {
             super.modelAdded(module, model)
         }
 
-        public override fun modelRemoved(module: SModule, ref: SModelReference) {
+        override fun modelRemoved(module: SModule, ref: SModelReference) {
             super.modelRemoved(module, ref)
         }
     }
 
     fun init() {
         cloudTreeNode = TextTreeNode("Cloud")
-        cloudTreeNode!!.setIcon(ROOT_ICON)
+        cloudTreeNode!!.icon = ROOT_ICON
         waitForProjectTree(object : _void_P1_E0<ProjectTree?> {
-            public override fun invoke(tree: ProjectTree?) {
+            override fun invoke(tree: ProjectTree?) {
                 treeModel = TreeModelUtil.getModel(tree)
                 treeModel!!.addTreeModelListener(treeListener)
-                project!!.getRepository().addRepositoryListener(repositoryListener)
+                project!!.repository.addRepositoryListener(repositoryListener)
                 updateModules()
             }
         })
@@ -136,7 +137,7 @@ class CloudProjectViewExtension(private val project: Project?) {
             timer.value = Timer(
                 1000,
                 object : ActionListener {
-                    public override fun actionPerformed(e: ActionEvent) {
+                    override fun actionPerformed(e: ActionEvent) {
                         val tree: ProjectTree? = projectTree
                         if (tree != null) {
                             callback.invoke(tree)
@@ -151,7 +152,7 @@ class CloudProjectViewExtension(private val project: Project?) {
 
     private val projectTree: ProjectTree?
         private get() {
-            if (project!!.isDisposed()) {
+            if (project!!.isDisposed) {
                 return null
             }
             val pane: ProjectPane? = ProjectPane.getInstance(
@@ -160,11 +161,11 @@ class CloudProjectViewExtension(private val project: Project?) {
             if (pane == null) {
                 return null
             }
-            return pane.getTree()
+            return pane.tree
         }
 
     fun dispose() {
-        project!!.getRepository().removeRepositoryListener(repositoryListener)
+        project!!.repository.removeRepositoryListener(repositoryListener)
         if (treeModel != null) {
             treeModel!!.removeTreeModelListener(treeListener)
         }
@@ -179,33 +180,33 @@ class CloudProjectViewExtension(private val project: Project?) {
         val projectPane: ProjectPane = ProjectPane.getInstance(
             project,
         )
-        val root: MPSTreeNode? = projectPane.getTree().getRootNode()
+        val root: MPSTreeNode? = projectPane.tree.rootNode
         if (root == null) {
             return
         }
-        val model: DefaultTreeModel? = TreeModelUtil.getModel(projectPane.getTree())
+        val model: DefaultTreeModel? = TreeModelUtil.getModel(projectPane.tree)
 
         // wrong parent
-        if (cloudTreeNode!!.getParent() != null && cloudTreeNode!!.getParent() !== root) {
+        if (cloudTreeNode!!.parent != null && cloudTreeNode!!.parent !== root) {
             cloudTreeNode!!.removeFromParent()
         }
 
         // wrong position
         val preferedIndex: Int = 3
-        if (cloudTreeNode!!.getParent() != null && cloudTreeNode!!.getParent().getIndex(cloudTreeNode) != min(
-                (cloudTreeNode!!.getParent().getChildCount() - 1),
+        if (cloudTreeNode!!.parent != null && cloudTreeNode!!.parent.getIndex(cloudTreeNode) != min(
+                (cloudTreeNode!!.parent.childCount - 1),
                 preferedIndex,
             )
         ) {
             model!!.removeNodeFromParent(cloudTreeNode)
         }
-        if (cloudTreeNode!!.getParent() == null) {
-            project!!.getRepository().getModelAccess().runReadAction(object : Runnable {
-                public override fun run() {
+        if (cloudTreeNode!!.parent == null) {
+            project!!.repository.modelAccess.runReadAction(object : Runnable {
+                override fun run() {
                     model!!.insertNodeInto(
                         cloudTreeNode,
                         root,
-                        min(root.getChildCount().toDouble(), preferedIndex.toDouble())
+                        min(root.childCount.toDouble(), preferedIndex.toDouble())
                             .toInt(),
                     )
                 }
@@ -214,9 +215,9 @@ class CloudProjectViewExtension(private val project: Project?) {
     }
 
     fun attachCloudRootIfNotEmpty() {
-        if (cloudTreeNode!!.getChildCount() == 0) {
-            if (cloudTreeNode!!.getParent() != null && cloudTreeNode!!.getTree() != null) {
-                TreeModelUtil.getModel(cloudTreeNode!!.getTree())!!.removeNodeFromParent(cloudTreeNode)
+        if (cloudTreeNode!!.childCount == 0) {
+            if (cloudTreeNode!!.parent != null && cloudTreeNode!!.tree != null) {
+                TreeModelUtil.getModel(cloudTreeNode!!.tree)!!.removeNodeFromParent(cloudTreeNode)
             }
         } else {
             attachCloudRoot()
@@ -224,7 +225,7 @@ class CloudProjectViewExtension(private val project: Project?) {
     }
 
     fun forceUpdate() {
-        while (cloudTreeNode!!.getChildCount() > 0) {
+        while (cloudTreeNode!!.childCount > 0) {
             val moduleTreeNode: CloudModuleTreeNode = cloudTreeNode!!.getChildAt(0) as CloudModuleTreeNode
             TreeModelUtil.getModel(projectTree)!!.removeNodeFromParent(moduleTreeNode)
             moduleTreeNode.dispose()
@@ -233,22 +234,22 @@ class CloudProjectViewExtension(private val project: Project?) {
     }
 
     fun updateModules() {
-        val root: MPSTreeNode? = projectTree!!.getRootNode()
+        val root: MPSTreeNode? = projectTree!!.rootNode
         if (root == null) {
             return
         }
         val treeModel: DefaultTreeModel? = TreeModelUtil.getModel(projectTree)
-        project!!.getRepository().getModelAccess().runReadAction(object : Runnable {
-            public override fun run() {
-                val modules: Iterable<SModule> = project.getRepository().getModules()
+        project!!.repository.modelAccess.runReadAction(object : Runnable {
+            override fun run() {
+                val modules: Iterable<SModule> = project.repository.modules
                 val module2treeNode: Map<SModule, CloudModuleTreeNode> = MapSequence.fromMap(HashMap())
                 val treeNodesToRemove: Set<CloudModuleTreeNode> = SetSequence.fromSet(HashSet())
                 Sequence.fromIterable<TreeNode>(getChildren(cloudTreeNode)).ofType<CloudModuleTreeNode>(
                     CloudModuleTreeNode::class.java,
                 ).visitAll(object : IVisitor<CloudModuleTreeNode>() {
-                    public override fun visit(it: CloudModuleTreeNode) {
+                    override fun visit(it: CloudModuleTreeNode) {
                         SetSequence.fromSet(treeNodesToRemove).addElement(it)
-                        MapSequence.fromMap(module2treeNode).put(it.getModule(), it)
+                        MapSequence.fromMap(module2treeNode).put(it.module, it)
                     }
                 })
                 var insertAt: Int = 0
@@ -257,8 +258,8 @@ class CloudProjectViewExtension(private val project: Project?) {
                         CloudTransientModule::class.java,
                     ).sort(
                         object : ISelector<CloudTransientModule, String>() {
-                            public override fun select(it: CloudTransientModule): String {
-                                return (it.getModuleName())!!
+                            override fun select(it: CloudTransientModule): String {
+                                return (it.moduleName)!!
                             }
                         },
                         true,
@@ -268,13 +269,13 @@ class CloudProjectViewExtension(private val project: Project?) {
                         treeModel!!.insertNodeInto(CloudModuleTreeNode(webModule), cloudTreeNode, insertAt)
                         insertAt++
                     } else {
-                        insertAt = moduleTreeNode.getParent().getIndex(moduleTreeNode) + 1
+                        insertAt = moduleTreeNode.parent.getIndex(moduleTreeNode) + 1
                         MapSequence.fromMap(module2treeNode).removeKey(webModule)
                         SetSequence.fromSet(treeNodesToRemove).removeElement(moduleTreeNode)
                     }
                 }
                 SetSequence.fromSet(treeNodesToRemove).visitAll(object : IVisitor<CloudModuleTreeNode>() {
-                    public override fun visit(it: CloudModuleTreeNode) {
+                    override fun visit(it: CloudModuleTreeNode) {
                         treeModel!!.removeNodeFromParent(it)
                         it.dispose()
                     }
@@ -286,9 +287,9 @@ class CloudProjectViewExtension(private val project: Project?) {
 
     companion object {
         private val LOG: Logger = LogManager.getLogger(CloudProjectViewExtension::class.java)
-        val ROOT_ICON: Icon = LetterInSquareIcon("C", 14, 3.0f, 13.0f, Color.YELLOW, Color.BLACK)
-        val MODULE_ICON: Icon = LetterInSquareIcon("M", 14, 2.0f, 13.0f, Color.YELLOW, Color.BLACK)
-        val MODEL_ICON: Icon = LetterInSquareIcon("m", 14, 2.0f, 12.0f, Color.YELLOW, Color.BLACK)
+        val ROOT_ICON: Icon = LetterInSquareIcon("C", 14, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
+        val MODULE_ICON: Icon = LetterInSquareIcon("M", 14, 2.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
+        val MODEL_ICON: Icon = LetterInSquareIcon("m", 14, 2.0f, 12.0f, JBColor.YELLOW, JBColor.BLACK)
         private val ourInstances: Map<com.intellij.openapi.project.Project, CloudProjectViewExtension> =
             MapSequence.fromMap(
                 HashMap(),
@@ -310,7 +311,7 @@ class CloudProjectViewExtension(private val project: Project?) {
 
         private fun getChildren(parent: TreeNode?): Iterable<TreeNode> {
             val result: List<TreeNode> = ListSequence.fromList(ArrayList())
-            for (i in 0 until parent!!.getChildCount()) {
+            for (i in 0 until parent!!.childCount) {
                 ListSequence.fromList(result).addElement(parent.getChildAt(i))
             }
             return result

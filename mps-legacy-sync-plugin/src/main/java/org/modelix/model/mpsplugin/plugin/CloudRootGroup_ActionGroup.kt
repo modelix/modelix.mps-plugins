@@ -7,7 +7,7 @@ import jetbrains.mps.workbench.action.ApplicationPlugin
 class CloudRootGroup_ActionGroup(plugin: ApplicationPlugin) : GeneratedActionGroup("CloudRootGroup", ID, plugin) {
     init {
         setIsInternal(false)
-        setPopup(false)
+        isPopup = false
         this@CloudRootGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.AddModelServer_Action")
     }
 

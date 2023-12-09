@@ -21,21 +21,21 @@ import java.util.Objects
 class JavaModuleFacetAsNode(facet: JavaModuleFacet) : TreeElementAsNode<JavaModuleFacet>(facet) {
     private val generatedAccessor: IPropertyAccessor<JavaModuleFacet> =
         object : ReadOnlyPropertyAccessor<JavaModuleFacet>() {
-            public override fun get(element: JavaModuleFacet): String? {
+            override fun get(element: JavaModuleFacet): String {
                 // Based on this, I would expect the value to be always true, if not for some legacy code https://github.com/JetBrains/MPS/blob/2820965ff7b8836ed1d14adaf1bde29744c88147/core/project/source/jetbrains/mps/project/facets/JavaModuleFacetImpl.java
                 return true.toString()
             }
         }
     private val pathAccessor: IPropertyAccessor<JavaModuleFacet> =
         object : ReadOnlyPropertyAccessor<JavaModuleFacet>() {
-            public override fun get(element: JavaModuleFacet): String? {
+            override fun get(element: JavaModuleFacet): String? {
                 if (element == null) {
                     throw IllegalStateException("The JavaModuleFacet should not be null")
                 }
-                val originalPath: String? = check_r9f4ri_a0b0a0a0d(element.getClassesGen())
+                val originalPath: String? = check_r9f4ri_a0b0a0a0d(element.classesGen)
                 var moduleRoot: String? = null
-                if (element.getModule() is AbstractModule) {
-                    val module: AbstractModule? = (element.getModule() as AbstractModule?)
+                if (element.module is AbstractModule) {
+                    val module: AbstractModule? = (element.module as AbstractModule?)
                     moduleRoot = check_r9f4ri_a0b0d0a0a0d(check_r9f4ri_a0a1a3a0a0a3(check_r9f4ri_a0a0b0d0a0a0d(module)))
                 }
                 var path: String? = originalPath
@@ -46,44 +46,44 @@ class JavaModuleFacetAsNode(facet: JavaModuleFacet) : TreeElementAsNode<JavaModu
             }
         }
 
-    public override val concept: IConcept
+    override val concept: IConcept
         get() {
             return SConceptAdapter.wrap(CONCEPTS.`JavaModuleFacet$5E`)
         }
 
     override fun getPropertyAccessor(role: String): IPropertyAccessor<JavaModuleFacet>? {
-        if (Objects.equals(role, PROPS.`generated$A44R`.getName())) {
+        if (Objects.equals(role, PROPS.`generated$A44R`.name)) {
             return generatedAccessor
         }
-        if (Objects.equals(role, PROPS.`path$A4yT`.getName())) {
+        if (Objects.equals(role, PROPS.`path$A4yT`.name)) {
             return pathAccessor
         }
         return super.getPropertyAccessor(role)
     }
 
-    public override val roleInParent: String?
+    override val roleInParent: String
         get() {
-            return LINKS.`facets$vw9T`.getName()
+            return LINKS.`facets$vw9T`.name
         }
 
-    public override val parent: INode?
+    override val parent: INode?
         get() {
-            val module: SModule? = element.getModule()
+            val module: SModule? = element.module
             return (if (module == null) null else SModuleAsNode(module))
         }
 
-    public override val reference: INodeReference
+    override val reference: INodeReference
         get() {
-            val module: SModule? = element.getModule()
-            return NodeReference(module!!.getModuleReference())
+            val module: SModule? = element.module
+            return NodeReference(module!!.moduleReference)
         }
 
     class NodeReference(private val moduleReference: SModuleReference) : INodeReference {
-        public override fun serialize(): String {
+        override fun serialize(): String {
             return "mps-java-facet:" + moduleReference
         }
 
-        public override fun resolveNode(area: IArea?): INode? {
+        override fun resolveNode(area: IArea?): INode? {
             val module: SModule? = check_r9f4ri_a0a0e71(
                 (
                     SModuleAsNode.NodeReference(
@@ -98,7 +98,7 @@ class JavaModuleFacetAsNode(facet: JavaModuleFacet) : TreeElementAsNode<JavaModu
             return JavaModuleFacetAsNode(((moduleFacet as JavaModuleFacet?)!!))
         }
 
-        public override fun equals(o: Any?): Boolean {
+        override fun equals(o: Any?): Boolean {
             if (this === o) {
                 return true
             }
@@ -106,13 +106,10 @@ class JavaModuleFacetAsNode(facet: JavaModuleFacet) : TreeElementAsNode<JavaModu
                 return false
             }
             val that: NodeReference = o as NodeReference
-            if (!(Objects.equals(moduleReference, that.moduleReference))) {
-                return false
-            }
-            return true
+            return Objects.equals(moduleReference, that.moduleReference)
         }
 
-        public override fun hashCode(): Int {
+        override fun hashCode(): Int {
             var result: Int = 0
             result = 31 * result + ((if (moduleReference != null) moduleReference.hashCode() else 0))
             return result
@@ -172,28 +169,28 @@ class JavaModuleFacetAsNode(facet: JavaModuleFacet) : TreeElementAsNode<JavaModu
     companion object {
         private fun check_r9f4ri_a0b0a0a0d(checkedDotOperand: IFile?): String? {
             if (null != checkedDotOperand) {
-                return checkedDotOperand.getPath()
+                return checkedDotOperand.path
             }
             return null
         }
 
         private fun check_r9f4ri_a0b0d0a0a0d(checkedDotOperand: IFile?): String? {
             if (null != checkedDotOperand) {
-                return checkedDotOperand.getPath()
+                return checkedDotOperand.path
             }
             return null
         }
 
         private fun check_r9f4ri_a0a1a3a0a0a3(checkedDotOperand: IFile?): IFile? {
             if (null != checkedDotOperand) {
-                return checkedDotOperand.getParent()
+                return checkedDotOperand.parent
             }
             return null
         }
 
         private fun check_r9f4ri_a0a0b0d0a0a0d(checkedDotOperand: AbstractModule?): IFile? {
             if (null != checkedDotOperand) {
-                return checkedDotOperand.getDescriptorFile()
+                return checkedDotOperand.descriptorFile
             }
             return null
         }

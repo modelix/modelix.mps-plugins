@@ -22,13 +22,13 @@ class ModuleCheckout(mpsProject: Project?, private val treeInRepository: CloudRe
     fun checkoutCloudModule(cloudModule: PNodeAdapter): Solution {
         val modelCloudExporter: ModelCloudExporter = ModelCloudExporter(treeInRepository)
         modelCloudExporter.setCheckoutMode()
-        val exportPath: String = mpsProject!!.getProjectFile().getAbsolutePath()
+        val exportPath: String = mpsProject!!.projectFile.absolutePath
         val moduleIds: Set<Long> = SetSequence.fromSetAndArray(HashSet(), cloudModule.nodeId)
         val solutions: _T<List<Solution>> = _T()
         val r: Runnable = object : Runnable {
-            public override fun run() {
-                mpsProject.getRepository().getModelAccess().executeCommand(object : Runnable {
-                    public override fun run() {
+            override fun run() {
+                mpsProject.repository.modelAccess.executeCommand(object : Runnable {
+                    override fun run() {
                         solutions.value = modelCloudExporter.export(exportPath, moduleIds, mpsProject)
                     }
                 })

@@ -42,8 +42,8 @@ object ModelCloudImportUtils {
         val treeInRepository: CloudRepository = CloudNodeTreeNodeBinding.getTreeInRepository(nodeTreeNode)
         val cloudModuleNode: PNodeAdapter = (nodeTreeNode?.node as PNodeAdapter?)!!
         val solution: Solution = ModuleCheckout(mpsProject, treeInRepository).checkoutCloudModule(cloudModuleNode)
-        mpsProject!!.getRepository().getModelAccess().runReadAction(object : Runnable {
-            public override fun run() {
+        mpsProject!!.repository.modelAccess.runReadAction(object : Runnable {
+            override fun run() {
                 syncInModelixAsIndependentModule(
                     treeInRepository,
                     solution,
@@ -59,8 +59,8 @@ object ModelCloudImportUtils {
     fun checkoutAndSync(treeInRepository: CloudRepository, mpsProject: Project, cloudModuleNodeId: Long) {
         val cloudModuleNode: PNodeAdapter = PNodeAdapter(cloudModuleNodeId, treeInRepository.activeBranch.branch)
         val solution: Solution = ModuleCheckout(mpsProject, treeInRepository).checkoutCloudModule(cloudModuleNode)
-        mpsProject.getRepository().getModelAccess().runReadAction(object : Runnable {
-            public override fun run() {
+        mpsProject.repository.modelAccess.runReadAction(object : Runnable {
+            override fun run() {
                 syncInModelixAsIndependentModule(
                     treeInRepository,
                     solution,
@@ -87,8 +87,8 @@ object ModelCloudImportUtils {
         repositoryInModelServer: CloudRepository,
         cloudNodeId: Long,
     ): TransientModuleBinding {
-        val modelServerConnection: ModelServerConnection? = repositoryInModelServer.modelServer
-        val repositoryId: RepositoryId? = repositoryInModelServer.repositoryId
+        val modelServerConnection: ModelServerConnection = repositoryInModelServer.modelServer
+        val repositoryId: RepositoryId = repositoryInModelServer.repositoryId
         val transientModuleBinding: TransientModuleBinding = TransientModuleBinding(cloudNodeId)
         modelServerConnection!!.addBinding(repositoryId, transientModuleBinding)
         PersistedBindingConfiguration.Companion.getInstance(mpsProject)!!.addTransientBoundModule(
@@ -100,7 +100,7 @@ object ModelCloudImportUtils {
     }
 
     fun containsModule(treeInRepository: CloudRepository, module: SModule?): Boolean {
-        return treeInRepository.hasModuleInRepository(module!!.getModuleId().toString())
+        return treeInRepository.hasModuleInRepository(module!!.moduleId.toString())
     }
 
     /**
@@ -114,7 +114,7 @@ object ModelCloudImportUtils {
         progress: ProgressMonitor?,
     ): INode? {
         // First create the module
-        val cloudModuleNode: INode? = treeInRepository.createModule(module!!.getModuleName())
+        val cloudModuleNode: INode? = treeInRepository.createModule(module!!.moduleName)
         replicatePhysicalModule(treeInRepository, cloudModuleNode, module, null, progress)
         return cloudModuleNode
     }
@@ -134,7 +134,7 @@ object ModelCloudImportUtils {
         treeInRepository: CloudRepository,
         mpsProject: MPSProject,
         cloudProject: SNode?,
-    ): ProjectBinding? {
+    ): ProjectBinding {
         val binding: ProjectBinding?
         if (cloudProject == null) {
             binding = treeInRepository.addProjectBinding(0L, mpsProject, SyncDirection.TO_CLOUD)
@@ -183,34 +183,34 @@ object ModelCloudImportUtils {
         }
         val sModuleAsNode: SModuleAsNode? = SModuleAsNode.Companion.wrap(physicalModule)
         treeInRepository.runWrite(object : Consumer<PNodeAdapter?> {
-            public override fun accept(rootNode: PNodeAdapter?) {
-                INodeUtils.copyProperty(cloudModule, sModuleAsNode, PROPS.`name$MnvL`.getName())
-                INodeUtils.copyProperty(cloudModule, sModuleAsNode, PROPS.`id$7MjP`.getName())
-                INodeUtils.copyProperty(cloudModule, sModuleAsNode, PROPS.`moduleVersion$sDQK`.getName())
-                INodeUtils.copyProperty(cloudModule, sModuleAsNode, PROPS.`compileInMPS$sEzN`.getName())
-                INodeUtils.cloneChildren(cloudModule, sModuleAsNode, LINKS.`facets$vw9T`.getName())
-                INodeUtils.cloneChildren(cloudModule, sModuleAsNode, LINKS.`dependencies$vC8r`.getName())
-                INodeUtils.cloneChildren(cloudModule, sModuleAsNode, LINKS.`languageDependencies$vKlY`.getName())
+            override fun accept(rootNode: PNodeAdapter?) {
+                INodeUtils.copyProperty(cloudModule, sModuleAsNode, PROPS.`name$MnvL`.name)
+                INodeUtils.copyProperty(cloudModule, sModuleAsNode, PROPS.`id$7MjP`.name)
+                INodeUtils.copyProperty(cloudModule, sModuleAsNode, PROPS.`moduleVersion$sDQK`.name)
+                INodeUtils.copyProperty(cloudModule, sModuleAsNode, PROPS.`compileInMPS$sEzN`.name)
+                INodeUtils.cloneChildren(cloudModule, sModuleAsNode, LINKS.`facets$vw9T`.name)
+                INodeUtils.cloneChildren(cloudModule, sModuleAsNode, LINKS.`dependencies$vC8r`.name)
+                INodeUtils.cloneChildren(cloudModule, sModuleAsNode, LINKS.`languageDependencies$vKlY`.name)
             }
         })
         val models: _T<List<SModel?>?> = _T(null)
-        physicalModule!!.getRepository()!!.getModelAccess().runReadAction(object : Runnable {
-            public override fun run() {
+        physicalModule!!.repository!!.modelAccess.runReadAction(object : Runnable {
+            override fun run() {
                 models.value = ListSequence.fromListWithValues(
                     ArrayList(),
                     SModuleUtils.getModelsWithoutDescriptor(physicalModule),
                 )
             }
         })
-        _progress.value!!.start("Module " + physicalModule.getModuleName(), ListSequence.fromList(models.value).count())
+        _progress.value!!.start("Module " + physicalModule.moduleName, ListSequence.fromList(models.value).count())
         for (model: SModel? in ListSequence.fromList<SModel?>(models.value)) {
-            if (_progress.value!!.isCanceled()) {
+            if (_progress.value!!.isCanceled) {
                 break
             }
-            physicalModule.getRepository()!!.getModelAccess().runReadAction(object : Runnable {
-                public override fun run() {
+            physicalModule.repository!!.modelAccess.runReadAction(object : Runnable {
+                override fun run() {
                     val modelProgress: ProgressMonitor = _progress.value!!.subTask(1)
-                    modelProgress.start("Model " + model!!.getName(), 1)
+                    modelProgress.start("Model " + model!!.name, 1)
                     val cloudModel: INode? = copyPhysicalModel(treeInRepository, cloudModule, model)
                     if (modelMappingConsumer != null) {
                         modelMappingConsumer.accept(PhysicalToCloudModelMapping(model, cloudModel))
@@ -229,23 +229,23 @@ object ModelCloudImportUtils {
      */
     fun copyPhysicalModel(treeInRepository: CloudRepository, cloudModule: INode?, physicalModel: SModel?): INode? {
         val originalModel: INode? = SModelAsNode.Companion.wrap(physicalModel)
-        val cloudModel: INode? = treeInRepository.createNode(
+        val cloudModel: INode = treeInRepository.createNode(
             cloudModule,
             LINKS.`models$h3QT`,
             CONCEPTS.`Model$2P`,
             object : Consumer<INode> {
-                public override fun accept(cloudModel: INode) {
-                    INodeUtils.copyProperty(cloudModel, originalModel, PROPS.`name$MnvL`.getName())
-                    INodeUtils.copyProperty(cloudModel, originalModel, PROPS.`id$lDUo`.getName())
-                    INodeUtils.cloneChildren(cloudModel, originalModel, LINKS.`modelImports$8DOI`.getName())
-                    INodeUtils.cloneChildren(cloudModel, originalModel, LINKS.`usedLanguages$QK4E`.getName())
+                override fun accept(cloudModel: INode) {
+                    INodeUtils.copyProperty(cloudModel, originalModel, PROPS.`name$MnvL`.name)
+                    INodeUtils.copyProperty(cloudModel, originalModel, PROPS.`id$lDUo`.name)
+                    INodeUtils.cloneChildren(cloudModel, originalModel, LINKS.`modelImports$8DOI`.name)
+                    INodeUtils.cloneChildren(cloudModel, originalModel, LINKS.`usedLanguages$QK4E`.name)
                     for (physicalRoot: SNode in Sequence.fromIterable<SNode>(
-                        physicalModel!!.getRootNodes(),
+                        physicalModel!!.rootNodes,
                     )) {
                         val cloudRoot: INode = cloudModel.addNewChild(
-                            LINKS.`rootNodes$jxXY`.getName(),
+                            LINKS.`rootNodes$jxXY`.name,
                             -1,
-                            SConceptAdapter.Companion.wrap(physicalRoot.getConcept()),
+                            SConceptAdapter.Companion.wrap(physicalRoot.concept),
                         )
                         replicatePhysicalNode(cloudRoot, physicalRoot)
                     }
@@ -263,17 +263,17 @@ object ModelCloudImportUtils {
      */
     private fun replicatePhysicalNode(cloudNode: INode, physicalNode: SNode) {
         MPSNodeMapping.mapToMpsNode(cloudNode, physicalNode)
-        for (prop: SProperty in Sequence.fromIterable(physicalNode.getProperties())) {
-            cloudNode.setPropertyValue(prop.getName(), physicalNode.getProperty(prop))
+        for (prop: SProperty in Sequence.fromIterable(physicalNode.properties)) {
+            cloudNode.setPropertyValue(prop.name, physicalNode.getProperty(prop))
         }
-        for (ref: SReference in Sequence.fromIterable(physicalNode.getReferences())) {
-            cloudNode.setReferenceTarget(ref.getRole(), SNodeToNodeAdapter.Companion.wrap(ref.getTargetNode()))
+        for (ref: SReference in Sequence.fromIterable(physicalNode.references)) {
+            cloudNode.setReferenceTarget(ref.role, SNodeToNodeAdapter.Companion.wrap(ref.targetNode))
         }
-        for (physicalChild: SNode in Sequence.fromIterable(physicalNode.getChildren())) {
+        for (physicalChild: SNode in Sequence.fromIterable(physicalNode.children)) {
             val cloudChild: INode = cloudNode.addNewChild(
-                physicalChild.getContainmentLink()!!.getName(),
+                physicalChild.containmentLink!!.name,
                 -1,
-                SConceptAdapter.Companion.wrap(physicalChild.getConcept()),
+                SConceptAdapter.Companion.wrap(physicalChild.concept),
             )
             replicatePhysicalNode(cloudChild, physicalChild)
         }

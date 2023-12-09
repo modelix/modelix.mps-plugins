@@ -39,6 +39,7 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.deepUnwrapNode
+import org.modelix.model.api.resolveIn
 import org.modelix.model.area.CompositeArea
 import org.modelix.model.area.IArea
 import org.modelix.model.area.PArea
@@ -59,7 +60,7 @@ class ModelSynchronizer(
     private val cloudRepository: ICloudRepository,
 ) {
     protected var nodeMap: NodeMap = NodeMap(object : BranchProvider {
-        override val branch: IBranch?
+        override val branch: IBranch
             get() {
                 return this@ModelSynchronizer.branch
             }
@@ -82,35 +83,34 @@ class ModelSynchronizer(
 
     fun syncModelToMPS(tree: ITree?, withInitialRemoval: Boolean) {
         with((tree)!!, {
-            if (LOG.isTraceEnabled()) {
+            if (LOG.isTraceEnabled) {
                 LOG.trace(
-                    "syncModel initialRemoval=" + withInitialRemoval + " on model " + model!!.getName().getLongName(),
+                    "syncModel initialRemoval=" + withInitialRemoval + " on model " + model!!.name.longName,
                 )
             }
             if (withInitialRemoval) {
                 for (root: SNode? in ListSequence.fromList(
                     ListSequence.fromListWithValues(
                         ArrayList(),
-                        model!!.getRootNodes(),
+                        model!!.rootNodes,
                     ),
                 ).ofType(
                     SNode::class.java,
                 )) {
                     ListSequence.fromList(SNodeOperations.getChildren(root)).visitAll(object : IVisitor<SNode?>() {
-                        public override fun visit(it: SNode?) {
+                        override fun visit(it: SNode?) {
                             SNodeOperations.deleteNode(it)
                         }
                     })
                 }
             }
             pendingReferences.runAndFlush(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     prefetchModelContent(tree)
                     syncRootNodesToMPS()
                     syncModelPropertiesToMPS(tree)
                 }
             })
-            Unit
         })
     }
 
@@ -132,22 +132,21 @@ class ModelSynchronizer(
         }
         with(tree, {
             pendingReferences.runAndFlush(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     prefetchModelContent(tree)
                     syncModelPropertiesFromMPS()
                     syncRootNodesFromMPS()
                 }
             })
-            Unit
         })
-        PArea((branch)!!).executeWrite({ Unit })
+        PArea((branch)).executeWrite({ })
     }
 
     protected fun syncRootNodesFromMPS() {
-        val t: IWriteTransaction = branch!!.writeTransaction
+        val t: IWriteTransaction = branch.writeTransaction
         val syncedNodes = createChildrenSynchronizer(
             modelNodeId,
-            LINKS.`rootNodes$jxXY`.getName(),
+            LINKS.`rootNodes$jxXY`.name,
         ).syncToCloud(t)
         for (syncedNode: IMapping<Long?, SNode?> in MapSequence.fromMap(syncedNodes)) {
             syncNodeFromMPS(syncedNode.value(), true)
@@ -184,7 +183,7 @@ class ModelSynchronizer(
         return nodeMap.getOrCreateNode(
             nodeId,
             object : _return_P0_E0<SAbstractConcept> {
-                public override fun invoke(): SAbstractConcept {
+                override fun invoke(): SAbstractConcept {
                     val concept: IConcept? = tree.getConcept(nodeId)
                     if (concept == null) {
                         throw RuntimeException("Node has no concept: " + nodeId)
@@ -200,7 +199,7 @@ class ModelSynchronizer(
     }
 
     fun syncNodeToMPS(nodeId: Long, tree: ITree, includeDescendants: Boolean) {
-        if (LOG.isTraceEnabled()) {
+        if (LOG.isTraceEnabled) {
             LOG.trace("syncNode nodeId: " + nodeId)
         }
         try {
@@ -212,19 +211,19 @@ class ModelSynchronizer(
                     ) + ", Concept: " + tree.getConcept(nodeId),
                 )
             }
-            val node: SNode? = nodeMap.getOrCreateNode(
+            val node: SNode = nodeMap.getOrCreateNode(
                 nodeId,
                 object : _return_P0_E0<SAbstractConcept> {
-                    public override fun invoke(): SAbstractConcept {
+                    override fun invoke(): SAbstractConcept {
                         return concept
                     }
                 },
             )
-            for (property: SProperty in CollectionSequence.fromCollection<SProperty>(concept.getProperties())) {
-                node!!.setProperty(property, tree.getProperty(nodeId, property.getName()))
+            for (property: SProperty in CollectionSequence.fromCollection<SProperty>(concept.properties)) {
+                node!!.setProperty(property, tree.getProperty(nodeId, property.name))
             }
-            for (link: SReferenceLink in CollectionSequence.fromCollection(concept.getReferenceLinks())) {
-                syncReferenceToMPS(nodeId, link.getName(), tree)
+            for (link: SReferenceLink in CollectionSequence.fromCollection(concept.referenceLinks)) {
+                syncReferenceToMPS(nodeId, link.name, tree)
             }
         } catch (ex: Exception) {
             if (LOG.isEnabledFor(Level.ERROR)) {
@@ -236,7 +235,7 @@ class ModelSynchronizer(
 
     fun syncPropertyToMPS(nodeId: Long, role: String?, tree: ITree) {
         val concept: SAbstractConcept? = SConceptAdapter.Companion.unwrap(tree.getConcept(nodeId))
-        val mpsNode: SNode? = getOrCreateMPSNode(nodeId, tree)
+        val mpsNode: SNode = getOrCreateMPSNode(nodeId, tree)
         val mpsProperty: SProperty = findProperty(concept, role)
         mpsNode!!.setProperty(mpsProperty, tree.getProperty(nodeId, (role)!!))
     }
@@ -249,11 +248,11 @@ class ModelSynchronizer(
 
     fun syncReferenceToMPS(nodeId: Long, role: String?, tree: ITree) {
         pendingReferences.add(object : _return_P0_E0<SNode> {
-            public override fun invoke(): SNode? {
+            override fun invoke(): SNode? {
                 try {
-                    val node: SNode? = getOrCreateMPSNode(nodeId, tree)
+                    val node: SNode = getOrCreateMPSNode(nodeId, tree)
                     val target: INodeReference? = tree.getReferenceTarget(nodeId, (role)!!)
-                    val repo: SRepository? = model!!.getRepository()
+                    val repo: SRepository? = model!!.repository
                     var resolveContext: IArea? = null
                     if (repo == null) {
                         // We look in NodeMap instead
@@ -276,7 +275,7 @@ class ModelSynchronizer(
                         val targetId: Long = (if (targetAsPNodeAdapter == null) 0L else targetAsPNodeAdapter.nodeId)
                         targetSNode = (if (targetId == 0L) null else getOrCreateMPSNode(targetId, tree))
                     }
-                    val link: SReferenceLink = findReferenceLink(node!!.getConcept(), role)
+                    val link: SReferenceLink = findReferenceLink(node!!.concept, role)
                     node.setReferenceTarget(link, targetSNode)
                     return targetSNode
                 } catch (e: RuntimeException) {
@@ -293,13 +292,13 @@ class ModelSynchronizer(
     }
 
     fun syncChildrenToMPS(parentId: Long, role: String?, tree: ITree, includeDescendants: Boolean) {
-        if (LOG.isTraceEnabled()) {
+        if (LOG.isTraceEnabled) {
             LOG.trace("syncChildren nodeId:" + parentId + ", role:" + role + ", descendants? " + includeDescendants)
         }
         val syncedNodes = createChildrenSynchronizer(parentId, role).syncToMPS(tree)
 
         // order
-        val isRootNodes: Boolean = parentId == modelNodeId && Objects.equals(role, LINKS.`rootNodes$jxXY`.getName())
+        val isRootNodes: Boolean = parentId == modelNodeId && Objects.equals(role, LINKS.`rootNodes$jxXY`.name)
         if (!(isRootNodes)) {
             val parentNode: SNode? = nodeMap.getNode(parentId)
             val link: SContainmentLink = findContainmentLink(SNodeOperations.getConcept(parentNode), role)
@@ -332,7 +331,7 @@ class ModelSynchronizer(
 
     private fun createChildrenSynchronizer(parentId: Long, role: String?): Synchronizer<SNode> {
         return object : Synchronizer<SNode>(parentId, role) {
-            public override fun associate(
+            override fun associate(
                 tree: ITree,
                 cloudChildren: List<Long>,
                 mpsChildren: List<SNode>,
@@ -340,8 +339,8 @@ class ModelSynchronizer(
             ): Map<Long, SNode> {
                 val mpsIdToNode: Map<String, SNode> = MapSequence.fromMap(HashMap())
                 ListSequence.fromList<SNode?>(mpsChildren).visitAll(object : IVisitor<SNode>() {
-                    public override fun visit(it: SNode) {
-                        MapSequence.fromMap(mpsIdToNode).put(it.getNodeId().toString(), it)
+                    override fun visit(it: SNode) {
+                        MapSequence.fromMap(mpsIdToNode).put(it.nodeId.toString(), it)
                     }
                 })
                 val mpsChildrenSet: Set<SNode?> = SetSequence.fromSetWithValues(HashSet(), mpsChildren)
@@ -372,7 +371,7 @@ class ModelSynchronizer(
                 return mapping
             }
 
-            public override fun createCloudChild(t: IWriteTransaction, mpsChild: SNode): Long {
+            override fun createCloudChild(t: IWriteTransaction, mpsChild: SNode): Long {
                 val nodeId: Long = getOrCreateCloudNode(mpsChild, parentId, role)
                 if (t.getParent(nodeId) != parentId || t.getRole(nodeId) !== role) {
                     t.moveChild(parentId, role, -1, nodeId)
@@ -399,14 +398,14 @@ class ModelSynchronizer(
             override val mPSChildren: Iterable<SNode>
                 get() {
                     if (isRootNodes) {
-                        return model!!.getRootNodes()
+                        return model!!.rootNodes
                     } else {
                         val parentNode: SNode? = nodeMap.getNode(parentId)
                         if (parentNode == null) {
                             throw IllegalStateException("Node has no parent but it is not a root node")
                         }
                         val children: Iterable<SNode> =
-                            parentNode.getChildren(findContainmentLink(parentNode.getConcept(), role))
+                            parentNode.getChildren(findContainmentLink(parentNode.concept, role))
                         return Sequence.fromIterable(children).ofType(
                             SNode::class.java,
                         )
@@ -414,20 +413,20 @@ class ModelSynchronizer(
                 }
             private val isRootNodes: Boolean
                 private get() {
-                    return parentId == modelNodeId && Objects.equals(role, LINKS.`rootNodes$jxXY`.getName())
+                    return parentId == modelNodeId && Objects.equals(role, LINKS.`rootNodes$jxXY`.name)
                 }
 
-            public override fun removeMPSChild(mpsChild: SNode) {
+            override fun removeMPSChild(mpsChild: SNode) {
                 SNodeOperations.deleteNode(mpsChild)
             }
         }
     }
 
     fun findContainmentLink(concept: SAbstractConcept, linkName: String?): SContainmentLink {
-        val links: Iterable<SContainmentLink> = concept.getContainmentLinks()
+        val links: Iterable<SContainmentLink> = concept.containmentLinks
         val link: SContainmentLink? = Sequence.fromIterable(links).findFirst(object : IWhereFilter<SContainmentLink>() {
-            public override fun accept(it: SContainmentLink): Boolean {
-                return Objects.equals(it.getName(), linkName)
+            override fun accept(it: SContainmentLink): Boolean {
+                return Objects.equals(it.name, linkName)
             }
         })
         if (link == null) {
@@ -437,10 +436,10 @@ class ModelSynchronizer(
     }
 
     fun findReferenceLink(concept: SAbstractConcept, linkName: String?): SReferenceLink {
-        val links: Iterable<SReferenceLink> = concept.getReferenceLinks()
+        val links: Iterable<SReferenceLink> = concept.referenceLinks
         val link: SReferenceLink? = Sequence.fromIterable(links).findFirst(object : IWhereFilter<SReferenceLink>() {
-            public override fun accept(it: SReferenceLink): Boolean {
-                return Objects.equals(it.getName(), linkName)
+            override fun accept(it: SReferenceLink): Boolean {
+                return Objects.equals(it.name, linkName)
             }
         })
         if (link == null) {
@@ -450,10 +449,10 @@ class ModelSynchronizer(
     }
 
     fun findProperty(concept: SAbstractConcept?, role: String?): SProperty {
-        val properties: Iterable<SProperty> = concept!!.getProperties()
+        val properties: Iterable<SProperty> = concept!!.properties
         val property: SProperty? = Sequence.fromIterable(properties).findFirst(object : IWhereFilter<SProperty>() {
-            public override fun accept(it: SProperty): Boolean {
-                return Objects.equals(it.getName(), role)
+            override fun accept(it: SProperty): Boolean {
+                return Objects.equals(it.name, role)
             }
         })
         if (property == null) {
@@ -463,30 +462,30 @@ class ModelSynchronizer(
     }
 
     fun syncNodeFromMPS(parentNode: SNode?, includeDescendants: Boolean) {
-        if (parentNode!!.getModel() !== model) {
+        if (parentNode!!.model !== model) {
             throw RuntimeException("Not part of this model: " + parentNode)
         }
-        val branch: IBranch? = branch
+        val branch: IBranch = branch
         val t: IWriteTransaction = branch!!.writeTransaction
-        val concept: SConcept = parentNode!!.getConcept()
+        val concept: SConcept = parentNode!!.concept
         val parentNodeId: Long = getOrCreateCloudNode(parentNode)
         val cloudNode: INode = PNodeAdapter(parentNodeId, (branch))
         MPSNodeMapping.mapToMpsNode(cloudNode, parentNode)
-        for (property: SProperty in CollectionSequence.fromCollection<SProperty>(concept.getProperties())) {
-            val oldValue: String? = t.getProperty(parentNodeId, property.getName())
+        for (property: SProperty in CollectionSequence.fromCollection<SProperty>(concept.properties)) {
+            val oldValue: String? = t.getProperty(parentNodeId, property.name)
             val newValue: String? = parentNode.getProperty(property)
             if (!(Objects.equals(newValue, oldValue))) {
-                t.setProperty(parentNodeId, property.getName(), newValue)
+                t.setProperty(parentNodeId, property.name, newValue)
             }
         }
-        for (link: SReferenceLink in CollectionSequence.fromCollection<SReferenceLink>(concept.getReferenceLinks())) {
+        for (link: SReferenceLink in CollectionSequence.fromCollection<SReferenceLink>(concept.referenceLinks)) {
             pendingReferences.add(object : _return_P0_E0<SNode> {
-                public override fun invoke(): SNode? {
+                override fun invoke(): SNode? {
                     val targetSNode: SNode? = parentNode.getReferenceTarget(link)
-                    val currentTarget: INodeReference? = t.getReferenceTarget(parentNodeId, link.getName())
+                    val currentTarget: INodeReference? = t.getReferenceTarget(parentNodeId, link.name)
                     if (targetSNode == null) {
                         if (currentTarget != null) {
-                            t.setReferenceTarget(parentNodeId, link.getName(), null)
+                            t.setReferenceTarget(parentNodeId, link.name, null)
                         }
                     } else {
                         val targetId: Long = nodeMap.getId(targetSNode)
@@ -497,14 +496,14 @@ class ModelSynchronizer(
                             targetNode = PNodeAdapter(targetId, (branch))
                         }
                         if (!(Objects.equals(currentTarget, targetNode!!.reference))) {
-                            t.setReferenceTarget(parentNodeId, link.getName(), targetNode.reference)
+                            t.setReferenceTarget(parentNodeId, link.name, targetNode.reference)
                         }
                     }
-                    return null as SNode?
+                    return null
                 }
             })
         }
-        for (link: SContainmentLink? in CollectionSequence.fromCollection<SContainmentLink>(concept.getContainmentLinks())) {
+        for (link: SContainmentLink? in CollectionSequence.fromCollection<SContainmentLink>(concept.containmentLinks)) {
             syncChildrenFromMPS(link, t, parentNodeId, parentNode, includeDescendants)
         }
     }
@@ -516,13 +515,13 @@ class ModelSynchronizer(
         parentNode: SNode?,
         includeDescendants: Boolean,
     ) {
-        val syncedNodes: Map<Long, SNode> = createChildrenSynchronizer(parentNodeId, link!!.getName()).syncToCloud(t)
+        val syncedNodes: Map<Long, SNode> = createChildrenSynchronizer(parentNodeId, link!!.name).syncToCloud(t)
 
         // order
         val sortedMappings: Iterable<IMapping<Long, SNode>> =
             MapSequence.fromMap(syncedNodes).sort(
                 object : ISelector<IMapping<Long, SNode>, Int>() {
-                    public override fun select(it: IMapping<Long, SNode>): Int {
+                    override fun select(it: IMapping<Long, SNode>): Int {
                         val mpsNode = it.value()
                         return SNodeOperations.getIndexInParent(mpsNode)
                     }
@@ -532,10 +531,10 @@ class ModelSynchronizer(
         var index: Int = 0
         for (mapping: IMapping<Long, SNode> in sortedMappings) {
             val cloudId: Long = mapping.key()
-            val children: Iterable<Long> = t.getChildren(parentNodeId, link.getName())
+            val children: Iterable<Long> = t.getChildren(parentNodeId, link.name)
             val actualId: Long = Optional.ofNullable(Sequence.fromIterable(children).skip(1).first()).orElse(0L)
             if (actualId != cloudId) {
-                t.moveChild(parentNodeId, link.getName(), index, cloudId)
+                t.moveChild(parentNodeId, link.name, index, cloudId)
             }
             index++
         }
@@ -548,12 +547,12 @@ class ModelSynchronizer(
 
     protected fun getOrCreateCloudNode(node: SNode?, parentIfCreate: Long, roleIfCreate: String?): Long {
         var nodeId: Long = nodeMap.getId(node)
-        val t: IWriteTransaction = branch!!.writeTransaction
+        val t: IWriteTransaction = branch.writeTransaction
         if (nodeId == 0L || !(t.containsNode(nodeId))) {
             nodeId = t.addNewChild(
                 parentIfCreate, roleIfCreate, -1,
                 SConceptAdapter.Companion.wrap(
-                    node!!.getConcept(),
+                    node!!.concept,
                 ),
             )
             nodeMap.put(nodeId, node)
@@ -572,7 +571,7 @@ class ModelSynchronizer(
     fun getOrSyncToCloud(node: SNode, t: IWriteTransaction): Long {
         var cloudId: Long = nodeMap.getId(node)
         if (cloudId == 0L || !(t.containsNode(cloudId))) {
-            val parent: SNode? = node.getParent()
+            val parent: SNode? = node.parent
             if (parent == null) {
                 syncRootNodesFromMPS()
             } else {
@@ -585,24 +584,24 @@ class ModelSynchronizer(
     }
 
     fun handleMPSNodeAdded(e: SNodeAddEvent) {
-        PArea((branch)!!).executeWrite<Unit>({
+        PArea((branch)).executeWrite<Unit>({
             pendingReferences.runAndFlush(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     val t: IWriteTransaction = branch.writeTransaction
                     val parentId: Long
                     val role: String
-                    if (e.isRoot()) {
+                    if (e.isRoot) {
                         parentId = modelNodeId
-                        role = LINKS.`rootNodes$jxXY`.getName()
+                        role = LINKS.`rootNodes$jxXY`.name
                     } else {
-                        parentId = nodeMap.getId(e.getParent())
-                        role = e.getAggregationLink()!!.getName()
+                        parentId = nodeMap.getId(e.parent)
+                        role = e.aggregationLink!!.name
                     }
                     if (parentId == 0L || !(t.containsNode(parentId))) {
                         return
                     }
-                    val child: SNode = e.getChild()
-                    if (e.isRoot()) {
+                    val child: SNode = e.child
+                    if (e.isRoot) {
                         var childId: Long = nodeMap.getId(child)
                         if (childId == 0L || !(t.containsNode(childId))) {
                             childId = t.addNewChild(
@@ -616,20 +615,19 @@ class ModelSynchronizer(
                             t.moveChild(parentId, role, -1, childId)
                         }
                     } else {
-                        syncChildrenFromMPS(e.getAggregationLink(), t, parentId, e.getParent(), false)
+                        syncChildrenFromMPS(e.aggregationLink, t, parentId, e.parent, false)
                     }
                     syncNodeFromMPS(child, true)
                 }
             })
-            Unit
         })
     }
 
     fun handleMPSNodeRemoved(e: SNodeRemoveEvent) {
-        val branch: IBranch? = branch
+        val branch: IBranch = branch
         PArea((branch)!!).executeWrite({
             val t: IWriteTransaction = branch.writeTransaction
-            val childId: Long = nodeMap.getId(e.getChild())
+            val childId: Long = nodeMap.getId(e.child)
             if (childId != 0L && t.containsNode(childId)) {
                 t.moveChild(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE, -1, childId)
             }
@@ -638,13 +636,13 @@ class ModelSynchronizer(
     }
 
     fun handleReferenceChanged(e: SReferenceChangeEvent) {
-        val branch: IBranch? = branch
+        val branch: IBranch = branch
         PArea((branch)!!).executeWrite<Unit>({
-            val t: IWriteTransaction = this.branch!!.writeTransaction
-            val targetSNode: SNode? = check_l95w85_a0b0a0a1a96(e.getNewValue())
-            val sourceId: Long = getOrCreateCloudNode(e.getNode())
+            val t: IWriteTransaction = this.branch.writeTransaction
+            val targetSNode: SNode? = check_l95w85_a0b0a0a1a96(e.newValue)
+            val sourceId: Long = getOrCreateCloudNode(e.node)
             if (targetSNode == null) {
-                t.setReferenceTarget(sourceId, e.getAssociationLink().getName(), null)
+                t.setReferenceTarget(sourceId, e.associationLink.name, null)
             } else {
                 val targetId: Long = nodeMap.getId(targetSNode)
                 val targetNode: INode?
@@ -653,13 +651,12 @@ class ModelSynchronizer(
                 } else {
                     targetNode = PNodeAdapter(targetId, (branch))
                 }
-                t.setReferenceTarget(sourceId, e.getAssociationLink().getName(), targetNode!!.reference)
+                t.setReferenceTarget(sourceId, e.associationLink.name, targetNode!!.reference)
             }
-            Unit
         })
     }
 
-    inner class PendingReferences() {
+    inner class PendingReferences {
         protected var currentReferences: List<_return_P0_E0<out SNode>>? = null
 
         @Synchronized
@@ -705,15 +702,15 @@ class ModelSynchronizer(
             }
             val modelsToImport: Iterable<SModel?> =
                 SetSequence.fromSet(targetModels).where(object : IWhereFilter<SModel?>() {
-                    public override fun accept(it: SModel?): Boolean {
+                    override fun accept(it: SModel?): Boolean {
                         return it != null && it !== model
                     }
                 })
-            if (Sequence.fromIterable(modelsToImport).isNotEmpty()) {
+            if (Sequence.fromIterable(modelsToImport).isNotEmpty) {
                 val importer: ModelImporter = ModelImporter((model)!!)
                 Sequence.fromIterable<SModel?>(modelsToImport).visitAll(object : IVisitor<SModel>() {
-                    public override fun visit(it: SModel) {
-                        importer.prepare(it.getReference())
+                    override fun visit(it: SModel) {
+                        importer.prepare(it.reference)
                     }
                 })
                 importer.execute()
@@ -738,21 +735,21 @@ class ModelSynchronizer(
         val MPS_NODE_ID_PROPERTY_NAME: String = "#mpsNodeId#"
         private fun check_l95w85_a0g0a0a0a0a14(checkedDotOperand: INodeReference?, resolveContext: IArea): INode? {
             if (null != checkedDotOperand) {
-                return checkedDotOperand.resolveNode(resolveContext)
+                return checkedDotOperand.resolveIn(resolveContext!!)
             }
             return null
         }
 
         private fun check_l95w85_a0b0a0a1a96(checkedDotOperand: SReference?): SNode? {
             if (null != checkedDotOperand) {
-                return checkedDotOperand.getTargetNode()
+                return checkedDotOperand.targetNode
             }
             return null
         }
 
         private fun check_l95w85_a0a1a0a1a6tc(checkedDotOperand: SNode?): SModel? {
             if (null != checkedDotOperand) {
-                return checkedDotOperand.getModel()
+                return checkedDotOperand.model
             }
             return null
         }

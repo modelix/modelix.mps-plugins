@@ -37,7 +37,7 @@ class CloudNodeGroupAddChild_ActionGroup(plugin: ApplicationPlugin) :
 
     init {
         setIsInternal(false)
-        setPopup(true)
+        isPopup = true
     }
 
     public override fun doUpdate(event: AnActionEvent) {
@@ -66,39 +66,39 @@ class CloudNodeGroupAddChild_ActionGroup(plugin: ApplicationPlugin) :
             return
         }
         val allLanguages_: Iterable<SLanguage> =
-            LanguageRegistry.getInstance(project!!.getRepository()).getAllLanguages()
+            LanguageRegistry.getInstance(project!!.repository).allLanguages
         val allLanguages: Set<SLanguage> = SetSequence.fromSetWithValues(HashSet(), allLanguages_)
-        for (role: SContainmentLink in CollectionSequence.fromCollection<SContainmentLink>(sconcept.getContainmentLinks())) {
+        for (role: SContainmentLink in CollectionSequence.fromCollection<SContainmentLink>(sconcept.containmentLinks)) {
             if (Objects.equals(role, LINKS.`smodelAttribute$KJ43`)) {
                 continue
             }
             var subConcepts: Iterable<SAbstractConcept>? =
-                SConceptOperations.getAllSubConcepts(role.getTargetConcept(), allLanguages)
+                SConceptOperations.getAllSubConcepts(role.targetConcept, allLanguages)
             subConcepts = Sequence.fromIterable(subConcepts).where(object : IWhereFilter<SAbstractConcept>() {
-                public override fun accept(it: SAbstractConcept): Boolean {
-                    return !(it.isAbstract())
+                override fun accept(it: SAbstractConcept): Boolean {
+                    return !(it.isAbstract)
                 }
             })
             if (Objects.equals(role, LINKS.`rootNodes$jxXY`)) {
                 subConcepts = Sequence.fromIterable(subConcepts).ofType(
                     SConcept::class.java,
                 ).where(object : IWhereFilter<SConcept>() {
-                    public override fun accept(it: SConcept): Boolean {
-                        return it.isRootable()
+                    override fun accept(it: SConcept): Boolean {
+                        return it.isRootable
                     }
                 }).ofType(SAbstractConcept::class.java)
             }
             subConcepts = Sequence.fromIterable(subConcepts).sort(
                 object : ISelector<SAbstractConcept, String>() {
-                    public override fun select(it: SAbstractConcept): String {
-                        return it.getLanguage().getQualifiedName()
+                    override fun select(it: SAbstractConcept): String {
+                        return it.language.qualifiedName
                     }
                 },
                 true,
             ).alsoSort(
                 object : ISelector<SAbstractConcept, String>() {
-                    public override fun select(it: SAbstractConcept): String {
-                        return it.getName()
+                    override fun select(it: SAbstractConcept): String {
+                        return it.name
                     }
                 },
                 true,
@@ -121,7 +121,7 @@ class CloudNodeGroupAddChild_ActionGroup(plugin: ApplicationPlugin) :
         }
     }
 
-    public override fun addPlace(place: ActionPlace, cond: Condition<BaseAction>?) {
+    override fun addPlace(place: ActionPlace, cond: Condition<BaseAction>?) {
         SetSequence.fromSet(myPlaces).addElement(Pair(place, cond))
     }
 

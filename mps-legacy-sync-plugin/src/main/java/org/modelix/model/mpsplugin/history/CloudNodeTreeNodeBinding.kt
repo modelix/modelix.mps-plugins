@@ -11,13 +11,13 @@ import org.modelix.model.mpsplugin.TransientModuleBinding
 object CloudNodeTreeNodeBinding {
     fun isBoundAsAModule(_this: CloudNodeTreeNode): Boolean {
         val nodeId: Long = (_this.node as PNodeAdapter?)!!.nodeId
-        val repositoryId: RepositoryId? = _this.getAncestor(RepositoryTreeNode::class.java).repositoryId
+        val repositoryId: RepositoryId = _this.getAncestor(RepositoryTreeNode::class.java).repositoryId
         return _this.modelServer?.hasModuleBinding(repositoryId, nodeId) == true
     }
 
     fun getTransientModuleBinding(_this: CloudNodeTreeNode): TransientModuleBinding? {
         val nodeId: Long = (_this.node as PNodeAdapter?)!!.nodeId
-        val repositoryId: RepositoryId? = _this.getAncestor(RepositoryTreeNode::class.java).repositoryId
+        val repositoryId: RepositoryId = _this.getAncestor(RepositoryTreeNode::class.java).repositoryId
         val bindings: List<TransientModuleBinding> = _this.modelServer?.getModuleBinding(repositoryId, nodeId)
             ?.filterIsInstance<TransientModuleBinding>() ?: emptyList()
         if (ListSequence.fromList(bindings).count() == 0) {
@@ -30,8 +30,8 @@ object CloudNodeTreeNodeBinding {
     }
 
     fun getTreeInRepository(_this: CloudNodeTreeNode?): CloudRepository {
-        val modelServer: ModelServerConnection? = _this!!.getAncestor(ModelServerTreeNode::class.java).modelServer
-        val repositoryId: RepositoryId? = _this.getAncestor(RepositoryTreeNode::class.java).repositoryId
+        val modelServer: ModelServerConnection = _this!!.getAncestor(ModelServerTreeNode::class.java).modelServer
+        val repositoryId: RepositoryId = _this.getAncestor(RepositoryTreeNode::class.java).repositoryId
         val treeInRepository: CloudRepository = CloudRepository(modelServer, repositoryId)
         return treeInRepository
     }

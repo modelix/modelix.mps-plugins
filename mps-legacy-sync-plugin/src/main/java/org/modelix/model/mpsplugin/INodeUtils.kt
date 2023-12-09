@@ -106,17 +106,17 @@ object INodeUtils {
 
     fun copyProperty(_this: INode, original: INode, property: SProperty) {
         try {
-            _this.setPropertyValue(property.getName(), original.getPropertyValue(property.getName()))
+            _this.setPropertyValue(property.name, original.getPropertyValue(property.name))
         } catch (e: Exception) {
             throw RuntimeException(
-                "Unable to copy property " + property.getName() + " from " + original + " to " + _this,
+                "Unable to copy property " + property.name + " from " + original + " to " + _this,
                 e,
             )
         }
     }
 
     fun copyPropertyIfNecessary(_this: INode, original: INode, property: SProperty) {
-        if (Objects.equals(original.getPropertyValue(property.getName()), _this.getPropertyValue(property.getName()))) {
+        if (Objects.equals(original.getPropertyValue(property.name), _this.getPropertyValue(property.name))) {
             return
         }
         copyProperty(_this, original, property)

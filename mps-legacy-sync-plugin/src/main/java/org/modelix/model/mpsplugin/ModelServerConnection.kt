@@ -69,21 +69,21 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
     private val bindings: Map<RepositoryId?, RootBinding> = MapSequence.fromMap(HashMap())
 
     init {
-        if (LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled) {
             LOG.debug("ModelServerConnection.init(" + baseUrl + ")")
         }
-        messageBusConnection = ApplicationManager.getApplication().getMessageBus().connect()
+        messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
         messageBusConnection.subscribe(
             ProjectManager.TOPIC,
             object : ProjectManagerListener {
-                public override fun projectClosing(closingProject: Project) {
+                override fun projectClosing(closingProject: Project) {
                     for (closingProjectBinding: ProjectBinding? in Sequence.fromIterable(MapSequence.fromMap(bindings).values)
                         .translate(object : ITranslator2<RootBinding, Binding?>() {
-                            public override fun translate(it: RootBinding): Iterable<Binding?> {
+                            override fun translate(it: RootBinding): Iterable<Binding?> {
                                 return it.allBindings
                             }
                         }).ofType(ProjectBinding::class.java).where(object : IWhereFilter<ProjectBinding>() {
-                            public override fun accept(it: ProjectBinding): Boolean {
+                            override fun accept(it: ProjectBinding): Boolean {
                                 return Objects.equals(ProjectHelper.toIdeaProject(it.project), closingProject)
                             }
                         }).toListSequence()) {
@@ -111,7 +111,6 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
             for (l: IListener in ListSequence.fromList(listeners)) {
                 l.connectionStatusChanged(newStatus == RestWebModelClient.ConnectionStatus.CONNECTED)
             }
-            Unit
         })
     }
 
@@ -120,11 +119,11 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
      * error messages multiple times, so we use a shared state of the connection
      */
     private class ConnectionListenerForForbiddenMessage(private val baseUrl: String) : ConnectionListener {
-        public override fun receivedForbiddenResponse() {
+        override fun receivedForbiddenResponse() {
             if (!(inForbiddenState())) {
                 MapSequence.fromMap(inForbiddenStateByURL).put(baseUrl, true)
                 SwingUtilities.invokeLater(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         ModelixNotifications.notifyError(
                             "Forbidden Access",
                             "Unauthorized to connect to Model Server " + baseUrl + ". Check you are logged in and have the right to access that Model Server",
@@ -134,7 +133,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
             }
         }
 
-        public override fun receivedSuccessfulResponse() {
+        override fun receivedSuccessfulResponse() {
             MapSequence.fromMap(inForbiddenStateByURL).put(baseUrl, false)
         }
 
@@ -189,7 +188,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
                 LOG.error("Failed to read the users e-mail address", ex)
             }
         }
-        if (LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled) {
             LOG.debug("connected to " + baseUrl)
         }
     }
@@ -240,11 +239,11 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
         }
 
     fun getRepositoryInfoById(repositoryId: String): SNode {
-        val repositoryInfo: SNode? = PArea((infoBranch)!!).executeRead<SNode>({
+        val repositoryInfo: SNode = PArea((infoBranch)!!).executeRead<SNode>({
             val modelServerInfo: SNode? = info
             ListSequence.fromList(SLinkOperations.getChildren(modelServerInfo, LINKS.`repositories$b56J`))
                 .findFirst(object : IWhereFilter<SNode?>() {
-                    public override fun accept(it: SNode?): Boolean {
+                    override fun accept(it: SNode?): Boolean {
                         return Objects.equals(
                             SPropertyOperations.getString(it, PROPS.`id$baYB`),
                             repositoryId,
@@ -257,7 +256,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
                 val modelServerInfo: SNode? = info
                 ListSequence.fromList(SLinkOperations.getChildren(modelServerInfo, LINKS.`repositories$b56J`))
                     .select(object : ISelector<SNode?, String>() {
-                        public override fun select(it: SNode?): String {
+                        override fun select(it: SNode?): String {
                             return SPropertyOperations.getString(it, PROPS.`id$baYB`)
                         }
                     }).toListSequence()
@@ -292,7 +291,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
                         LINKS.`repositories$b56J`,
                     ),
                 ).findFirst(object : IWhereFilter<SNode?>() {
-                    public override fun accept(it: SNode?): Boolean {
+                    override fun accept(it: SNode?): Boolean {
                         return Objects.equals(SPropertyOperations.getString(it, PROPS.`id$baYB`), id)
                     }
                 }),
@@ -302,7 +301,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
 
     fun hasProjectBinding(repositoryId: RepositoryId?, projectNodeId: Long): Boolean {
         return Sequence.fromIterable(projectBindings).any(object : IWhereFilter<ProjectBinding>() {
-            public override fun accept(it: ProjectBinding): Boolean {
+            override fun accept(it: ProjectBinding): Boolean {
                 return Objects.equals(
                     it.cloudRepository?.repositoryId,
                     repositoryId,
@@ -315,7 +314,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
         get() {
             return Sequence.fromIterable(MapSequence.fromMap(bindings).values)
                 .translate(object : ITranslator2<RootBinding, Binding?>() {
-                    public override fun translate(it: RootBinding): Iterable<Binding?> {
+                    override fun translate(it: RootBinding): Iterable<Binding?> {
                         return it.allBindings
                     }
                 }).ofType(ProjectBinding::class.java)
@@ -336,7 +335,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
         return Sequence.fromIterable(
             moduleBindings,
         ).any(object : IWhereFilter<ModuleBinding>() {
-            public override fun accept(it: ModuleBinding): Boolean {
+            override fun accept(it: ModuleBinding): Boolean {
                 return Objects.equals(
                     it.cloudRepository?.repositoryId,
                     repositoryId,
@@ -349,7 +348,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
         return Sequence.fromIterable(
             moduleBindings,
         ).where(object : IWhereFilter<ModuleBinding>() {
-            public override fun accept(it: ModuleBinding): Boolean {
+            override fun accept(it: ModuleBinding): Boolean {
                 return Objects.equals(
                     it.cloudRepository?.repositoryId,
                     repositoryId,
@@ -362,7 +361,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
         get() {
             return Sequence.fromIterable(MapSequence.fromMap(bindings).values)
                 .translate(object : ITranslator2<RootBinding, Binding?>() {
-                    public override fun translate(it: RootBinding): Iterable<Binding?> {
+                    override fun translate(it: RootBinding): Iterable<Binding?> {
                         return it.allBindings
                     }
                 }).ofType(ModuleBinding::class.java)
@@ -392,7 +391,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
                 val allChildren_: Iterable<Long> = t.getAllChildren(ITree.ROOT_ID)
                 val allChildren: Iterable<SNode> =
                     Sequence.fromIterable<Long>(allChildren_).select<SNode>(object : ISelector<Long?, SNode>() {
-                        public override fun select(it: Long?): SNode {
+                        override fun select(it: Long?): SNode {
                             return NodeToSNodeAdapter.wrap(PNodeAdapter((it)!!, infoTree!!.branch))
                         }
                     })
@@ -401,7 +400,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
             if (result == null) {
                 SharedExecutors.FIXED.submit(
                     _Adapters._return_P0_E0_to_Runnable_adapter(object : _return_P0_E0<SNode> {
-                        public override fun invoke(): SNode {
+                        override fun invoke(): SNode {
                             return PArea(infoTree!!.branch).executeWrite<SNode>({
                                 val t: IWriteTransaction = infoTree!!.branch.writeTransaction
                                 val id: Long = t.addNewChild(
@@ -430,7 +429,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
             var ab: ActiveBranch? = MapSequence.fromMap(activeBranches).get(repositoryId)
             if (ab == null) {
                 ab = object : ActiveBranch(client, (repositoryId)!!, null, { author ?: "<unknown author>" }) {
-                    protected override fun createReplicatedRepository(
+                    override fun createReplicatedRepository(
                         client: IModelClient,
                         repositoryId: RepositoryId,
                         branchName: String,
@@ -497,7 +496,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
         return client
     }
 
-    public override fun toString(): String {
+    override fun toString(): String {
         return baseUrl
     }
 
@@ -518,7 +517,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
             consumer.accept(this)
         } else {
             val listener: IListener = object : IListener {
-                public override fun connectionStatusChanged(connected: Boolean) {
+                override fun connectionStatusChanged(connected: Boolean) {
                     if (connected) {
                         consumer.accept(this@ModelServerConnection)
                         removeListener(this)

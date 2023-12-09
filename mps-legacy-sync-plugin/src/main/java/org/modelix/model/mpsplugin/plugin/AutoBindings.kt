@@ -161,18 +161,18 @@ class AutoBindings @JvmOverloads constructor(
             for (repositoryId in ListSequence.fromList<RepositoryId>(repositories)) {
                 val activeBranch = connection!!.getActiveBranch(repositoryId)
                 if (LOG.isDebugEnabled) {
-                    LOG.debug("using branch: " + activeBranch!!.branchName)
+                    LOG.debug("using branch: " + activeBranch.branchName)
                 }
                 ListSequence.fromList(allActiveBranches).addElement(activeBranch)
                 val outsideRead: List<_void_P0_E0> = ListSequence.fromList(ArrayList())
-                PArea(activeBranch!!.branch).executeRead<Unit> {
+                PArea(activeBranch.branch).executeRead<Unit> {
                     val t = activeBranch.branch.transaction
                     val allChildren_ = t.getAllChildren(ITree.ROOT_ID)
                     val allChildren: Iterable<SNode> =
                         Sequence.fromIterable<Long>(allChildren_).select<SNode>(object : ISelector<Long, SNode>() {
                             override fun select(it: Long): SNode? {
                                 return NodeToSNodeAdapter.wrap(
-                                    PNodeAdapter.wrap(
+                                    wrap(
                                         it,
                                         activeBranch.branch,
                                     ),
@@ -254,7 +254,6 @@ class AutoBindings @JvmOverloads constructor(
                             },
                         )
                     }
-                    Unit
                 }
                 ListSequence.fromList(outsideRead).visitAll(object : IVisitor<_void_P0_E0>() {
                     override fun visit(it: _void_P0_E0) {

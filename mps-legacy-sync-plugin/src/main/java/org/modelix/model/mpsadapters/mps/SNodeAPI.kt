@@ -40,17 +40,17 @@ object SNodeAPI {
     }
 
     fun addNewChild(parent: SNode, role: SContainmentLink, index: Int): SNode {
-        return addNewChild(parent, role, index, role.getTargetConcept())
+        return addNewChild(parent, role, index, role.targetConcept)
     }
 
     fun addNewChild(
         parent: SNode,
         role: SContainmentLink,
         index: Int = -1,
-        childConcept: SAbstractConcept? = role.getTargetConcept(),
+        childConcept: SAbstractConcept? = role.targetConcept,
     ): SNode {
         val newChild: INode = SNodeToNodeAdapter.Companion.wrap(parent)!!
-            .addNewChild(role.getName(), index, SConceptAdapter.Companion.wrap(childConcept))
+            .addNewChild(role.name, index, SConceptAdapter.Companion.wrap(childConcept))
         if (newChild == null) {
             throw RuntimeException("addNewChild has to return the created child node")
         }
@@ -59,7 +59,7 @@ object SNodeAPI {
 
     fun moveChild(newParent: SNode?, newRole: SContainmentLink, newIndex: Int, child: SNode?) {
         SNodeToNodeAdapter.Companion.wrap(newParent)!!
-            .moveChild(newRole.getName(), newIndex, (SNodeToNodeAdapter.Companion.wrap(child))!!)
+            .moveChild(newRole.name, newIndex, (SNodeToNodeAdapter.Companion.wrap(child))!!)
     }
 
     fun <T : SNode> copyAsMPSNode(sourceNode: T): T {
@@ -95,7 +95,7 @@ object SNodeAPI {
         targetIndex: Int,
         copiedNodes: Map<SNode, SNode>,
     ): SNode {
-        val concept: SConcept = sourceNode.getConcept()
+        val concept: SConcept = sourceNode.concept
         val copy: SNode = addNewChild(targetParent, targetRole, targetIndex, concept)
         MapSequence.fromMap(copiedNodes).put(sourceNode, copy)
         copyProperties(sourceNode, copy)
@@ -104,7 +104,7 @@ object SNodeAPI {
     }
 
     private fun copyProperties(source: SNode, target: SNode?) {
-        for (property: SProperty in CollectionSequence.fromCollection(source.getConcept().getProperties())) {
+        for (property: SProperty in CollectionSequence.fromCollection(source.concept.properties)) {
             val value: String? = source.getProperty(property)
             if (value != null) {
                 target!!.setProperty(property, value)
@@ -113,7 +113,7 @@ object SNodeAPI {
     }
 
     private fun copyChildren(source: SNode, target: SNode, copiedNodes: Map<SNode, SNode>) {
-        for (link: SContainmentLink in CollectionSequence.fromCollection(source.getConcept().getContainmentLinks())) {
+        for (link: SContainmentLink in CollectionSequence.fromCollection(source.concept.containmentLinks)) {
             for (child: SNode in Sequence.fromIterable(source.getChildren(link))) {
                 copyTo(child, target, link, -1, copiedNodes)
             }
@@ -123,13 +123,13 @@ object SNodeAPI {
     private fun resolveReferences(copiedNodes: Map<SNode, SNode?>) {
         for (entry: IMapping<SNode, SNode?> in MapSequence.fromMap(copiedNodes)) {
             for (link: SReferenceLink in CollectionSequence.fromCollection(
-                entry.key().getConcept().getReferenceLinks(),
+                entry.key().concept.referenceLinks,
             )) {
                 val ref: SReference? = entry.key().getReference(link)
                 if (ref == null) {
                     continue
                 }
-                val originalTarget: SNode? = ref.getTargetNode()
+                val originalTarget: SNode? = ref.targetNode
                 if (originalTarget == null) {
                     continue
                 }
@@ -170,14 +170,12 @@ object SNodeAPI {
     fun runRead(snode: SNode?, r: Runnable) {
         SNodeToNodeAdapter.Companion.wrap(snode)!!.getArea().executeRead<Unit>({
             r.run()
-            Unit
         })
     }
 
     fun runWrite(snode: SNode?, r: Runnable) {
         SNodeToNodeAdapter.Companion.wrap(snode)!!.getArea().executeWrite<Unit>({
             r.run()
-            Unit
         })
     }
 
@@ -187,7 +185,7 @@ object SNodeAPI {
 
     private fun check_jvh1te_a0a33(checkedDotOperand: SNode?): SModel? {
         if (null != checkedDotOperand) {
-            return checkedDotOperand.getModel()
+            return checkedDotOperand.model
         }
         return null
     }

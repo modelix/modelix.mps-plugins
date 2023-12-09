@@ -17,11 +17,11 @@ class SNodeReferenceAdapter(ref: SNodeReference) : INodeReference {
         return ref
     }
 
-    public override fun resolveNode(area: IArea?): INode? {
+    override fun resolveNode(area: IArea?): INode? {
         return area!!.resolveNode(this)
     }
 
-    public override fun equals(o: Any?): Boolean {
+    override fun equals(o: Any?): Boolean {
         if (this === o) {
             return true
         }
@@ -29,19 +29,16 @@ class SNodeReferenceAdapter(ref: SNodeReference) : INodeReference {
             return false
         }
         val that: SNodeReferenceAdapter = o as SNodeReferenceAdapter
-        if ((if (ref != null) !((ref == that.ref)) else that.ref != null)) {
-            return false
-        }
-        return true
+        return !(if (ref != null) !((ref == that.ref)) else that.ref != null)
     }
 
-    public override fun hashCode(): Int {
+    override fun hashCode(): Int {
         var result: Int = 0
         result = 31 * result + ((if (ref != null) (ref as Any).hashCode() else 0))
         return result
     }
 
-    public override fun toString(): String {
+    override fun toString(): String {
         return "SNodeReferenceAdapter{" + "ref=" + ref + "}"
     }
 }

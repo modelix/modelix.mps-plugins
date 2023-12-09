@@ -19,7 +19,7 @@ class CloudActionsForPhysicalModulesCloudActions_ActionGroup(plugin: Application
 
     init {
         setIsInternal(false)
-        setPopup(true)
+        isPopup = true
     }
 
     public override fun doUpdate(event: AnActionEvent) {
@@ -45,7 +45,7 @@ class CloudActionsForPhysicalModulesCloudActions_ActionGroup(plugin: Application
         }
     }
 
-    public override fun addPlace(place: ActionPlace, cond: Condition<BaseAction>?) {
+    override fun addPlace(place: ActionPlace, cond: Condition<BaseAction>?) {
         SetSequence.fromSet(myPlaces).addElement(Pair(place, cond))
     }
 

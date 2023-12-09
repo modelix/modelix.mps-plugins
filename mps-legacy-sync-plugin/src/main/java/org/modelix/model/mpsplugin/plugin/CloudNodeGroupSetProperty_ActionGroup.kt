@@ -28,7 +28,7 @@ class CloudNodeGroupSetProperty_ActionGroup(plugin: ApplicationPlugin) :
 
     init {
         setIsInternal(false)
-        setPopup(true)
+        isPopup = true
     }
 
     public override fun doUpdate(event: AnActionEvent) {
@@ -48,11 +48,11 @@ class CloudNodeGroupSetProperty_ActionGroup(plugin: ApplicationPlugin) :
             return
         }
         val sconcept: SAbstractConcept? = SConceptAdapter.Companion.unwrap(concept)
-        val properties: Iterable<SProperty> = sconcept!!.getProperties()
+        val properties: Iterable<SProperty> = sconcept!!.properties
         for (role: SProperty in Sequence.fromIterable(properties).sort(
             object : ISelector<SProperty, String>() {
-                public override fun select(it: SProperty): String {
-                    return it.getName()
+                override fun select(it: SProperty): String {
+                    return it.name
                 }
             },
             true,
@@ -68,7 +68,7 @@ class CloudNodeGroupSetProperty_ActionGroup(plugin: ApplicationPlugin) :
         }
     }
 
-    public override fun addPlace(place: ActionPlace, cond: Condition<BaseAction>?) {
+    override fun addPlace(place: ActionPlace, cond: Condition<BaseAction>?) {
         SetSequence.fromSet(myPlaces).addElement(Pair(place, cond))
     }
 

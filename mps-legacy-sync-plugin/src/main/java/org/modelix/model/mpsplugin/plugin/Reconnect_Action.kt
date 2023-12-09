@@ -45,7 +45,7 @@ class Reconnect_Action : BaseAction("Reconnect", "", ICON) {
 
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
         val modelServer = (event.getData(MPSCommonDataKeys.TREE_NODE) as ModelServerTreeNode?)!!.modelServer
-        modelServer!!.reconnect()
+        modelServer.reconnect()
     }
 
     companion object {

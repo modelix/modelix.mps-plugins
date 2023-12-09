@@ -36,17 +36,17 @@ class MpsReplicatedRepository(
     { (user() ?: "<unknown author>") },
 ) {
     private val commandListener: CommandListener = object : CommandListener {
-        public override fun commandStarted() {
+        override fun commandStarted() {
             SetSequence.fromSet(affectedDocuments).clear()
             startEdit()
         }
 
-        public override fun commandFinished() {
+        override fun commandFinished() {
             val version: CLVersion? = endEdit()
             if (version == null) {
                 return
             }
-            val project: Project? = CommandProcessor.getInstance().getCurrentCommandProject()
+            val project: Project? = CommandProcessor.getInstance().currentCommandProject
             if (project == null) {
                 return
             }
@@ -56,16 +56,16 @@ class MpsReplicatedRepository(
     }
 
     init {
-        MPSModuleRepository.getInstance().getModelAccess().addCommandListener(commandListener)
+        MPSModuleRepository.getInstance().modelAccess.addCommandListener(commandListener)
         synchronized(INSTANCES, { SetSequence.fromSet(INSTANCES).addElement(this) })
     }
 
-    public override fun dispose() {
+    override fun dispose() {
         synchronized(INSTANCES, { SetSequence.fromSet(INSTANCES).removeElement(this) })
         if (isDisposed()) {
             return
         }
-        MPSModuleRepository.getInstance().getModelAccess().removeCommandListener(commandListener)
+        MPSModuleRepository.getInstance().modelAccess.removeCommandListener(commandListener)
         super.dispose()
     }
 
@@ -80,23 +80,22 @@ class MpsReplicatedRepository(
         }
 
         @Throws(UnexpectedUndoException::class)
-        public override fun undo() {
+        override fun undo() {
             PArea(branch).executeWrite({
                 branch.writeTransaction.applyOperation(UndoOp(KVEntryReference(version.data!!)))
-                Unit
             })
         }
 
         @Throws(UnexpectedUndoException::class)
-        public override fun redo() {
+        override fun redo() {
             throw UnexpectedUndoException("Not supported yet")
         }
 
-        public override fun getAffectedDocuments(): Array<DocumentReference>? {
+        override fun getAffectedDocuments(): Array<DocumentReference>? {
             return (if (documents.size == 0) null else documents)
         }
 
-        public override fun isGlobal(): Boolean {
+        override fun isGlobal(): Boolean {
             return documents.size == 0
         }
     }

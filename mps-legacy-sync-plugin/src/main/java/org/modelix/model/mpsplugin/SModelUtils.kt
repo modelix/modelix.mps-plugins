@@ -13,7 +13,7 @@ import java.util.LinkedList
 object SModelUtils {
     fun getRootsAsList(_this: SModel): List<SNode> {
         val nodes: List<SNode> = ListSequence.fromList(LinkedList())
-        for (node: SNode in Sequence.fromIterable(_this.getRootNodes())) {
+        for (node: SNode in Sequence.fromIterable(_this.rootNodes)) {
             ListSequence.fromList(nodes).addElement(node)
         }
         return nodes
@@ -31,7 +31,7 @@ object SModelUtils {
         if (_this is SModelDescriptorStub) {
             val dsmd: SModelDescriptorStub = _this
             dsmd.addLanguage((sLanguage)!!)
-            dsmd.setLanguageImportVersion((sLanguage)!!, version)
+            dsmd.setLanguageImportVersion((sLanguage), version)
         } else {
             throw IllegalStateException("Unable to handle this model " + _this + " (class: " + _this!!.javaClass.getCanonicalName() + ")")
         }

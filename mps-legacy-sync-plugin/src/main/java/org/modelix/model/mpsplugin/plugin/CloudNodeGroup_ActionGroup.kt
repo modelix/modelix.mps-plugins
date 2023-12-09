@@ -10,7 +10,7 @@ import jetbrains.mps.workbench.action.ApplicationPlugin
 class CloudNodeGroup_ActionGroup(plugin: ApplicationPlugin) : GeneratedActionGroup("CloudNodeGroup", ID, plugin) {
     init {
         setIsInternal(false)
-        setPopup(false)
+        isPopup = false
         this@CloudNodeGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.AddProjectNode_Action")
         this@CloudNodeGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.AddModuleNode_Action")
         this@CloudNodeGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.AddModelNode_Action")
@@ -26,21 +26,21 @@ class CloudNodeGroup_ActionGroup(plugin: ApplicationPlugin) : GeneratedActionGro
         this@CloudNodeGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.ShowProperties_Action")
         this@CloudNodeGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.ShowReferences_Action")
         run({
-            val newAction: GeneratedActionGroup = CloudNodeGroupAddChild_ActionGroup(getApplicationPlugin())
+            val newAction: GeneratedActionGroup = CloudNodeGroupAddChild_ActionGroup(applicationPlugin)
             val manager: ActionManagerEx = ActionManagerEx.getInstanceEx()
-            var oldAction: AnAction? = manager.getAction(newAction.getId())
+            var oldAction: AnAction? = manager.getAction(newAction.id)
             if (oldAction == null) {
-                manager.registerAction(newAction.getId(), newAction, PluginId.getId("org.modelix.model.mpsplugin"))
+                manager.registerAction(newAction.id, newAction, PluginId.getId("org.modelix.model.mpsplugin"))
                 oldAction = newAction
             }
             this@CloudNodeGroup_ActionGroup.addAction(oldAction)
         })
         run({
-            val newAction: GeneratedActionGroup = CloudNodeGroupSetProperty_ActionGroup(getApplicationPlugin())
+            val newAction: GeneratedActionGroup = CloudNodeGroupSetProperty_ActionGroup(applicationPlugin)
             val manager: ActionManagerEx = ActionManagerEx.getInstanceEx()
-            var oldAction: AnAction? = manager.getAction(newAction.getId())
+            var oldAction: AnAction? = manager.getAction(newAction.id)
             if (oldAction == null) {
-                manager.registerAction(newAction.getId(), newAction, PluginId.getId("org.modelix.model.mpsplugin"))
+                manager.registerAction(newAction.id, newAction, PluginId.getId("org.modelix.model.mpsplugin"))
                 oldAction = newAction
             }
             this@CloudNodeGroup_ActionGroup.addAction(oldAction!!)

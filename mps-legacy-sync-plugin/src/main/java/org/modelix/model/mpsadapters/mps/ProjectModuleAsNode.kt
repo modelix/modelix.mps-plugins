@@ -21,68 +21,68 @@ class ProjectModuleAsNode(project: MPSProject, module: SModule) :
     TreeElementAsNode<Pair<MPSProject, SModule>>(project to module) {
     private val moduleAccessor: IReferenceAccessor<Pair<MPSProject, SModule>> =
         object : IReferenceAccessor<Pair<MPSProject, SModule>> {
-            public override fun get(element: Pair<MPSProject, SModule>): INode? {
+            override fun get(element: Pair<MPSProject, SModule>): INode {
                 return SModuleAsNode(element.second)
             }
 
-            public override fun set(element: Pair<MPSProject, SModule>, target: INode?): INode? {
+            override fun set(element: Pair<MPSProject, SModule>, target: INode?): INode? {
                 throw UnsupportedOperationException("readonly")
             }
         }
     private val virtualFolderAccessor: IPropertyAccessor<Pair<MPSProject, SModule>> =
         object : IPropertyAccessor<Pair<MPSProject, SModule>> {
-            public override fun get(element: Pair<MPSProject, SModule>): String? {
+            override fun get(element: Pair<MPSProject, SModule>): String? {
                 return check_9jclrw_a0a0a0a1(element.first.getPath((element.second)))
             }
 
-            public override fun set(element: Pair<MPSProject, SModule>, value: String?): String? {
+            override fun set(element: Pair<MPSProject, SModule>, value: String?): String? {
                 element.first.setVirtualFolder((element.second), value)
                 return value
             }
         }
 
     override fun getReferenceAccessor(role: String): IReferenceAccessor<Pair<MPSProject, SModule>>? {
-        if (Objects.equals(role, LINKS.`module$DFjI`.getName())) {
+        if (Objects.equals(role, LINKS.`module$DFjI`.name)) {
             return moduleAccessor
         }
         return super.getReferenceAccessor(role)
     }
 
     override fun getPropertyAccessor(role: String): IPropertyAccessor<Pair<MPSProject, SModule>>? {
-        if (Objects.equals(role, PROPS.`virtualFolder$dgnn`.getName())) {
+        if (Objects.equals(role, PROPS.`virtualFolder$dgnn`.name)) {
             return virtualFolderAccessor
         }
         return super.getPropertyAccessor(role)
     }
 
-    public override val concept: IConcept
+    override val concept: IConcept
         get() {
             return SConceptAdapter.wrap(CONCEPTS.`ProjectModule$uf`)
         }
 
-    public override val parent: INode
+    override val parent: INode
         get() {
             return ProjectAsNode(element.first)
         }
 
-    public override val reference: INodeReference
+    override val reference: INodeReference
         get() {
             return NodeReference(
-                parent!!.reference as ProjectAsNode.NodeReference?,
-                element.second.getModuleReference(),
+                parent.reference as ProjectAsNode.NodeReference?,
+                element.second.moduleReference,
             )
         }
 
-    public override val roleInParent: String?
+    override val roleInParent: String
         get() {
-            return LINKS.`modules$Bi3g`.getName()
+            return LINKS.`modules$Bi3g`.name
         }
 
     class NodeReference(
         private val projectRef: ProjectAsNode.NodeReference?,
         private val moduleRef: SModuleReference?,
     ) : INodeReference {
-        public override fun serialize(): String {
+        override fun serialize(): String {
             return "mps-project-module:" + moduleRef + "#IN#" + projectRef!!.serialize()
         }
 
@@ -94,13 +94,13 @@ class ProjectModuleAsNode(project: MPSProject, module: SModule) :
             return projectRef
         }
 
-        public override fun resolveNode(area: IArea?): INode? {
+        override fun resolveNode(area: IArea?): INode? {
             val project: MPSProject = projectRef!!.resolveNode(area)?.element ?: return null
             val module: SModule = moduleRef!!.resolve(project.repository) ?: return null
             return ProjectModuleAsNode(project, module)
         }
 
-        public override fun equals(o: Any?): Boolean {
+        override fun equals(o: Any?): Boolean {
             if (this === o) {
                 return true
             }
@@ -117,7 +117,7 @@ class ProjectModuleAsNode(project: MPSProject, module: SModule) :
             return true
         }
 
-        public override fun hashCode(): Int {
+        override fun hashCode(): Int {
             var result: Int = 0
             result = 31 * result + ((if (moduleRef != null) (moduleRef as Any).hashCode() else 0))
             result = 31 * result + ((if (projectRef != null) (projectRef as Any).hashCode() else 0))
@@ -169,7 +169,7 @@ class ProjectModuleAsNode(project: MPSProject, module: SModule) :
     companion object {
         private fun check_9jclrw_a0a0a0a1(checkedDotOperand: ModulePath?): String? {
             if (null != checkedDotOperand) {
-                return checkedDotOperand.getVirtualFolder()
+                return checkedDotOperand.virtualFolder
             }
             return null
         }

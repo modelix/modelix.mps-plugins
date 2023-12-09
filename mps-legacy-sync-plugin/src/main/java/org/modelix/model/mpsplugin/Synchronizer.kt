@@ -50,12 +50,12 @@ abstract class Synchronizer<MPSChildT : Any>(cloudParentId: Long, cloudRole: Str
         val toRemove: List<MPSChildT> = ListSequence.fromList(existingChildren)
             .subtract(Sequence.fromIterable(MapSequence.fromMap(mappings).values)).toListSequence()
         ListSequence.fromList(toRemove).visitAll(object : IVisitor<MPSChildT>() {
-            public override fun visit(it: MPSChildT) {
+            override fun visit(it: MPSChildT) {
                 removeMPSChild(it)
             }
         })
         ListSequence.fromList(toAdd).visitAll(object : IVisitor<Long>() {
-            public override fun visit(it: Long) {
+            override fun visit(it: Long) {
                 MapSequence.fromMap(mappings).put(it, createMPSChild(tree, it))
             }
         })
@@ -74,12 +74,12 @@ abstract class Synchronizer<MPSChildT : Any>(cloudParentId: Long, cloudRole: Str
             ListSequence.fromList(existingChildren).subtract(SetSequence.fromSet(MapSequence.fromMap(mappings).keys))
                 .toListSequence()
         ListSequence.fromList(toRemove).visitAll(object : IVisitor<Long?>() {
-            public override fun visit(it: Long?) {
+            override fun visit(it: Long?) {
                 t.moveChild(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE, -1, (it)!!)
             }
         })
         ListSequence.fromList(toAdd).visitAll(object : IVisitor<MPSChildT>() {
-            public override fun visit(it: MPSChildT) {
+            override fun visit(it: MPSChildT) {
                 MapSequence.fromMap(mappings).put(createCloudChild(t, it), it)
             }
         })

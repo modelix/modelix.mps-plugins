@@ -16,12 +16,12 @@ import org.jetbrains.mps.openapi.persistence.ModelRoot
 object SModuleUtils {
     private val LOG: Logger = LogManager.getLogger(SModuleUtils::class.java)
     fun createModel(_this: SModule?, name: String?, id: SModelId?): SModel {
-        val modelRoots: Iterable<ModelRoot> = _this!!.getModelRoots()
+        val modelRoots: Iterable<ModelRoot> = _this!!.modelRoots
         val modelName: SModelName = SModelName((name)!!)
         val modelRoot: DefaultModelRoot = Sequence.fromIterable<ModelRoot>(modelRoots).ofType<DefaultModelRoot>(
             DefaultModelRoot::class.java,
         ).findFirst(object : IWhereFilter<DefaultModelRoot>() {
-            public override fun accept(it: DefaultModelRoot): Boolean {
+            override fun accept(it: DefaultModelRoot): Boolean {
                 return it.canCreateModel(modelName)
             }
         })
@@ -29,14 +29,14 @@ object SModuleUtils {
             modelName,
             null,
             null,
-            ModelPersistenceWithFixedId(_this.getModuleReference(), id),
+            ModelPersistenceWithFixedId(_this.moduleReference, id),
         )
     }
 
     fun getModelsWithoutDescriptor(_this: SModule?): List<SModel> {
-        val models: Iterable<SModel> = _this!!.getModels()
+        val models: Iterable<SModel> = _this!!.models
         return Sequence.fromIterable(models).where(object : IWhereFilter<SModel?>() {
-            public override fun accept(it: SModel?): Boolean {
+            override fun accept(it: SModel?): Boolean {
                 return !(SModelStereotype.isDescriptorModel(it))
             }
         }).toListSequence()

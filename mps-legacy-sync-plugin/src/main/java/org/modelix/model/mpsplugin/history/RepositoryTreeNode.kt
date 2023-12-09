@@ -39,12 +39,12 @@ class RepositoryTreeNode(val modelServer: ModelServerConnection, val repositoryI
     private val branchesTreeNode: TextTreeNode = TextTreeNode("branches")
     private var bindingsTreeNode: CloudBindingTreeNode? = null
     private val branchListener: IBranchListener = object : IBranchListener {
-        public override fun treeChanged(oldTree: ITree?, newTree: ITree) {
+        override fun treeChanged(oldTree: ITree?, newTree: ITree) {
             SwingUtilities.invokeLater(object : Runnable {
-                public override fun run() {
-                    (getTree() as CloudViewTree).runRebuildAction(
+                override fun run() {
+                    (tree as CloudViewTree).runRebuildAction(
                         object : Runnable {
-                            public override fun run() {
+                            override fun run() {
                                 updateData()
                             }
                         },
@@ -88,7 +88,7 @@ class RepositoryTreeNode(val modelServer: ModelServerConnection, val repositoryI
 
     override fun onRemove() {
         super.onRemove()
-        activeBranch!!.removeListener(branchListener)
+        activeBranch.removeListener(branchListener)
     }
 
     fun updateChildren() {
@@ -98,8 +98,8 @@ class RepositoryTreeNode(val modelServer: ModelServerConnection, val repositoryI
     fun updateBranches() {
         val existing: Map<SNode?, CloudBranchTreeNode> = MapSequence.fromMap(LinkedHashMap(16, 0.75.toFloat(), false))
         ThreadUtils.runInUIThreadAndWait(object : Runnable {
-            public override fun run() {
-                if (Sequence.fromIterable<TreeNode?>(TreeModelUtil.getChildren(this@RepositoryTreeNode)).isEmpty()) {
+            override fun run() {
+                if (Sequence.fromIterable<TreeNode?>(TreeModelUtil.getChildren(this@RepositoryTreeNode)).isEmpty) {
                     TreeModelUtil.setChildren(
                         this@RepositoryTreeNode,
                         Sequence.singleton<TreeNode>(LoadingIcon.Companion.apply<TextTreeNode>(TextTreeNode("loading ..."))),
@@ -117,12 +117,12 @@ class RepositoryTreeNode(val modelServer: ModelServerConnection, val repositoryI
             }
         })
         SharedExecutors.FIXED.execute(object : Runnable {
-            public override fun run() {
+            override fun run() {
                 val newChildren: List<TreeNode>? =
-                    PArea(modelServer!!.infoBranch!!).executeRead<IListSequence<TreeNode>?>({
+                    PArea(modelServer.infoBranch!!).executeRead<IListSequence<TreeNode>?>({
                         ListSequence.fromList<SNode>(SLinkOperations.getChildren(repositoryInfo, LINKS.`branches$b5_g`))
                             .select<TreeNode>(object : ISelector<SNode?, TreeNode>() {
-                                public override fun select(it: SNode?): TreeNode? {
+                                override fun select(it: SNode?): TreeNode? {
                                     val tn: TreeNode? = (
                                         if (MapSequence.fromMap(existing)
                                                 .containsKey(it)
@@ -137,7 +137,7 @@ class RepositoryTreeNode(val modelServer: ModelServerConnection, val repositoryI
                             }).toListSequence()
                     })
                 ThreadUtils.runInUIThreadNoWait(object : Runnable {
-                    public override fun run() {
+                    override fun run() {
                         TreeModelUtil.setChildren(branchesTreeNode, newChildren)
                     }
                 })
@@ -163,7 +163,7 @@ class RepositoryTreeNode(val modelServer: ModelServerConnection, val repositoryI
         Sequence.fromIterable(TreeModelUtil.getChildren(dataTreeNode)).ofType(
             CloudNodeTreeNode::class.java,
         ).visitAll(object : IVisitor<CloudNodeTreeNode>() {
-            public override fun visit(it: CloudNodeTreeNode) {
+            override fun visit(it: CloudNodeTreeNode) {
                 it.update()
             }
         })

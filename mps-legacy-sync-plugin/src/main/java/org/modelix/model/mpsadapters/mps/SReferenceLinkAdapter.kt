@@ -11,29 +11,29 @@ class SReferenceLinkAdapter(private val link: SReferenceLink?) : IReferenceLink 
         return link
     }
 
-    public override fun getUID(): String {
+    override fun getUID(): String {
         return MetaIdHelper.getAssociation(link).serialize()
     }
 
-    public override fun getConcept(): IConcept {
-        return (SConceptAdapter.Companion.wrap(link!!.getOwner()))!!
+    override fun getConcept(): IConcept {
+        return (SConceptAdapter.Companion.wrap(link!!.owner))
     }
 
-    public override fun getSimpleName(): String {
-        return link!!.getName()
+    override fun getSimpleName(): String {
+        return link!!.name
     }
 
-    public override val targetConcept: IConcept
+    override val targetConcept: IConcept
         get() {
-            return SConceptAdapter(link!!.getTargetConcept())
+            return SConceptAdapter(link!!.targetConcept)
         }
 
-    public override val isOptional: Boolean
+    override val isOptional: Boolean
         get() {
-            return link!!.isOptional()
+            return link!!.isOptional
         }
 
-    public override fun equals(o: Any?): Boolean {
+    override fun equals(o: Any?): Boolean {
         if (this === o) {
             return true
         }
@@ -41,13 +41,10 @@ class SReferenceLinkAdapter(private val link: SReferenceLink?) : IReferenceLink 
             return false
         }
         val that: SReferenceLinkAdapter = o as SReferenceLinkAdapter
-        if ((if (link != null) !((link == that.link)) else that.link != null)) {
-            return false
-        }
-        return true
+        return !(if (link != null) !((link == that.link)) else that.link != null)
     }
 
-    public override fun hashCode(): Int {
+    override fun hashCode(): Int {
         var result: Int = 0
         result = 31 * result + ((if (link != null) (link as Any).hashCode() else 0))
         return result

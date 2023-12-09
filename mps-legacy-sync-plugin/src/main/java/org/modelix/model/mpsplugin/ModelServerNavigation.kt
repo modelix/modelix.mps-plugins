@@ -19,7 +19,7 @@ object ModelServerNavigation {
         return PArea(_this.infoBranch!!).executeRead<IListSequence<CloudRepository>>({
             ListSequence.fromList(SLinkOperations.getChildren(info, LINKS.`repositories$b56J`))
                 .select(object : ISelector<SNode?, CloudRepository>() {
-                    public override fun select(it: SNode?): CloudRepository {
+                    override fun select(it: SNode?): CloudRepository {
                         val repositoryId: RepositoryId =
                             RepositoryId(SPropertyOperations.getString(it, PROPS.`id$baYB`))
                         return CloudRepository(_this, repositoryId)

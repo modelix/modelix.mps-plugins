@@ -29,15 +29,15 @@ class MPSArea @JvmOverloads constructor(repository: SRepository? = MPSModuleRepo
     IAreaReference {
     val repository: SRepository = repository ?: MPSModuleRepository.getInstance()
 
-    public override fun getLockOrderingPriority(): Long {
+    override fun getLockOrderingPriority(): Long {
         return 100L shl 32
     }
 
-    public override fun getReference(): IAreaReference {
+    override fun getReference(): IAreaReference {
         return this
     }
 
-    public override fun resolveConcept(reference: IConceptReference): IConcept? {
+    override fun resolveConcept(reference: IConceptReference): IConcept? {
         if (!(reference is ConceptReference)) {
             return null
         }
@@ -61,40 +61,40 @@ class MPSArea @JvmOverloads constructor(repository: SRepository? = MPSModuleRepo
         return SConceptAdapter.Companion.wrap(MetaAdapterFactory.getAbstractConcept(conceptDescriptor))
     }
 
-    public override fun resolveArea(reference: IAreaReference): IArea? {
+    override fun resolveArea(reference: IAreaReference): IArea? {
         return (if (Objects.equals(reference, this)) this else null)
     }
 
-    public override fun canRead(): Boolean {
-        return repository!!.getModelAccess().canRead()
+    override fun canRead(): Boolean {
+        return repository.modelAccess.canRead()
     }
 
-    public override fun canWrite(): Boolean {
-        return repository!!.getModelAccess().canWrite()
+    override fun canWrite(): Boolean {
+        return repository.modelAccess.canWrite()
     }
 
-    public override fun <T> executeRead(f: () -> T): T {
+    override fun <T> executeRead(f: () -> T): T {
         val result: _T<T> = _T()
-        repository!!.getModelAccess().runReadAction(object : Runnable {
-            public override fun run() {
+        repository.modelAccess.runReadAction(object : Runnable {
+            override fun run() {
                 result.value = f.invoke()
             }
         })
         return result.value
     }
 
-    public override fun <T> executeWrite(f: () -> T): T {
+    override fun <T> executeWrite(f: () -> T): T {
         val result: _T<T> = _T()
-        val modelAccess: ModelAccess = repository!!.getModelAccess()
+        val modelAccess: ModelAccess = repository.modelAccess
         if (modelAccess is GlobalModelAccess) {
             modelAccess.runWriteAction(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     result.value = f.invoke()
                 }
             })
         } else {
             modelAccess.executeCommand(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     result.value = f.invoke()
                 }
             })
@@ -102,23 +102,23 @@ class MPSArea @JvmOverloads constructor(repository: SRepository? = MPSModuleRepo
         return result.value
     }
 
-    public override fun getRoot(): INode {
+    override fun getRoot(): INode {
         return SRepositoryAsNode(repository)
     }
 
-    public override fun addListener(listener: IAreaListener) {
+    override fun addListener(listener: IAreaListener) {
         throw UnsupportedOperationException("Not implemented yet")
     }
 
-    public override fun removeListener(listener: IAreaListener) {
+    override fun removeListener(listener: IAreaListener) {
         throw UnsupportedOperationException("Not implemented yet")
     }
 
-    public override fun resolveNode(reference: INodeReference): INode? {
+    override fun resolveNode(reference: INodeReference): INode? {
         return resolveOriginalNode(reference)
     }
 
-    public override fun resolveOriginalNode(reference: INodeReference): INode? {
+    override fun resolveOriginalNode(reference: INodeReference): INode? {
         if (reference is SNodeReferenceAdapter) {
             val mpsNode: SNode? = reference.getReference()!!
                 .resolve(
@@ -129,15 +129,15 @@ class MPSArea @JvmOverloads constructor(repository: SRepository? = MPSModuleRepo
         return null
     }
 
-    public override fun resolveBranch(id: String): IBranch? {
+    override fun resolveBranch(id: String): IBranch? {
         return null
     }
 
-    public override fun collectAreas(): List<IArea> {
+    override fun collectAreas(): List<IArea> {
         return listOf<IArea>(this)
     }
 
-    public override fun equals(o: Any?): Boolean {
+    override fun equals(o: Any?): Boolean {
         if (this === o) {
             return true
         }
@@ -145,13 +145,10 @@ class MPSArea @JvmOverloads constructor(repository: SRepository? = MPSModuleRepo
             return false
         }
         val that: MPSArea = o as MPSArea
-        if ((if (repository != null) !((repository == that.repository)) else that.repository != null)) {
-            return false
-        }
-        return true
+        return !(if (repository != null) !((repository == that.repository)) else that.repository != null)
     }
 
-    public override fun hashCode(): Int {
+    override fun hashCode(): Int {
         var result: Int = 0
         result = 31 * result + ((if (repository != null) (repository as Any).hashCode() else 0))
         return result

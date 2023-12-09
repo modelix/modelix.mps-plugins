@@ -138,7 +138,7 @@ class ModelCloudExporter {
         val coreComponents: MPSCoreComponents = ApplicationManager.getApplication().getComponent(
             MPSCoreComponents::class.java,
         )
-        val vfsManager: VFSManager? = coreComponents.getPlatform().findComponent(VFSManager::class.java)
+        val vfsManager: VFSManager? = coreComponents.platform.findComponent(VFSManager::class.java)
         val fileSystem: IFileSystem = vfsManager!!.getFileSystem(VFSManager.FILE_FS)
         val outputFolder: IFile = fileSystem.getFile(File(exportPath))
         return export(outputFolder, selectedMduleIds, mpsProject)
@@ -157,7 +157,7 @@ class ModelCloudExporter {
      * @return
      */
     fun export(outputFolder: IFile, selectedModuleIds: Set<Long>?, mpsProject: Project?): List<Solution> {
-        println("exporting to " + outputFolder.getPath())
+        println("exporting to " + outputFolder.path)
         println("the output folder exists? " + outputFolder.exists())
         if (!(inCheckoutMode)) {
             outputFolder.deleteIfExists()
@@ -165,7 +165,7 @@ class ModelCloudExporter {
         val url: String? = repositoryInModelServer?.modelServer?.baseUrl
         val client: RestWebModelClient = RestWebModelClient((url)!!)
         val repositoryId: RepositoryId? = repositoryInModelServer?.repositoryId
-        val branchKey: String = repositoryId!!.getBranchKey(branchName)
+        val branchKey: String = repositoryId!!.getBranchReference(branchName).getKey()
         var versionHash: String? = null
         try {
             versionHash = client.get(branchKey)
@@ -175,7 +175,7 @@ class ModelCloudExporter {
         if ((versionHash == null || versionHash.length == 0)) {
             throw RuntimeException("No version found at " + url + "get/" + branchKey + ". Base URL " + client.baseUrl)
         }
-        val version: CLVersion? = loadFromHash(versionHash, client.storeCache)
+        val version: CLVersion = loadFromHash(versionHash, client.storeCache)
         if (version == null) {
             throw RuntimeException("Branch " + branchKey + " references non-existent version " + versionHash)
         }
@@ -185,7 +185,7 @@ class ModelCloudExporter {
             PArea(branch).executeRead({
                 with<List<Solution>>(tree, {
                     val t: ITransaction = branch.transaction
-                    var moduleIds: Iterable<Long>? = t.getChildren(ITree.ROOT_ID, LINKS.`modules$jBPn`.getName())
+                    var moduleIds: Iterable<Long>? = t.getChildren(ITree.ROOT_ID, LINKS.`modules$jBPn`.name)
                     if (moduleIds != null && selectedModuleIds != null) {
                         moduleIds = Sequence.fromIterable(moduleIds).intersect(SetSequence.fromSet(selectedModuleIds))
                     }
@@ -194,7 +194,7 @@ class ModelCloudExporter {
                     tree.getDescendants((moduleIds)!!, true)
                     val modules: List<INode> =
                         Sequence.fromIterable<Long>(moduleIds).select<INode>(object : ISelector<Long?, INode>() {
-                            public override fun select(it: Long?): INode {
+                            override fun select(it: Long?): INode {
                                 val n: INode = PNodeAdapter((it)!!, branch)
                                 return n
                             }
@@ -224,15 +224,15 @@ class ModelCloudExporter {
      * This method ensure that files are deleted, recursively both on the virtual filesystem and the physical filesystem
      */
     private fun ensureDeletion(virtualFile: IFile) {
-        if (virtualFile.isDirectory()) {
-            for (child: IFile in ListSequence.fromList(virtualFile.getChildren())) {
+        if (virtualFile.isDirectory) {
+            for (child: IFile in ListSequence.fromList(virtualFile.children)) {
                 ensureDeletion(child)
             }
         } else {
             if (virtualFile.exists()) {
                 virtualFile.delete()
             }
-            val physicalFile: File = File(virtualFile.getPath())
+            val physicalFile: File = File(virtualFile.path)
             physicalFile.delete()
         }
     }
@@ -258,16 +258,16 @@ class ModelCloudExporter {
         val coreComponents: MPSCoreComponents = ApplicationManager.getApplication().getComponent(
             MPSCoreComponents::class.java,
         )
-        val vfsManager: VFSManager? = coreComponents.getPlatform().findComponent(VFSManager::class.java)
+        val vfsManager: VFSManager? = coreComponents.platform.findComponent(VFSManager::class.java)
         val fileSystem: IFileSystem = vfsManager!!.getFileSystem(VFSManager.FILE_FS)
         if (!(inCheckoutMode)) {
             outputFolder.deleteIfExists()
         }
         val solutionFile: IFile = outputFolder.findChild((name)!!).findChild("solution" + MPSExtentions.DOT_SOLUTION)
-        val solutionDir: IFile = outputFolder.findChild((name)!!)
+        val solutionDir: IFile = outputFolder.findChild((name))
         if (inCheckoutMode) {
             ApplicationManager.getApplication().invokeAndWait(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     VirtualFileManager.getInstance().syncRefresh()
                     val modelsDirVirtual: IFile = solutionDir.findChild("models")
                     ensureDirDeletionAndRecreation(modelsDirVirtual)
@@ -275,16 +275,16 @@ class ModelCloudExporter {
             })
         }
         val descriptor: SolutionDescriptor = SolutionDescriptor()
-        descriptor.setNamespace(name)
+        descriptor.namespace = name
         val solutionId: ModuleId = ModuleId.regular(UUID.fromString(moduleIdAsString))
-        descriptor.setId(solutionId)
-        descriptor.getModelRootDescriptors().add(
+        descriptor.id = solutionId
+        descriptor.modelRootDescriptors.add(
             DefaultModelRoot.createDescriptor(
-                (solutionFile.getParent())!!,
-                solutionFile.getParent()!!.findChild(Solution.SOLUTION_MODELS),
+                (solutionFile.parent)!!,
+                solutionFile.parent!!.findChild(Solution.SOLUTION_MODELS),
             ),
         )
-        descriptor.setKind(SolutionKind.PLUGIN_OTHER)
+        descriptor.kind = SolutionKind.PLUGIN_OTHER
         for (facet: INode in Sequence.fromIterable<INode>(module.getChildren("facets"))) {
             if (facet.concept!!.isSubConceptOf(SConceptAdapter.Companion.wrap(CONCEPTS.`JavaModuleFacet$5E`))) {
                 val javaFacetMemento: Memento = MementoImpl()
@@ -293,21 +293,21 @@ class ModelCloudExporter {
                 javaFacetClassesMemento.put(
                     "path",
                     facet.getPropertyValue("path")!!
-                        .replace("\\$\\{module\\}".toRegex(), solutionFile.getParent()!!.toRealPath()),
+                        .replace("\\$\\{module\\}".toRegex(), solutionFile.parent!!.toRealPath()),
                 )
                 val javaFacetDescriptor: ModuleFacetDescriptor =
                     ModuleFacetDescriptor(JavaModuleFacet.FACET_TYPE, javaFacetMemento)
-                descriptor.getModuleFacetDescriptors().add(javaFacetDescriptor)
+                descriptor.moduleFacetDescriptors.add(javaFacetDescriptor)
             }
         }
         val solution: Solution = GeneralModuleFactory().instantiate(descriptor, solutionFile) as Solution
         if (mpsProject != null) {
             mpsProject.addModule(solution)
-            if (solution.getRepository() == null) {
-                solution.attach(mpsProject.getRepository())
+            if (solution.repository == null) {
+                solution.attach(mpsProject.repository)
             }
         }
-        if (mpsProject != null && solution.getRepository() == null) {
+        if (mpsProject != null && solution.repository == null) {
             throw IllegalStateException("The solution should be in a repo, so also the model will be in a repo and syncReference will not crash")
         }
         for (model: INode in module.getChildren("models")) {
@@ -320,8 +320,7 @@ class ModelCloudExporter {
     /**
      * We had to copy it from https://github.com/JetBrains/MPS/blob/14b86a2f987cdd3fbcc72b9262e8b388f7a5fae3/core/persistence/source/jetbrains/mps/persistence/DefaultModelPersistence.java#L115
      */
-    private class PersistenceFacility /*package*/
-    internal constructor(modelFactory: DefaultModelPersistence?, dataSource: StreamDataSource?) :
+    private class PersistenceFacility /*package*/(modelFactory: DefaultModelPersistence?, dataSource: StreamDataSource?) :
         LazyLoadFacility((modelFactory)!!, (dataSource)!!, true) {
         private val source0: StreamDataSource
             private get() {
@@ -329,27 +328,27 @@ class ModelCloudExporter {
             }
 
         @Throws(ModelReadException::class)
-        public override fun readHeader(): SModelHeader {
+        override fun readHeader(): SModelHeader {
             return ModelPersistence.loadDescriptor(source0)
         }
 
         @Throws(ModelReadException::class)
-        public override fun readModel(header: SModelHeader, state: ModelLoadingState): ModelLoadResult {
+        override fun readModel(header: SModelHeader, state: ModelLoadingState): ModelLoadResult {
             return ModelPersistence.readModel(header, source0, state)
         }
 
-        public override fun doesSaveUpgradePersistence(header: SModelHeader): Boolean {
+        override fun doesSaveUpgradePersistence(header: SModelHeader): Boolean {
             // not sure !=-1 is really needed, just left to be ensured about compatibility
-            return header.getPersistenceVersion() != ModelPersistence.LAST_VERSION && header.getPersistenceVersion() != -1
+            return header.persistenceVersion != ModelPersistence.LAST_VERSION && header.persistenceVersion != -1
         }
 
         @Throws(IOException::class)
-        public override fun saveModel(header: SModelHeader, modelData: SModelData) {
+        override fun saveModel(header: SModelHeader, modelData: SModelData) {
             val res: AsyncPromise<Boolean> = AsyncPromise()
             ThreadUtils.runInUIThreadNoWait(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     try {
-                        ModelPersistence.saveModel((modelData as SModel?)!!, source0, header.getPersistenceVersion())
+                        ModelPersistence.saveModel((modelData as SModel?)!!, source0, header.persistenceVersion)
                         res.setResult(true)
                     } catch (e: ModelSaveException) {
                         e.printStackTrace()
@@ -364,17 +363,17 @@ class ModelCloudExporter {
     }
 
     private fun createModel(module: AbstractModule, model: INode) {
-        val modelRootsIt: Iterator<ModelRoot> = module.getModelRoots().iterator()
+        val modelRootsIt: Iterator<ModelRoot> = module.modelRoots.iterator()
         if (!(modelRootsIt.hasNext())) {
-            throw IllegalStateException("Module has not default model root: " + module + " (" + module.getModuleName() + ")")
+            throw IllegalStateException("Module has not default model root: " + module + " (" + module.moduleName + ")")
         }
         val defaultModelRoot: DefaultModelRoot = (modelRootsIt.next() as DefaultModelRoot)
         val sModelName: SModelName = SModelName((model.getPropertyValue("name"))!!)
         val imposedModelID: SModelId = SModelId.fromString(model.getPropertyValue("id"))
         val modelFactory: ModelFactory =
-            object : ModelPersistenceWithFixedId(module.getModuleReference(), imposedModelID) {
+            object : ModelPersistenceWithFixedId(module.moduleReference, imposedModelID) {
                 @Throws(UnsupportedDataSourceException::class)
-                public override fun create(
+                override fun create(
                     dataSource: DataSource,
                     modelName: SModelName,
                     vararg options: ModelLoadingOption,
@@ -385,8 +384,8 @@ class ModelCloudExporter {
                     }
                     val header: SModelHeader = SModelHeader.create(ModelPersistence.LAST_VERSION)
                     val modelReference: SModelReference =
-                        PersistenceFacade.getInstance().createModelReference(null, imposedModelID, modelName.getValue())
-                    header.setModelReference(modelReference)
+                        PersistenceFacade.getInstance().createModelReference(null, imposedModelID, modelName.value)
+                    header.modelReference = modelReference
                     val rv: DefaultSModelDescriptor =
                         DefaultSModelDescriptor(PersistenceFacility(this, dataSource as StreamDataSource?), header)
                     // Hack to ensure newly created model is indeed empty. Otherwise, with StreamDataSource pointing to existing model stream, an attempt to
@@ -409,7 +408,7 @@ class ModelCloudExporter {
         VirtualFileManager.getInstance().syncRefresh()
         val res: AsyncPromise<EditableSModel> = AsyncPromise()
         ThreadUtils.runInUIThreadNoWait(object : Runnable {
-            public override fun run() {
+            override fun run() {
                 try {
                     println("creating model " + sModelName)
                     val smodel: EditableSModel =
@@ -428,8 +427,8 @@ class ModelCloudExporter {
                 model.branch.transaction.tree,
                 true,
             )
-            module.getRepository()!!.getModelAccess().runWriteAction(object : Runnable {
-                public override fun run() {
+            module.repository!!.modelAccess.runWriteAction(object : Runnable {
+                override fun run() {
                     smodel.save()
                     println("  model " + sModelName + " saved")
                 }

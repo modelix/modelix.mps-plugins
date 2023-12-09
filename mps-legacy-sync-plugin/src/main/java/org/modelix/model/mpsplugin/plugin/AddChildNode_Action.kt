@@ -28,27 +28,25 @@ class AddChildNode_Action(
 ) : BaseAction("Add new child of concept ... in role ...", "", ICON) {
     init {
         setIsAlwaysVisible(false)
-        setActionAccess(ActionAccess.NONE)
+        actionAccess = ActionAccess.NONE
     }
 
-    public override fun isDumbAware(): Boolean {
+    override fun isDumbAware(): Boolean {
         return true
     }
 
-    public override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
+    override fun isApplicable(event: AnActionEvent, _params: Map<String, Any>): Boolean {
         if (childConcept == null) {
-            event.getPresentation().setText("To '" + role.getName())
+            event.presentation.text = "To '" + role.name
         } else {
-            event.getPresentation().setText(
-                "To '" + role.getName() + "' add '" + childConcept.getLanguage()
-                    .getQualifiedName() + "." + childConcept.getName() + "'",
-            )
+            event.presentation.text = "To '" + role.name + "' add '" + childConcept.language
+                .qualifiedName + "." + childConcept.name + "'"
         }
         return true
     }
 
     public override fun doUpdate(event: AnActionEvent, _params: Map<String, Any>) {
-        setEnabledState(event.getPresentation(), isApplicable(event, _params))
+        setEnabledState(event.presentation, isApplicable(event, _params))
     }
 
     override fun collectActionData(event: AnActionEvent, _params: Map<String, Any>): Boolean {
@@ -73,11 +71,11 @@ class AddChildNode_Action(
     public override fun doExecute(event: AnActionEvent, _params: Map<String, Any>) {
         val nodeTreeNode: CloudNodeTreeNode? = event.getData(MPSCommonDataKeys.TREE_NODE) as CloudNodeTreeNode?
         val name: _T<String?> = _T(null)
-        if (childConcept!!.getProperties().contains(PROPS.`name$MnvL`)) {
+        if (childConcept!!.properties.contains(PROPS.`name$MnvL`)) {
             name.value = Messages.showInputDialog(
                 event.getData(CommonDataKeys.PROJECT),
                 "Name",
-                "Add " + childConcept.getName(),
+                "Add " + childConcept.name,
                 null,
             )
             if (isEmptyString(name.value)) {
@@ -86,20 +84,20 @@ class AddChildNode_Action(
         }
         PArea(nodeTreeNode!!.branch).executeWrite<Unit>({
             val newModule: INode = parentNode.addNewChild(
-                role.getName(),
+                role.name,
                 -1,
                 SConceptAdapter.Companion.wrap(
                     childConcept,
                 ),
             )
             if (isNotEmptyString(name.value)) {
-                newModule.setPropertyValue(PROPS.`name$MnvL`.getName(), name.value)
+                newModule.setPropertyValue(PROPS.`name$MnvL`.name, name.value)
             }
             Unit
         })
     }
 
-    public override fun getActionId(): String {
+    override fun getActionId(): String {
         val res: StringBuilder = StringBuilder()
         res.append(super.getActionId())
         res.append("#")
@@ -133,11 +131,11 @@ class AddChildNode_Action(
             if (`object` == null) {
                 return "null"
             }
-            return `object`.getName()
+            return `object`.name
         }
 
         fun role_State(`object`: SContainmentLink): String {
-            return `object`.getName()
+            return `object`.name
         }
 
         private fun isEmptyString(str: String?): Boolean {

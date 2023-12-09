@@ -19,12 +19,12 @@ class TransientModuleBinding(moduleNodeId: Long) : ModuleBinding(moduleNodeId, S
         val branch: IBranch? = this.branch
         var moduleName: String? = PArea((branch)!!).executeRead({
             PNodeAdapter(moduleNodeId, (branch)).getPropertyValue(
-                PROPS.`name$MnvL`.getName(),
+                PROPS.`name$MnvL`.name,
             )
         })
-        val moduleIdStr: String? = PArea((branch)!!).executeRead({
+        val moduleIdStr: String? = PArea((branch)).executeRead({
             PNodeAdapter(moduleNodeId, (branch)).getPropertyValue(
-                PROPS.`id$7MjP`.getName(),
+                PROPS.`id$7MjP`.name,
             )
         })
         if ((moduleName == null || moduleName.length == 0)) {
@@ -52,10 +52,10 @@ class TransientModuleBinding(moduleNodeId: Long) : ModuleBinding(moduleNodeId, S
     override fun doDeactivate() {
         super.doDeactivate()
         SharedExecutors.FIXED.execute(object : Runnable {
-            public override fun run() {
+            override fun run() {
                 synchronized(this@TransientModuleBinding, {
-                    MPSModuleRepository.getInstance().getModelAccess().runWriteAction(object : Runnable {
-                        public override fun run() {
+                    MPSModuleRepository.getInstance().modelAccess.runWriteAction(object : Runnable {
+                        override fun run() {
                             CloudTransientModules.instance.disposeModule(module)
                         }
                     })
@@ -64,7 +64,7 @@ class TransientModuleBinding(moduleNodeId: Long) : ModuleBinding(moduleNodeId, S
         })
     }
 
-    protected override val modelsSynchronizer: Synchronizer<SModel>
+    override val modelsSynchronizer: Synchronizer<SModel>
         protected get() {
             return TransientModelsSynchronizer(moduleNodeId, module!!)
         }

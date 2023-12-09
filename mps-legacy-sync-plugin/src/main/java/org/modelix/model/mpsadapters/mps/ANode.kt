@@ -26,13 +26,13 @@ class ANode(private val node: SNode) : jetbrains.mps.smodel.SNode(DummyConcept()
         // Here all fields of this class are set to null, because we override all methods.
         for (field: Field in jetbrains.mps.smodel.SNode::class.java.getDeclaredFields()) {
             field.setAccessible(true)
-            if (Modifier.isStatic(field.getModifiers())) {
+            if (Modifier.isStatic(field.modifiers)) {
                 continue
             }
-            if (Modifier.isFinal(field.getModifiers())) {
+            if (Modifier.isFinal(field.modifiers)) {
                 continue
             }
-            if (Objects.equals(field.getName(), "myOwner")) {
+            if (Objects.equals(field.name, "myOwner")) {
                 continue
             }
             try {
@@ -43,196 +43,196 @@ class ANode(private val node: SNode) : jetbrains.mps.smodel.SNode(DummyConcept()
         }
     }
 
-    public override fun getModel(): SModel? {
-        return node.getModel()
+    override fun getModel(): SModel? {
+        return node.model
     }
 
-    public override fun getNodeId(): SNodeId {
-        return node.getNodeId()
+    override fun getNodeId(): SNodeId {
+        return node.nodeId
     }
 
-    public override fun getReference(): SNodeReference {
-        return ANodeReference(node.getReference())
+    override fun getReference(): SNodeReference {
+        return ANodeReference(node.reference)
     }
 
-    public override fun getConcept(): SConcept {
-        return node.getConcept()
+    override fun getConcept(): SConcept {
+        return node.concept
     }
 
-    public override fun isInstanceOfConcept(concept: SAbstractConcept): Boolean {
+    override fun isInstanceOfConcept(concept: SAbstractConcept): Boolean {
         return node.isInstanceOfConcept(concept)
     }
 
-    public override fun getPresentation(): String {
-        return node.getPresentation()
+    override fun getPresentation(): String {
+        return node.presentation
     }
 
-    public override fun getName(): String? {
-        return node.getName()
+    override fun getName(): String? {
+        return node.name
     }
 
-    public override fun addChild(link: SContainmentLink, node: SNode) {
+    override fun addChild(link: SContainmentLink, node: SNode) {
         throw UnsupportedOperationException()
     }
 
-    public override fun insertChildBefore(link: SContainmentLink, node: SNode, node1: SNode?) {
+    override fun insertChildBefore(link: SContainmentLink, node: SNode, node1: SNode?) {
         throw UnsupportedOperationException()
     }
 
-    public override fun insertChildAfter(link: SContainmentLink, node: SNode, node1: SNode?) {
+    override fun insertChildAfter(link: SContainmentLink, node: SNode, node1: SNode?) {
         throw UnsupportedOperationException()
     }
 
-    public override fun removeChild(node: SNode) {
+    override fun removeChild(node: SNode) {
         throw UnsupportedOperationException()
     }
 
-    public override fun delete() {
+    override fun delete() {
         node.delete()
     }
 
-    public override fun getContainingRoot(): jetbrains.mps.smodel.SNode {
-        return (wrap(node.getContainingRoot()))!!
+    override fun getContainingRoot(): jetbrains.mps.smodel.SNode {
+        return (wrap(node.containingRoot))
     }
 
-    public override fun getContainmentLink(): SContainmentLink? {
-        return node.getContainmentLink()
+    override fun getContainmentLink(): SContainmentLink? {
+        return node.containmentLink
     }
 
-    public override fun getFirstChild(): SNode? {
-        return wrap(node.getFirstChild())
+    override fun getFirstChild(): SNode? {
+        return wrap(node.firstChild)
     }
 
-    public override fun getLastChild(): SNode? {
-        return wrap(node.getLastChild())
+    override fun getLastChild(): SNode? {
+        return wrap(node.lastChild)
     }
 
-    public override fun getPrevSibling(): jetbrains.mps.smodel.SNode? {
-        return wrap(node.getPrevSibling())
+    override fun getPrevSibling(): jetbrains.mps.smodel.SNode? {
+        return wrap(node.prevSibling)
     }
 
-    public override fun getNextSibling(): jetbrains.mps.smodel.SNode? {
-        return wrap(node.getNextSibling())
+    override fun getNextSibling(): jetbrains.mps.smodel.SNode? {
+        return wrap(node.nextSibling)
     }
 
-    public override fun getChildren(link: SContainmentLink): List<jetbrains.mps.smodel.SNode> {
+    override fun getChildren(link: SContainmentLink): List<jetbrains.mps.smodel.SNode> {
         return node.getChildren(link).map { wrap(it) }
     }
 
-    public override fun getChildren(): List<jetbrains.mps.smodel.SNode> {
-        return node.getChildren().map { wrap(it) }
+    override fun getChildren(): List<jetbrains.mps.smodel.SNode> {
+        return node.children.map { wrap(it) }
     }
 
-    public override fun setReferenceTarget(link: SReferenceLink, target: SNode?) {
+    override fun setReferenceTarget(link: SReferenceLink, target: SNode?) {
         node.setReferenceTarget(link, unwrap(target))
     }
 
-    public override fun getReferenceTarget(link: SReferenceLink): jetbrains.mps.smodel.SNode? {
+    override fun getReferenceTarget(link: SReferenceLink): jetbrains.mps.smodel.SNode? {
         return wrap(node.getReferenceTarget(link))
     }
 
-    public override fun getReference(link: SReferenceLink): SReference? {
+    override fun getReference(link: SReferenceLink): SReference? {
         return AReference.Companion.wrap(node.getReference(link))
     }
 
-    public override fun setReference(link: SReferenceLink, reference: org.jetbrains.mps.openapi.model.SReference?) {
+    override fun setReference(link: SReferenceLink, reference: org.jetbrains.mps.openapi.model.SReference?) {
         throw UnsupportedOperationException()
     }
 
-    public override fun getReferences(): List<SReference> {
-        val references: Iterable<org.jetbrains.mps.openapi.model.SReference> = node.getReferences()
+    override fun getReferences(): List<SReference> {
+        val references: Iterable<org.jetbrains.mps.openapi.model.SReference> = node.references
         return Sequence.fromIterable(references)
             .select(object : ISelector<org.jetbrains.mps.openapi.model.SReference, SReference>() {
-                public override fun select(it: org.jetbrains.mps.openapi.model.SReference): SReference {
+                override fun select(it: org.jetbrains.mps.openapi.model.SReference): SReference {
                     val r: SReference = AReference(it)
                     return r
                 }
             }).toListSequence()
     }
 
-    public override fun getProperties(): Iterable<SProperty> {
-        return node.getProperties()
+    override fun getProperties(): Iterable<SProperty> {
+        return node.properties
     }
 
-    public override fun hasProperty(property: SProperty): Boolean {
+    override fun hasProperty(property: SProperty): Boolean {
         return node.hasProperty(property)
     }
 
-    public override fun getProperty(property: SProperty): String? {
+    override fun getProperty(property: SProperty): String? {
         return node.getProperty(property)
     }
 
-    public override fun setProperty(property: SProperty, value: String?) {
+    override fun setProperty(property: SProperty, value: String?) {
         node.setProperty(property, value)
     }
 
-    public override fun getUserObject(key: Any): Any {
+    override fun getUserObject(key: Any): Any {
         return node.getUserObject(key)
     }
 
-    public override fun putUserObject(key: Any, value: Any?) {
+    override fun putUserObject(key: Any, value: Any?) {
         node.putUserObject(key, value)
     }
 
-    public override fun getUserObjectKeys(): Iterable<Any> {
-        return node.getUserObjectKeys()
+    override fun getUserObjectKeys(): Iterable<Any> {
+        return node.userObjectKeys
     }
 
     @Deprecated("")
-    public override fun getRoleInParent(): String {
-        return node.getRoleInParent()
+    override fun getRoleInParent(): String {
+        return node.roleInParent
     }
 
     @Deprecated("")
-    public override fun setProperty(string: String, string1: String) {
+    override fun setProperty(string: String, string1: String) {
         throw UnsupportedOperationException()
     }
 
     @Deprecated("")
-    public override fun getPropertyNames(): Collection<String> {
-        return IterableUtil.asList(node.getPropertyNames())
+    override fun getPropertyNames(): Collection<String> {
+        return IterableUtil.asList(node.propertyNames)
     }
 
     @Deprecated("")
-    public override fun setReferenceTarget(string: String, node: SNode?) {
+    override fun setReferenceTarget(string: String, node: SNode?) {
         throw UnsupportedOperationException()
     }
 
     @Deprecated("")
-    public override fun getReferenceTarget(string: String): jetbrains.mps.smodel.SNode {
-        return (wrap(node.getReferenceTarget(string)))!!
+    override fun getReferenceTarget(string: String): jetbrains.mps.smodel.SNode {
+        return (wrap(node.getReferenceTarget(string)))
     }
 
     @Deprecated("")
-    public override fun getReference(role: String): SReference {
+    override fun getReference(role: String): SReference {
         throw UnsupportedOperationException()
     }
 
     @Deprecated("")
-    public override fun setReference(string: String, reference: org.jetbrains.mps.openapi.model.SReference?) {
+    override fun setReference(string: String, reference: org.jetbrains.mps.openapi.model.SReference?) {
         throw UnsupportedOperationException()
     }
 
     @Deprecated("")
-    public override fun insertChildBefore(role: String, newChild: SNode, anchor: SNode?) {
+    override fun insertChildBefore(role: String, newChild: SNode, anchor: SNode?) {
         node.insertChildBefore(role, newChild, unwrap(anchor))
     }
 
     @Deprecated("")
-    public override fun addChild(role: String, newChild: SNode) {
+    override fun addChild(role: String, newChild: SNode) {
         node.addChild(role, newChild)
     }
 
     @Deprecated("")
-    public override fun getChildren(role: String): List<jetbrains.mps.smodel.SNode> {
+    override fun getChildren(role: String): List<jetbrains.mps.smodel.SNode> {
         return node.getChildren(role).map { it as jetbrains.mps.smodel.SNode }
     }
 
-    public override fun toString(): String {
+    override fun toString(): String {
         return "ANode"
     }
 
-    public override fun setId(id: SNodeId?) {
+    override fun setId(id: SNodeId?) {
         throw UnsupportedOperationException()
     }
 
@@ -244,12 +244,12 @@ class ANode(private val node: SNode) : jetbrains.mps.smodel.SNode(DummyConcept()
         throw UnsupportedOperationException()
     }
 
-    public override fun treeNext(): jetbrains.mps.smodel.SNode {
+    override fun treeNext(): jetbrains.mps.smodel.SNode {
         throw UnsupportedOperationException()
     }
 
     override fun treeParent(): jetbrains.mps.smodel.SNode {
-        return (wrap(node.getParent()))!!
+        return (wrap(node.parent))!!
     }
 
     override fun children_insertBefore(anchor: jetbrains.mps.smodel.SNode, node: jetbrains.mps.smodel.SNode) {
@@ -260,7 +260,7 @@ class ANode(private val node: SNode) : jetbrains.mps.smodel.SNode(DummyConcept()
         throw UnsupportedOperationException()
     }
 
-    public override fun equals(o: Any?): Boolean {
+    override fun equals(o: Any?): Boolean {
         if (this === o) {
             return true
         }
@@ -271,13 +271,10 @@ class ANode(private val node: SNode) : jetbrains.mps.smodel.SNode(DummyConcept()
             return false
         }
         val that: ANode = o as ANode
-        if ((if (node != null) !((node == that.node)) else that.node != null)) {
-            return false
-        }
-        return true
+        return !(if (node != null) !((node == that.node)) else that.node != null)
     }
 
-    public override fun hashCode(): Int {
+    override fun hashCode(): Int {
         var result: Int = 0
         result = 31 * result + ((if (node != null) (node as Any).hashCode() else 0))
         return result

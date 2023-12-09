@@ -18,9 +18,9 @@ import java.util.Objects
     storages = [Storage(file = "cloudResources.xml", value = "cloudResources.xml", roamingType = RoamingType.DISABLED)],
     reloadable = true,
 )
-class CloudResourcesConfigurationComponent() : PersistentStateComponent<CloudResourcesConfigurationComponent.State> {
+class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResourcesConfigurationComponent.State> {
     /*package*/
-    class State() {
+    class State {
         var modelServers: MutableSet<String?>
         var transientProjects: MutableSet<String?>
         var transientModules: MutableSet<String?>
@@ -34,7 +34,7 @@ class CloudResourcesConfigurationComponent() : PersistentStateComponent<CloudRes
             mappedModules = LinkedHashSet()
         }
 
-        public override fun hashCode(): Int {
+        override fun hashCode(): Int {
             var hc: Int = 1
             hc += 3 * modelServers.hashCode()
             hc += 7 * transientProjects.hashCode()
@@ -43,7 +43,7 @@ class CloudResourcesConfigurationComponent() : PersistentStateComponent<CloudRes
             return hc
         }
 
-        public override fun equals(obj: Any?): Boolean {
+        override fun equals(obj: Any?): Boolean {
             if (obj is State) {
                 val other: State = obj
                 if (!(Objects.equals(transientProjects, other.transientProjects))) {
@@ -64,17 +64,17 @@ class CloudResourcesConfigurationComponent() : PersistentStateComponent<CloudRes
             }
         }
 
-        public override fun toString(): String {
+        override fun toString(): String {
             return "State(cloudRepositories: " + modelServers + ", transientProjects: " + transientProjects + ", transientModules: " + transientModules + ", mappedModules: " + mappedModules + ")"
         }
     }
 
     private var state: State = State()
-    public override fun getState(): State {
+    override fun getState(): State {
         return state
     }
 
-    public override fun loadState(state: State) {
+    override fun loadState(state: State) {
         this.state = state
     }
 }

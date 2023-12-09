@@ -47,7 +47,7 @@ class SingleLanguageDependencyAsNode : INode {
         modelImporter = importer
     }
 
-    public override fun getConceptReference(): IConceptReference? {
+    override fun getConceptReference(): IConceptReference {
         return concept!!.getReference()
     }
 
@@ -59,43 +59,43 @@ class SingleLanguageDependencyAsNode : INode {
         return languageVersion
     }
 
-    public override fun getArea(): IArea {
+    override fun getArea(): IArea {
         return MPSArea()
     }
 
-    public override val isValid: Boolean
+    override val isValid: Boolean
         get() {
             return true
         }
 
-    public override val reference: INodeReference
+    override val reference: INodeReference
         get() {
             if (moduleImporter != null) {
-                return NodeReference(moduleImporter!!.getModuleReference(), moduleReference.getModuleId())
+                return NodeReference(moduleImporter!!.moduleReference, moduleReference.moduleId)
             }
             if (modelImporter != null) {
-                return NodeReference(modelImporter!!.getReference(), moduleReference.getModuleId())
+                return NodeReference(modelImporter!!.reference, moduleReference.moduleId)
             }
             throw IllegalStateException()
         }
 
-    public override val concept: IConcept?
+    override val concept: IConcept
         get() {
             return SConceptAdapter.Companion.wrap(CONCEPTS.`SingleLanguageDependency$_9`)
         }
 
-    public override val roleInParent: String?
+    override val roleInParent: String
         get() {
             if (moduleImporter != null) {
-                return LINKS.`languageDependencies$vKlY`.getName()
+                return LINKS.`languageDependencies$vKlY`.name
             }
             if (modelImporter != null) {
-                return LINKS.`usedLanguages$QK4E`.getName()
+                return LINKS.`usedLanguages$QK4E`.name
             }
             throw IllegalStateException()
         }
 
-    public override val parent: INode?
+    override val parent: INode?
         get() {
             if (moduleImporter != null) {
                 SModuleAsNode.Companion.wrap(moduleImporter)
@@ -106,11 +106,11 @@ class SingleLanguageDependencyAsNode : INode {
             throw IllegalStateException()
         }
 
-    public override fun getChildren(role: String?): Iterable<INode> {
+    override fun getChildren(role: String?): Iterable<INode> {
         return LinkedListSequence.fromLinkedListNew(LinkedList())
     }
 
-    public override val allChildren: Iterable<INode>
+    override val allChildren: Iterable<INode>
         get() {
             val concept: IConcept? = concept
             if (concept == null) {
@@ -118,85 +118,85 @@ class SingleLanguageDependencyAsNode : INode {
             }
             val links: Iterable<IChildLink> = concept.getAllChildLinks()
             return Sequence.fromIterable(links).select(object : ISelector<IChildLink, Iterable<INode>>() {
-                public override fun select(it: IChildLink): Iterable<INode> {
+                override fun select(it: IChildLink): Iterable<INode> {
                     return getChildren(it.name)
                 }
             }).translate(object : ITranslator2<Iterable<INode>, INode>() {
-                public override fun translate(it: Iterable<INode>): Iterable<INode> {
+                override fun translate(it: Iterable<INode>): Iterable<INode> {
                     return it
                 }
             })
         }
 
-    public override fun moveChild(string: String?, i: Int, node: INode) {
+    override fun moveChild(string: String?, i: Int, node: INode) {
         throw UnsupportedOperationException()
     }
 
-    public override fun addNewChild(string: String?, i: Int, concept: IConcept?): INode {
+    override fun addNewChild(string: String?, i: Int, concept: IConcept?): INode {
         throw UnsupportedOperationException()
     }
 
-    public override fun addNewChild(string: String?, i: Int, reference: IConceptReference?): INode {
+    override fun addNewChild(string: String?, i: Int, reference: IConceptReference?): INode {
         throw UnsupportedOperationException()
     }
 
-    public override fun removeChild(node: INode) {
+    override fun removeChild(node: INode) {
         throw UnsupportedOperationException()
     }
 
-    public override fun getReferenceTarget(role: String): INode? {
+    override fun getReferenceTarget(role: String): INode? {
         return null
     }
 
-    public override fun getReferenceTargetRef(string: String): INodeReference? {
+    override fun getReferenceTargetRef(string: String): INodeReference? {
         return null
     }
 
-    public override fun setReferenceTarget(string: String, node: INode?) {
+    override fun setReferenceTarget(string: String, node: INode?) {
         throw UnsupportedOperationException()
     }
 
-    public override fun setReferenceTarget(string: String, reference: INodeReference?) {
+    override fun setReferenceTarget(string: String, reference: INodeReference?) {
         throw UnsupportedOperationException()
     }
 
-    public override fun getPropertyValue(propertyName: String): String? {
-        if (Objects.equals(PROPS.`version$ApUL`.getName(), propertyName)) {
+    override fun getPropertyValue(propertyName: String): String? {
+        if (Objects.equals(PROPS.`version$ApUL`.name, propertyName)) {
             return languageVersion.toString()
-        } else if (Objects.equals(PROPS.`name$lpYq`.getName(), propertyName)) {
-            return moduleReference.getModuleName()
-        } else if (Objects.equals(PROPS.`uuid$lpJp`.getName(), propertyName)) {
-            return moduleReference.getModuleId().toString()
+        } else if (Objects.equals(PROPS.`name$lpYq`.name, propertyName)) {
+            return moduleReference.moduleName
+        } else if (Objects.equals(PROPS.`uuid$lpJp`.name, propertyName)) {
+            return moduleReference.moduleId.toString()
         } else {
             return null
         }
     }
 
-    public override fun setPropertyValue(string: String, string1: String?) {
+    override fun setPropertyValue(string: String, string1: String?) {
         throw UnsupportedOperationException()
     }
 
-    public override fun getPropertyRoles(): List<String> {
+    override fun getPropertyRoles(): List<String> {
         val concept: IConcept? = concept
         if (concept == null) {
             return emptyList()
         }
         val allProperties: List<IProperty> = concept.getAllProperties()
         return ListSequence.fromList(allProperties).select(object : ISelector<IProperty, String>() {
-            public override fun select(it: IProperty): String {
+            override fun select(it: IProperty): String {
                 return it.name
             }
         }).toListSequence()
     }
 
-    public override fun getReferenceRoles(): List<String> {
+    override fun getReferenceRoles(): List<String> {
         val concept: IConcept? = concept
         if (concept == null) {
             return emptyList()
         }
         val allReferenceLinks: List<IReferenceLink> = concept.getAllReferenceLinks()
         return ListSequence.fromList(allReferenceLinks).select(object : ISelector<IReferenceLink, String>() {
-            public override fun select(it: IReferenceLink): String {
+            override fun select(it: IReferenceLink): String {
                 return it.name
             }
         }).toListSequence()
@@ -217,7 +217,7 @@ class SingleLanguageDependencyAsNode : INode {
             this.usedModuleId = usedModuleId
         }
 
-        public override fun serialize(): String {
+        override fun serialize(): String {
             if (userModuleReference == null) {
                 return "mps-lang:" + usedModuleId + "#IN#" + userModel
             } else {
@@ -225,7 +225,7 @@ class SingleLanguageDependencyAsNode : INode {
             }
         }
 
-        public override fun resolveNode(area: IArea?): INode? {
+        override fun resolveNode(area: IArea?): INode? {
             var repo: SRepository? = null
             if (area != null) {
                 val areas: List<IArea> = area.collectAreas()
@@ -248,7 +248,7 @@ class SingleLanguageDependencyAsNode : INode {
             }
         }
 
-        public override fun equals(o: Any?): Boolean {
+        override fun equals(o: Any?): Boolean {
             if (this === o) {
                 return true
             }
@@ -268,7 +268,7 @@ class SingleLanguageDependencyAsNode : INode {
             return true
         }
 
-        public override fun hashCode(): Int {
+        override fun hashCode(): Int {
             var result: Int = 0
             result = 31 * result + ((if (userModuleReference != null) (userModuleReference as Any).hashCode() else 0))
             result = 11 * result + ((if (usedModuleId != null) (usedModuleId as Any).hashCode() else 0))

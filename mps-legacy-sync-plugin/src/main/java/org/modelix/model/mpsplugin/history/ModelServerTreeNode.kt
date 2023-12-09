@@ -31,12 +31,12 @@ import javax.swing.tree.TreeNode
 class ModelServerTreeNode(val modelServer: ModelServerConnection) :
     TextTreeNode(CloudIcons.MODEL_SERVER_ICON, modelServer.baseUrl) {
     private val branchListener: IBranchListener = object : IBranchListener {
-        public override fun treeChanged(oldTree: ITree?, newTree: ITree) {
+        override fun treeChanged(oldTree: ITree?, newTree: ITree) {
             SwingUtilities.invokeLater(object : Runnable {
-                public override fun run() {
-                    (getTree() as CloudViewTree).runRebuildAction(
+                override fun run() {
+                    (tree as CloudViewTree).runRebuildAction(
                         object : Runnable {
-                            public override fun run() {
+                            override fun run() {
                                 updateChildren()
                             }
                         },
@@ -48,12 +48,12 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
     }
     private var infoBranch: IBranch? = null
     private val repoListener: ModelServerConnection.IListener = object : ModelServerConnection.IListener {
-        public override fun connectionStatusChanged(connected: Boolean) {
+        override fun connectionStatusChanged(connected: Boolean) {
             SwingUtilities.invokeLater(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     if (connected) {
                         infoBranch = modelServer.infoBranch
-                        if (getTree() != null) {
+                        if (tree != null) {
                             infoBranch!!.addListener(branchListener)
                         }
                     }
@@ -66,15 +66,15 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
 
     init {
         setAllowsChildren(true)
-        setNodeIdentifier("" + System.identityHashCode(modelServer))
-        modelServer!!.addListener(repoListener)
+        nodeIdentifier = "" + System.identityHashCode(modelServer)
+        modelServer.addListener(repoListener)
         updateText()
         updateChildren()
     }
 
     fun updateText() {
         var text: String? = modelServer.baseUrl
-        if (modelServer!!.isConnected) {
+        if (modelServer.isConnected) {
             text += " (" + modelServer.id + ")"
         } else {
             text += " (not connected)"
@@ -91,13 +91,13 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
     }
 
     fun updateChildren() {
-        if (modelServer!!.isConnected) {
+        if (modelServer.isConnected) {
             val existing: Map<SNode?, RepositoryTreeNode> =
                 MapSequence.fromMap(LinkedHashMap(16, 0.75.toFloat(), false))
             ThreadUtils.runInUIThreadAndWait(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     if (Sequence.fromIterable<TreeNode?>(TreeModelUtil.getChildren(this@ModelServerTreeNode))
-                            .isEmpty()
+                            .isEmpty
                     ) {
                         TreeModelUtil.setChildren(
                             this@ModelServerTreeNode,
@@ -113,7 +113,7 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
                 }
             })
             SharedExecutors.FIXED.execute(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     val newChildren: List<TreeNode>? =
                         PArea(modelServer.infoBranch!!).executeRead<IListSequence<TreeNode>?>({
                             val info: SNode? = modelServer.info
@@ -122,7 +122,7 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
                             }
                             ListSequence.fromList<SNode>(SLinkOperations.getChildren(info, LINKS.`repositories$b56J`))
                                 .select<TreeNode>(object : ISelector<SNode, TreeNode?>() {
-                                    public override fun select(it: SNode): TreeNode? {
+                                    override fun select(it: SNode): TreeNode? {
                                         var tn: TreeNode? = null
                                         try {
                                             tn =
@@ -152,12 +152,12 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
                                 }).where(NotNullWhereFilter<Any?>()).toListSequence()
                         })
                     ThreadUtils.runInUIThreadNoWait(object : Runnable {
-                        public override fun run() {
+                        override fun run() {
                             TreeModelUtil.setChildren(this@ModelServerTreeNode, newChildren)
                             Sequence.fromIterable(TreeModelUtil.getChildren(this@ModelServerTreeNode)).ofType(
                                 RepositoryTreeNode::class.java,
                             ).visitAll(object : IVisitor<RepositoryTreeNode>() {
-                                public override fun visit(it: RepositoryTreeNode) {
+                                override fun visit(it: RepositoryTreeNode) {
                                     it.updateChildren()
                                 }
                             })
@@ -167,7 +167,7 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
             })
         } else {
             ThreadUtils.runInUIThreadNoWait(object : Runnable {
-                public override fun run() {
+                override fun run() {
                     TreeModelUtil.clearChildren(this@ModelServerTreeNode)
                 }
             })

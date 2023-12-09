@@ -23,12 +23,12 @@ class SyncTask(
         this.requiredLocks = Collections.unmodifiableSet(SetSequence.fromSetWithValues(HashSet(), requiredLocks))
     }
 
-    public override fun toString(): String {
+    override fun toString(): String {
         return "task[" + binding + ", " + direction + ", " + requiredLocks + "]"
     }
 
     @Synchronized
-    public override fun run() {
+    override fun run() {
         if (state != State.NEW) {
             throw IllegalStateException("Current state: " + state)
         }

@@ -27,17 +27,17 @@ class RootBinding(override val cloudRepository: ICloudRepository) : Binding(null
         ),
     )
 
-    public override fun toString(): String {
+    override fun toString(): String {
         return "bindings"
     }
 
-    override val branch: IBranch?
+    override val branch: IBranch
         get() {
             val branch: IBranch? = super.branch
             return (if (branch != null) branch else cloudRepository.branch)
         }
 
-    public override fun treeChanged(oldTree: ITree?, newTree: ITree) {
+    override fun treeChanged(oldTree: ITree?, newTree: ITree) {
         if (syncQueue.isSynchronizing) {
             return
         }
@@ -55,7 +55,7 @@ class RootBinding(override val cloudRepository: ICloudRepository) : Binding(null
         }
     }
 
-    public override fun doSyncToCloud(t: IWriteTransaction) {}
+    override fun doSyncToCloud(t: IWriteTransaction) {}
     override fun getTreeChangeVisitor(oldTree: ITree?, newTree: ITree): ITreeChangeVisitor? {
         return null
     }

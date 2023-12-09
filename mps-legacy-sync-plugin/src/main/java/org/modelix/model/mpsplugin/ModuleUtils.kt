@@ -15,7 +15,7 @@ object ModuleUtils {
             } else {
                 sb.append(", ")
             }
-            sb.append(m!!.getModelName())
+            sb.append(m!!.modelName)
         }
     }
 }

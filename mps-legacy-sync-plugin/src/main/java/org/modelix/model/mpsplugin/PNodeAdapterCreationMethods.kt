@@ -17,14 +17,14 @@ object PNodeAdapterCreationMethods {
         // TODO check the concept of this node is Repository
         return PArea(_this!!.branch).executeWrite<INode>({
             val newModule: INode = _this.addNewChild(
-                LINKS.`modules$jBPn`.getName(),
+                LINKS.`modules$jBPn`.name,
                 -1,
                 SConceptAdapter.Companion.wrap(
                     CONCEPTS.`Module$4i`,
                 ),
             )
-            newModule.setPropertyValue(PROPS.`name$MnvL`.getName(), name)
-            newModule.setPropertyValue(PROPS.`id$7MjP`.getName(), UUID.randomUUID().toString())
+            newModule.setPropertyValue(PROPS.`name$MnvL`.name, name)
+            newModule.setPropertyValue(PROPS.`id$7MjP`.name, UUID.randomUUID().toString())
             newModule
         })
     }
@@ -33,13 +33,13 @@ object PNodeAdapterCreationMethods {
         // TODO check the concept of this node is Repository
         return PArea(_this!!.branch).executeWrite<INode>({
             val newModule: INode = _this.addNewChild(
-                LINKS.`projects$NW07`.getName(),
+                LINKS.`projects$NW07`.name,
                 -1,
                 SConceptAdapter.Companion.wrap(
                     CONCEPTS.`Project$An`,
                 ),
             )
-            newModule.setPropertyValue(PROPS.`name$MnvL`.getName(), name)
+            newModule.setPropertyValue(PROPS.`name$MnvL`.name, name)
             newModule
         })
     }

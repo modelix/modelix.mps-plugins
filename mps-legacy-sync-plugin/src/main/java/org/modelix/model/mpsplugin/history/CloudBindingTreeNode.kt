@@ -16,24 +16,24 @@ class CloudBindingTreeNode(val binding: Binding?, val repositoryInModelServer: C
     binding.toString(),
 ) {
     private val bindingListener: Binding.IListener = object : Binding.IListener {
-        public override fun bindingAdded(binding: Binding?) {
+        override fun bindingAdded(binding: Binding?) {
             updateBindingsLater()
         }
 
-        public override fun bindingRemoved(binding: Binding?) {
+        override fun bindingRemoved(binding: Binding?) {
             updateBindingsLater()
         }
 
-        public override fun ownerChanged(newOwner: Binding?) {
+        override fun ownerChanged(newOwner: Binding?) {
             updateBindingsLater()
         }
 
-        public override fun bindingActivated() {
+        override fun bindingActivated() {
             updateText()
             updateBindingsLater()
         }
 
-        public override fun bindingDeactivated() {
+        override fun bindingDeactivated() {
             updateText()
             updateBindingsLater()
         }
@@ -53,21 +53,21 @@ class CloudBindingTreeNode(val binding: Binding?, val repositoryInModelServer: C
         binding!!.removeListener(bindingListener)
     }
 
-    val modelServer: ModelServerConnection?
+    val modelServer: ModelServerConnection
         get() {
             return repositoryInModelServer.modelServer
         }
 
     fun updateBindingsLater() {
         SwingUtilities.invokeLater(object : Runnable {
-            public override fun run() {
+            override fun run() {
                 updateBindings()
             }
         })
     }
 
     fun updateText() {
-        setText(binding.toString() + ((if (binding!!.isActive) "" else " [disabled]")))
+        text = binding.toString() + ((if (binding!!.isActive) "" else " [disabled]"))
     }
 
     fun updateBindings() {
@@ -75,7 +75,7 @@ class CloudBindingTreeNode(val binding: Binding?, val repositoryInModelServer: C
         Sequence.fromIterable<TreeNode?>(TreeModelUtil.getChildren(this)).ofType<CloudBindingTreeNode>(
             CloudBindingTreeNode::class.java,
         ).visitAll(object : IVisitor<CloudBindingTreeNode>() {
-            public override fun visit(it: CloudBindingTreeNode) {
+            override fun visit(it: CloudBindingTreeNode) {
                 MapSequence.fromMap(existing).put(it.binding, it)
             }
         })
@@ -84,7 +84,7 @@ class CloudBindingTreeNode(val binding: Binding?, val repositoryInModelServer: C
             Sequence.fromIterable<Binding?>(
                 binding!!.getOwnedBindings(),
             ).select<CloudBindingTreeNode>(object : ISelector<Binding?, CloudBindingTreeNode?>() {
-                public override fun select(it: Binding?): CloudBindingTreeNode? {
+                override fun select(it: Binding?): CloudBindingTreeNode? {
                     return (
                         if (MapSequence.fromMap<Binding?, CloudBindingTreeNode>(existing)
                                 .containsKey(it)

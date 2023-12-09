@@ -29,8 +29,8 @@ object CommandHelper {
         timer = Timer(
             10,
             object : ActionListener {
-                public override fun actionPerformed(e: ActionEvent) {
-                    val project: Project? = project
+                override fun actionPerformed(e: ActionEvent) {
+                    val project: Project = project
                     if (project == null) {
                         return
                     }
@@ -39,7 +39,7 @@ object CommandHelper {
                     ListSequence.fromList(queue).clear()
                     for (entry: Tuples._2<Runnable, Boolean> in ListSequence.fromList(queueCopy)) {
                         try {
-                            executeCommand(project.getRepository(), entry._1() as Boolean, entry._0())
+                            executeCommand(project.repository, entry._1() as Boolean, entry._0())
                         } catch (ex: Exception) {
                             if (LOG.isEnabledFor(Level.ERROR)) {
                                 LOG.error("", ex)
@@ -57,16 +57,16 @@ object CommandHelper {
 
     @JvmOverloads
     fun runInCommand(runnable: Runnable, undoTransparent: Boolean = false) {
-        val project: Project? = project
+        val project: Project = project
         if (project == null) {
             ListSequence.fromList(queue).addElement(MultiTuple.from(runnable, undoTransparent))
-            if (!(timer.isRunning())) {
+            if (!(timer.isRunning)) {
                 timer.start()
             }
         } else {
             val ex: _T<Throwable?> = _T(null)
             val runnableWithExceptionHandling: Runnable = object : Runnable {
-                public override fun run() {
+                override fun run() {
                     try {
                         runnable.run()
                     } catch (t: Throwable) {
@@ -75,11 +75,11 @@ object CommandHelper {
                 }
             }
             if (ThreadUtils.isInEDT()) {
-                executeCommand(project.getRepository(), undoTransparent, runnableWithExceptionHandling)
+                executeCommand(project.repository, undoTransparent, runnableWithExceptionHandling)
             } else {
                 ApplicationManager.getApplication().invokeAndWait(object : Runnable {
-                    public override fun run() {
-                        executeCommand(project.getRepository(), undoTransparent, runnableWithExceptionHandling)
+                    override fun run() {
+                        executeCommand(project.repository, undoTransparent, runnableWithExceptionHandling)
                     }
                 })
             }
@@ -91,7 +91,7 @@ object CommandHelper {
 
     fun executeCommand(repository: SRepository, undoTransparent: Boolean, runnable: Runnable) {
         ThreadUtils.assertEDT()
-        val modelAccess: ModelAccess = repository.getModelAccess()
+        val modelAccess: ModelAccess = repository.modelAccess
         if (modelAccess.canWrite()) {
             runnable.run()
         } else {
@@ -105,16 +105,16 @@ object CommandHelper {
 
     internal val project: Project
         internal get() {
-            val projects: List<Project> = ProjectManager.getInstance().getOpenedProjects()
+            val projects: List<Project> = ProjectManager.getInstance().openedProjects
             return ListSequence.fromList(projects).first()
         }
     val sRepository: SRepository
         get() {
-            val openedProjects: List<Project> = ProjectManager.getInstance().getOpenedProjects()
+            val openedProjects: List<Project> = ProjectManager.getInstance().openedProjects
             val projectRepo: SRepository? =
                 ListSequence.fromList(openedProjects).select(object : ISelector<Project, SRepository>() {
-                    public override fun select(it: Project): SRepository {
-                        return it.getRepository()
+                    override fun select(it: Project): SRepository {
+                        return it.repository
                     }
                 }).where(NotNullWhereFilter<Any?>() as _return_P1_E0<Boolean?, SRepository>?).first()
             return (if (projectRepo != null) projectRepo else MPSModuleRepository.getInstance())
