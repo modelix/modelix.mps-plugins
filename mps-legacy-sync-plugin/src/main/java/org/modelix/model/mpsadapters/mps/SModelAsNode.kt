@@ -279,7 +279,7 @@ class SModelAsNode(model: SModel) : TreeElementAsNode<SModel>(model), INode {
                         override fun select(it: SModelReference): SModel {
                             return it.resolve(element.repository)
                         }
-                    }).where(NotNullWhereFilter<Any?>())
+                    }).filterNotNull()
                 return Sequence.fromIterable(importedModels)
                     .select<INode>(object : ISelector<SModel, ModelImportAsNode>() {
                         override fun select(it: SModel): ModelImportAsNode {

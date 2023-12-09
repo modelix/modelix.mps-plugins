@@ -72,7 +72,7 @@ class SRepositoryAsNode(repository: SRepository) : TreeElementAsNode<SRepository
                         override fun select(it: MPSArea): SRepository {
                             return it.repository
                         }
-                    }).where(NotNullWhereFilter<Any?>() as _return_P1_E0<Boolean?, SRepository?>?).first()
+                    }).filterNotNull().firstOrNull()
             }
             if (repo == null) {
                 repo = MPSModuleRepository.getInstance()

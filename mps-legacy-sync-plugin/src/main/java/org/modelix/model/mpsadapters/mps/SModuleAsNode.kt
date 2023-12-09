@@ -179,7 +179,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
                         override fun select(it: MPSArea): SRepository {
                             return it.repository
                         }
-                    }).where(NotNullWhereFilter<Any?>() as _return_P1_E0<Boolean?, SRepository?>?).first()
+                    }).filterNotNull().firstOrNull()
             }
             if (repo.value == null) {
                 repo.value = MPSModuleRepository.getInstance()
@@ -352,7 +352,7 @@ class SModuleAsNode(module: SModule) : TreeElementAsNode<SModule>(module) {
                     override fun select(it: MPSProject): String? {
                         return check_jbj149_a0a0a0a0b0a0a0f(it.getPath((element)))
                     }
-                }).where(NotNullWhereFilter<Any?>() as _return_P1_E0<Boolean?, String?>?).first()
+                }).filterNotNull().firstOrNull()
                 if (("" == value)) return null // default value is returned as not being set to avoid unnecessary synchronization
                 return value
             }

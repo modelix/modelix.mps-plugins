@@ -115,7 +115,7 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
             SharedExecutors.FIXED.execute(object : Runnable {
                 override fun run() {
                     val newChildren: List<TreeNode>? =
-                        PArea(modelServer.infoBranch!!).executeRead<IListSequence<TreeNode>?>({
+                        PArea(modelServer.infoBranch!!).executeRead<List<TreeNode>>({
                             val info: SNode? = modelServer.info
                             if (info == null) {
                                 return@executeRead ListSequence.fromList<TreeNode>(ArrayList<TreeNode>())
@@ -149,7 +149,7 @@ class ModelServerTreeNode(val modelServer: ModelServerConnection) :
                                         }
                                         return tn
                                     }
-                                }).where(NotNullWhereFilter<Any?>()).toListSequence()
+                                }).filterNotNull()
                         })
                     ThreadUtils.runInUIThreadNoWait(object : Runnable {
                         override fun run() {

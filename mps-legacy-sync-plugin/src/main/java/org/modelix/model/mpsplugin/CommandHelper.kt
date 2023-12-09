@@ -116,7 +116,7 @@ object CommandHelper {
                     override fun select(it: Project): SRepository {
                         return it.repository
                     }
-                }).where(NotNullWhereFilter<Any?>() as _return_P1_E0<Boolean?, SRepository>?).first()
+                }).filterNotNull().firstOrNull()
             return (if (projectRepo != null) projectRepo else MPSModuleRepository.getInstance())
         }
 }

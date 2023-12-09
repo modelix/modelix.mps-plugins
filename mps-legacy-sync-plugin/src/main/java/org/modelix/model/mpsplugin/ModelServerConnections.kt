@@ -57,7 +57,7 @@ class ModelServerConnections {
                     val branch: IBranch = it.branch
                     return PArea(branch)
                 }
-            }).where(NotNullWhereFilter<Any?>())
+            }).filterNotNull()
         val area: CompositeArea = CompositeArea(
             Sequence.fromIterable(Sequence.singleton<IArea>(MPSArea(mpsRepository))).concat(
                 Sequence.fromIterable(cloudAreas),

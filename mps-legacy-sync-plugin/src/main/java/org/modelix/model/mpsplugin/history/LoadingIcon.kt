@@ -52,7 +52,7 @@ class LoadingIcon : Icon {
                                 override fun select(it: MPSTreeNode): MPSTree {
                                     return it.tree
                                 }
-                            }).where(NotNullWhereFilter<Any?>() as _return_P1_E0<Boolean?, MPSTree>?).distinct()) {
+                            }).filterNotNull().distinct()) {
                             c.repaint()
                         }
                     }
