@@ -14,7 +14,11 @@ pluginManagement {
         }
         versionCatalogs {
             create("coreLibs") {
-                from("org.modelix:core-version-catalog:3.15.0")
+                val modelixCoreVersion = file("gradle/libs.versions.toml").readLines()
+                    .first { it.startsWith("modelixCore = ") }
+                    .substringAfter('"')
+                    .substringBefore('"')
+                from("org.modelix:core-version-catalog:$modelixCoreVersion")
             }
         }
     }
