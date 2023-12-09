@@ -1,0 +1,36 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request: {}
+  # allow manual execution just in case
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/gradle-build-action@v2
+      - name: Build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew --build-cache build -PciBuild=true
+      - name: Archive test report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-report
+          path: |
+            */build/test-results
+            */build/reports

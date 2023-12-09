@@ -1,0 +1,13 @@
+.gradle/
+/build/
+/*/build/
+.DS_Store
+.gradletasknamecache
+.idea/
+*.iml
+kotlin_gen
+/version.txt
+/node_modules
+**/.ideaconfig
+**/.mpsconfig
+$LOG_DIR$

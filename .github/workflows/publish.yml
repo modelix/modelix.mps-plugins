@@ -1,0 +1,32 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
+
+jobs:
+  newRelease:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18.3.0'
+          registry-url: 'https://artifacts.itemis.cloud/repository/npm-open/'
+          scope: '<@modelix>'
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/gradle-build-action@v2
+      - name: Use tag as version
+        run: echo "${GITHUB_REF#refs/*/}" > version.txt
+      - name: Build and Publish Artifacts
+        run: ./gradlew --build-cache build publish -PciBuild=true -Partifacts.itemis.cloud.user=${{secrets.ARTIFACTS_ITEMIS_CLOUD_USER}} -Partifacts.itemis.cloud.pw=${{secrets.ARTIFACTS_ITEMIS_CLOUD_PW}} -Pgpr.user=${{ github.actor }} -Pgpr.key=${{ secrets.GITHUB_TOKEN }} -Pgpr.universalkey=${{ secrets.GHP_UNIVERSAL_PUBLISH_TOKEN }}
