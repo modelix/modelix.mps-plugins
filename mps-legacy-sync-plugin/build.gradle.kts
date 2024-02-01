@@ -15,6 +15,9 @@ val mpsHome = rootProject.layout.buildDirectory.dir("mps-$mpsVersion")
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
 }
 
 kotlin {
@@ -68,22 +71,6 @@ intellij {
 }
 
 tasks {
-    // This plugin in intended to be used by all 'supported' MPS versions, as a result we need to use the lowest
-    // common java version, which is JAVA 11 to ensure bytecode compatibility.
-    // However, when building with MPS >= 2022.3 to ensure compileOnly dependency compatibility, we need to build
-    // with JAVA 17 explicitly.
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        if (mpsVersion >= "2022.2") {
-            kotlinOptions.jvmTarget = "17"
-            java.sourceCompatibility = JavaVersion.VERSION_17
-            java.targetCompatibility = JavaVersion.VERSION_17
-        } else {
-            kotlinOptions.jvmTarget = "11"
-            java.sourceCompatibility = JavaVersion.VERSION_11
-            java.targetCompatibility = JavaVersion.VERSION_11
-        }
-    }
-
     patchPluginXml {
         sinceBuild.set("211") // 203 not supported, because VersionFixer was replaced by ModuleDependencyVersions in 211
         untilBuild.set("232.10072.781")
