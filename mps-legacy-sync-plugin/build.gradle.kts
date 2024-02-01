@@ -1,5 +1,7 @@
+import com.jetbrains.plugin.structure.base.utils.contentBuilder.buildZipFile
 import org.jetbrains.intellij.tasks.PrepareSandboxTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.zip.ZipInputStream
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -13,6 +15,22 @@ val mpsHome = rootProject.layout.buildDirectory.dir("mps-$mpsVersion")
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
+    withSourcesJar()
+}
+
+tasks.compileJava {
+    options.release = 11
+}
+
+tasks.compileKotlin {
+    kotlinOptions {
+        jvmTarget = "11"
+        freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
+        apiVersion = "1.6"
+    }
 }
 
 kotlin {
@@ -66,22 +84,6 @@ intellij {
 }
 
 tasks {
-    // This plugin in intended to be used by all 'supported' MPS versions, as a result we need to use the lowest
-    // common java version, which is JAVA 11 to ensure bytecode compatibility.
-    // However, when building with MPS >= 2022.3 to ensure compileOnly dependency compatibility, we need to build
-    // with JAVA 17 explicitly.
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        if (mpsVersion >= "2022.2") {
-            kotlinOptions.jvmTarget = "17"
-            java.sourceCompatibility = JavaVersion.VERSION_17
-            java.targetCompatibility = JavaVersion.VERSION_17
-        } else {
-            kotlinOptions.jvmTarget = "11"
-            java.sourceCompatibility = JavaVersion.VERSION_11
-            java.targetCompatibility = JavaVersion.VERSION_11
-        }
-    }
-
     patchPluginXml {
         sinceBuild.set("211") // 203 not supported, because VersionFixer was replaced by ModuleDependencyVersions in 211
         untilBuild.set("232.10072.781")
@@ -110,6 +112,31 @@ tasks {
         intoChild(pluginName.map { "$it/languages" })
             .from(project.layout.projectDirectory.dir("repositoryconcepts"))
     }
+
+    val checkBinaryCompatibility by registering {
+        group = "verification"
+        doLast {
+            val ignoredFiles = setOf(
+                "META-INF/MANIFEST.MF",
+                "org/modelix/model/mpsplugin/AllowedBinaryIncompatibilityKt.class"
+            )
+            fun loadEntries(fileName: String) = rootProject.layout.buildDirectory
+                .dir("binary-compatibility")
+                .dir(project.name)
+                .file(fileName)
+                .get().asFile.inputStream().use {
+                    val zip = ZipInputStream(it)
+                    val entries = generateSequence { zip.nextEntry }
+                    entries.associate { it.name to "size:${it.size},crc:${it.crc}" }
+                } - ignoredFiles
+            val entriesA = loadEntries("a.jar")
+            val entriesB = loadEntries("b.jar")
+            val mismatches = (entriesA.keys + entriesB.keys).map { it to (entriesA[it] to entriesB[it]) }.filter { it.second.first != it.second.second }
+            check(mismatches.isEmpty()) {
+                "The following files have a different content:\n" + mismatches.joinToString("\n") { "  ${it.first}: ${it.second.first} != ${it.second.second}" }
+            }
+        }
+    }
 }
 
 publishing {
@@ -123,3 +150,7 @@ publishing {
         }
     }
 }
+
+fun Provider<Directory>.dir(name: String): Provider<Directory> = map { it.dir(name) }
+fun Provider<Directory>.file(name: String): Provider<RegularFile> = map { it.file(name) }
+fun Provider<Directory>.dir(name: Provider<out CharSequence>): Provider<Directory> = flatMap { it.dir(name) }

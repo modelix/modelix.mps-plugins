@@ -49,7 +49,7 @@ class LoadingIcon : Icon {
                         }
                         for (c: MPSTree in SetSequence.fromSet(activeNodes)
                             .select(object : ISelector<MPSTreeNode, MPSTree>() {
-                                override fun select(it: MPSTreeNode): MPSTree {
+                                override fun select(it: MPSTreeNode): MPSTree? {
                                     return it.tree
                                 }
                             }).filterNotNull().distinct()) {

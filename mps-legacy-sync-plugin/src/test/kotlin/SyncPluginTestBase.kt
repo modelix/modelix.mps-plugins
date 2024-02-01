@@ -17,8 +17,8 @@
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.serviceContainer.AlreadyDisposedException
+import com.intellij.testFramework.EdtTestUtil
 import com.intellij.testFramework.HeavyPlatformTestCase
-import com.intellij.testFramework.runInEdtAndWait
 import io.ktor.client.HttpClient
 import io.ktor.http.Url
 import io.ktor.serialization.kotlinx.json.json
@@ -41,7 +41,6 @@ import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.authorization.installAuthentication
-import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2
@@ -51,7 +50,6 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.mps.ProjectAsNode
 import org.modelix.model.mpsadapters.mps.SModuleAsNode
-import org.modelix.model.mpsplugin.SModuleUtils
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
@@ -65,7 +63,6 @@ import java.nio.file.Path
 import kotlin.io.path.absolutePathString
 
 @Suppress("removal")
-@OptIn(UnstableModelixFeature::class)
 abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlatformTestCase() {
     protected val baseUrl = "http://localhost/v2/"
     protected lateinit var httpClient: HttpClient
@@ -144,7 +141,7 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
     }
 
     override fun setUpProject() {
-        runInEdtAndWait {
+        EdtTestUtil.runInEdtAndGet<_, Throwable> {
             super.setUpProject()
             @Suppress("removal")
             MPSCoreComponents.getInstance().getLibraryInitializer().load(
@@ -161,7 +158,7 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
     }
 
     override fun tearDown() {
-        runInEdtAndWait {
+        EdtTestUtil.runInEdtAndGet<_, Throwable> {
             try {
                 super.tearDown()
             } catch (ex: AlreadyDisposedException) {
@@ -171,7 +168,7 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
     }
 
     override fun setUp() {
-        runInEdtAndWait {
+        EdtTestUtil.runInEdtAndGet<_, Throwable> {
             super.setUp()
         }
     }
