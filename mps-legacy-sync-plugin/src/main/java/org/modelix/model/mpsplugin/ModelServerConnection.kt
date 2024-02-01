@@ -72,9 +72,9 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
         if (LOG.isDebugEnabled) {
             LOG.debug("ModelServerConnection.init(" + baseUrl + ")")
         }
-        messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
+        messageBusConnection = ApplicationManager.getApplication().messageBus.connectToMessageBus()
         messageBusConnection.subscribe(
-            ProjectManager.TOPIC,
+            getProjectManagerTopic(),
             object : ProjectManagerListener {
                 override fun projectClosing(closingProject: Project) {
                     for (closingProjectBinding: ProjectBinding? in Sequence.fromIterable(MapSequence.fromMap(bindings).values)

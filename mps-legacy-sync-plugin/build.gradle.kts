@@ -116,7 +116,10 @@ tasks {
     val checkBinaryCompatibility by registering {
         group = "verification"
         doLast {
-            val ignoredFiles = setOf("META-INF/MANIFEST.MF")
+            val ignoredFiles = setOf(
+                "META-INF/MANIFEST.MF",
+                "org/modelix/model/mpsplugin/AllowedBinaryIncompatibilityKt.class"
+            )
             fun loadEntries(fileName: String) = rootProject.layout.buildDirectory
                 .dir("binary-compatibility")
                 .dir(project.name)
