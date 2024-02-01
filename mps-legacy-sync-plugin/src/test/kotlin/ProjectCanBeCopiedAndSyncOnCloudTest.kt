@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import com.intellij.testFramework.runInEdtAndGet
+import com.intellij.testFramework.EdtTestUtil
 import io.ktor.http.Url
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.Solution
@@ -52,7 +52,7 @@ class ProjectCanBeCopiedAndSyncOnCloudTest : SyncPluginTestBase("SimpleProjectF"
 
         // create new solution in MPS
         val newSolutionId = UUID.fromString("e8a7cec0-ecbb-4e2f-b9cd-74f510383c39")
-        val newSolution = runInEdtAndGet {
+        val newSolution = EdtTestUtil.runInEdtAndGet<_, Throwable> {
             writeAction {
                 MPSProjectUtils.createModule(
                     mpsProject,

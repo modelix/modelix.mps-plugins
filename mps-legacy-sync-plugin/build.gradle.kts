@@ -18,6 +18,19 @@ java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(11))
     }
+    withSourcesJar()
+}
+
+tasks.compileJava {
+    options.release = 11
+}
+
+tasks.compileKotlin {
+    kotlinOptions {
+        jvmTarget = "11"
+        freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
+        apiVersion = "1.6"
+    }
 }
 
 kotlin {

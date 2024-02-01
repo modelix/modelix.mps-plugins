@@ -16,13 +16,14 @@
 
 package org.modelix.mps.sync
 
-import com.intellij.openapi.components.service
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
 
 class ModelixSyncPluginInitializer : StartupActivity.Background {
     override fun runActivity(project: Project) {
-        service<ModelSyncService>().registerProject(project)
+        //service<ModelSyncService>().registerProject(project)
+        ApplicationManager.getApplication().getService(ModelSyncService::class.java).registerProject(project)
     }
 }
 
