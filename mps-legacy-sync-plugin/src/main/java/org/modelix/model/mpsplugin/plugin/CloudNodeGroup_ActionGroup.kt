@@ -1,7 +1,7 @@
 package org.modelix.model.mpsplugin.plugin
 
+import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.ex.ActionManagerEx
 import com.intellij.openapi.extensions.PluginId
 import jetbrains.mps.plugins.actions.GeneratedActionGroup
 import jetbrains.mps.workbench.action.ApplicationPlugin
@@ -27,7 +27,7 @@ class CloudNodeGroup_ActionGroup(plugin: ApplicationPlugin) : GeneratedActionGro
         this@CloudNodeGroup_ActionGroup.addAction("org.modelix.model.mpsplugin.plugin.ShowReferences_Action")
         run({
             val newAction: GeneratedActionGroup = CloudNodeGroupAddChild_ActionGroup(applicationPlugin)
-            val manager: ActionManagerEx = ActionManagerEx.getInstanceEx()
+            val manager: ActionManager = ActionManager.getInstance()
             var oldAction: AnAction? = manager.getAction(newAction.id)
             if (oldAction == null) {
                 manager.registerAction(newAction.id, newAction, PluginId.getId("org.modelix.model.mpsplugin"))
@@ -37,7 +37,7 @@ class CloudNodeGroup_ActionGroup(plugin: ApplicationPlugin) : GeneratedActionGro
         })
         run({
             val newAction: GeneratedActionGroup = CloudNodeGroupSetProperty_ActionGroup(applicationPlugin)
-            val manager: ActionManagerEx = ActionManagerEx.getInstanceEx()
+            val manager: ActionManager = ActionManager.getInstance()
             var oldAction: AnAction? = manager.getAction(newAction.id)
             if (oldAction == null) {
                 manager.registerAction(newAction.id, newAction, PluginId.getId("org.modelix.model.mpsplugin"))
