@@ -117,11 +117,15 @@ tasks {
         group = "verification"
         doLast {
             val ignoredFiles = setOf("META-INF/MANIFEST.MF")
-            fun loadEntries(fileName: String) = project.layout.buildDirectory.file("binary-compatibility/$fileName").get().asFile.inputStream().use {
-                val zip = ZipInputStream(it)
-                val entries = generateSequence { zip.nextEntry }
-                entries.associate { it.name to "size:${it.size},crc:${it.crc}" }
-            } - ignoredFiles
+            fun loadEntries(fileName: String) = rootProject.layout.buildDirectory
+                .dir("binary-compatibility")
+                .dir(project.name)
+                .file(fileName)
+                .get().asFile.inputStream().use {
+                    val zip = ZipInputStream(it)
+                    val entries = generateSequence { zip.nextEntry }
+                    entries.associate { it.name to "size:${it.size},crc:${it.crc}" }
+                } - ignoredFiles
             val entriesA = loadEntries("a.jar")
             val entriesB = loadEntries("b.jar")
             val mismatches = (entriesA.keys + entriesB.keys).map { it to (entriesA[it] to entriesB[it]) }.filter { it.second.first != it.second.second }
@@ -143,3 +147,7 @@ publishing {
         }
     }
 }
+
+fun Provider<Directory>.dir(name: String): Provider<Directory> = map { it.dir(name) }
+fun Provider<Directory>.file(name: String): Provider<RegularFile> = map { it.file(name) }
+fun Provider<Directory>.dir(name: Provider<out CharSequence>): Provider<Directory> = flatMap { it.dir(name) }
