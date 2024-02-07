@@ -72,6 +72,7 @@ dependencies {
 //    implementation(libs.ktor.server.forwarded.header)
     testImplementation(coreLibs.ktor.server.websockets)
     testImplementation(coreLibs.ktor.server.content.negotiation)
+    implementation(coreLibs.ktor.server.resources)
 //    implementation(libs.ktor.serialization.json)
 }
 
