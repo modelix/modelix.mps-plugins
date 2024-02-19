@@ -22,23 +22,15 @@ import io.ktor.client.HttpClient
 import io.ktor.http.Url
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.delay
+import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.project.Project
-import org.modelix.model.api.IChildLink
-import org.modelix.model.api.INode
-import org.modelix.model.api.IProperty
-import org.modelix.model.api.getRootNode
+import org.modelix.model.api.*
 import org.modelix.model.client.ActiveBranch
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.mps.SNodeToNodeAdapter
-import org.modelix.model.mpsplugin.Binding
-import org.modelix.model.mpsplugin.ModelServerConnections
-import org.modelix.model.mpsplugin.ModuleBinding
-import org.modelix.model.mpsplugin.ProjectBinding
-import org.modelix.model.mpsplugin.ProjectModuleBinding
-import org.modelix.model.mpsplugin.SyncDirection
-import org.modelix.model.mpsplugin.TransientModuleBinding
+import org.modelix.model.mpsplugin.*
 import org.modelix.model.mpsplugin.plugin.Mpsplugin_ApplicationPlugin
 import org.modelix.mps.sync.api.IBranchConnection
 import org.modelix.mps.sync.api.IModelServerConnection
@@ -101,6 +93,23 @@ class ModelSyncService : Disposable, ISyncService {
             Disposer.register(this, it)
             serverConnections += it
         }
+    }
+
+    private val modelBindings
+        // Use ModelServerConnections.instance.modelServers.rootBindings
+        // instead of ActiveBranch.bindings
+        // as long the not every consumer uses the ModelSyncService to create connections.
+        get() = ModelServerConnections.instance.modelServers
+            .flatMap(ModelServerConnection::rootBindings)
+            .flatMap { rootBinding -> rootBinding.allBindings }
+            .filterIsInstance<ModelBinding>()
+
+    override fun findCloudNodeReference(mpsNode: SNode): List<INode> {
+        return modelBindings.mapNotNull { it.findCloudNodeReference(mpsNode) }
+    }
+
+    override fun findMpsNode(cloudNodeReference: INodeReference): List<SNode> {
+        return modelBindings.mapNotNull { it.findMpsNode(cloudNodeReference) }
     }
 
     private inner class ServerConnection(httpClient: HttpClient?, url: String) : IModelServerConnection {

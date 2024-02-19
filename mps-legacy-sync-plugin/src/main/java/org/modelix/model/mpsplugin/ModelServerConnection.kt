@@ -159,6 +159,8 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
         return rootBinding
     }
 
+    val rootBindings = bindings.values
+
     @Deprecated("")
     fun reconnect() {
         client.reconnect()
