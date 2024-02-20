@@ -3,7 +3,8 @@
 /*/build/
 .DS_Store
 .gradletasknamecache
-.idea/
+.idea/*
+!.idea/codeStyles
 *.iml
 kotlin_gen
 /version.txt
@@ -11,3 +12,6 @@ kotlin_gen
 **/.ideaconfig
 **/.mpsconfig
 $LOG_DIR$
+
+# for MPS projects
+workspace.xml
