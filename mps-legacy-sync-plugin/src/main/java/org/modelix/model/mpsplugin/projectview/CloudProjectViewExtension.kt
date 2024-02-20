@@ -31,7 +31,6 @@ import org.jetbrains.mps.openapi.module.SRepositoryListenerBase
 import org.modelix.model.mpsplugin.CloudTransientModule
 import org.modelix.model.mpsplugin.LetterInSquareIcon
 import org.modelix.model.mpsplugin.history.TreeModelUtil
-import java.awt.Color
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
 import java.util.concurrent.atomic.AtomicBoolean

@@ -1,10 +1,8 @@
 package org.modelix.model.mpsadapters.mps
 
-import jetbrains.mps.baseLanguage.closures.runtime._FunctionTypes._return_P1_E0
 import jetbrains.mps.internal.collections.runtime.ISelector
 import jetbrains.mps.internal.collections.runtime.IWhereFilter
 import jetbrains.mps.internal.collections.runtime.ListSequence
-import jetbrains.mps.internal.collections.runtime.NotNullWhereFilter
 import jetbrains.mps.internal.collections.runtime.Sequence
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.Project

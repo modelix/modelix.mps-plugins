@@ -2,12 +2,10 @@ package org.modelix.model.mpsplugin.history
 
 import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.ide.ui.tree.TextTreeNode
-import jetbrains.mps.internal.collections.runtime.IListSequence
 import jetbrains.mps.internal.collections.runtime.ISelector
 import jetbrains.mps.internal.collections.runtime.IVisitor
 import jetbrains.mps.internal.collections.runtime.ListSequence
 import jetbrains.mps.internal.collections.runtime.MapSequence
-import jetbrains.mps.internal.collections.runtime.NotNullWhereFilter
 import jetbrains.mps.internal.collections.runtime.Sequence
 import jetbrains.mps.lang.smodel.generator.smodelAdapter.SLinkOperations
 import jetbrains.mps.lang.smodel.generator.smodelAdapter.SPropertyOperations
