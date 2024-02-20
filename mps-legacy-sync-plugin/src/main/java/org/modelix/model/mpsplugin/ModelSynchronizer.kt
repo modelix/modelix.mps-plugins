@@ -39,6 +39,7 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.deepUnwrapNode
+import org.modelix.model.api.getNode
 import org.modelix.model.api.resolveIn
 import org.modelix.model.area.CompositeArea
 import org.modelix.model.area.IArea
@@ -753,5 +754,27 @@ class ModelSynchronizer(
             }
             return null
         }
+    }
+
+    fun findCloudNodeReference(mpsNode: SNode): INode? {
+        val nodeId = nodeMap.getId(mpsNode)
+        if (nodeId == 0L) {
+            // nodeId means that node corresponding INode exists
+            return null
+        }
+        return nodeId.let(cloudRepository.branch::getNode)
+    }
+
+    fun findMpsNode(cloudNodeReference: INodeReference): SNode? {
+        var resolvedNode: INode? = null
+        branch.runRead {
+            resolvedNode = PArea(branch).resolveNode(cloudNodeReference)
+        }
+        if (resolvedNode == null) {
+            return null
+        }
+        val unwrappedNode = deepUnwrapNode(resolvedNode!!)
+        require(unwrappedNode is PNodeAdapter)
+        return nodeMap.getNode(unwrappedNode.nodeId)
     }
 }
