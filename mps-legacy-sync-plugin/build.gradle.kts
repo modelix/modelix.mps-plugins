@@ -1,6 +1,16 @@
+import com.jetbrains.plugin.structure.base.utils.contentBuilder.buildZipFile
 import org.jetbrains.intellij.tasks.PrepareSandboxTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.modelix.buildtools.ModuleId
+import org.modelix.buildtools.ModuleIdAndName
+import org.modelix.buildtools.StubsSolutionGenerator
 import java.util.zip.ZipInputStream
+
+buildscript {
+    dependencies {
+        classpath("org.modelix.mps:build-tools-lib:1.3.0")
+    }
+}
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -100,6 +110,42 @@ tasks {
     }
 
     val mpsPluginDir = project.findProperty("mps232.plugins.dir")?.toString()?.let { file(it) }
+    val generatedStubsSolution by registering {
+        val pluginFolder = project.layout.buildDirectory.dir("idea-sandbox").dir("plugins").dir(prepareSandbox.flatMap { it.pluginName })
+        val libFolder = pluginFolder.dir("lib")
+        val languagesFolder = pluginFolder.dir("languages")
+        inputs.dir(libFolder)
+        doLast {
+            val solutionName = "org.modelix.model.sync.stubs"
+            val stubsSolutionJar = languagesFolder.get().asFile.resolve("$solutionName.jar")
+            val dependencies: List<ModuleIdAndName> = listOf(
+                ModuleIdAndName.fromString("8865b7a8-5271-43d3-884c-6fd1d9cfdd34(MPS.OpenAPI)"),
+                ModuleIdAndName.fromString("6ed54515-acc8-4d1e-a16c-9fd6cfe951ea(MPS.Core)"),
+//                ModuleIdAndName.fromString("3f233e7f-b8a6-46d2-a57f-795d56775243(Annotations)"),
+//                ModuleIdAndName.fromString("6354ebe7-c22a-4a0f-ac54-50b52ab9b065(JDK)"),
+                ModuleIdAndName.fromString("86441d7a-e194-42da-81a5-2161ec62a379(MPS.Workbench)"),
+                ModuleIdAndName.fromString("742f6602-5a2f-4313-aa6e-ae1cd4ffdc61(MPS.Platform)"),
+                ModuleIdAndName.fromString("498d89d2-c2e9-11e2-ad49-6cf049e62fe5(MPS.IDEA)"),
+            )
+            buildZipFile(stubsSolutionJar.toPath()) {
+                dir("modules") {
+                    dir(solutionName) {
+                        file("$solutionName.msd") {
+                            StubsSolutionGenerator(
+                                ModuleIdAndName(ModuleId("c5e5433e-201f-43e2-ad14-a6cba8c80cd6"), solutionName),
+                                libFolder.get().asFile.listFiles().map { "\${module}/../../../../lib/${it.name}" }.sorted(),
+                                dependencies,
+                            ).generateString()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    prepareSandbox {
+        finalizedBy(generatedStubsSolution)
+    }
+
     if (mpsPluginDir != null && mpsPluginDir.isDirectory) {
         create<Sync>("installMpsPlugin") {
             dependsOn(prepareSandbox)
