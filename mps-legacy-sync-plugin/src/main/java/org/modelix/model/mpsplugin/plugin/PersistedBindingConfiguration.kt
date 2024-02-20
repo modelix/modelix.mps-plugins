@@ -31,7 +31,7 @@ import org.modelix.model.mpsplugin.SharedExecutors
 import org.modelix.model.mpsplugin.SyncDirection
 import org.modelix.model.mpsplugin.TransientModuleBinding
 import org.modelix.model.mpsplugin.history.CloudNodeTreeNode
-import org.modelix.model.mpsplugin.plugin._Adapters._return_P1_E0_to_Consumer_adapter
+import org.modelix.model.mpsplugin.plugin.Adapters.ReturnP1E0toConsumerAdapter
 import java.util.Objects
 import java.util.concurrent.ConcurrentMap
 import java.util.function.Consumer
@@ -180,7 +180,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
 
     fun addTransientBoundModule(repositoryInModelServer: CloudRepository, branch: IBranch?, cloudNode: INode?) {
         modifyState(
-            _return_P1_E0_to_Consumer_adapter(object :
+            ReturnP1E0toConsumerAdapter(object :
                 _return_P1_E0<Unit, CloudResourcesConfigurationComponent.State> {
                 override fun invoke(state: CloudResourcesConfigurationComponent.State) {
                     return PArea((branch)!!).executeRead({
@@ -195,7 +195,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
 
     fun removeTransientBoundModule(repositoryInModelServer: CloudRepository, branch: IBranch?, cloudNode: INode?) {
         modifyState(
-            _return_P1_E0_to_Consumer_adapter(object :
+            ReturnP1E0toConsumerAdapter(object :
                 _return_P1_E0<Unit, CloudResourcesConfigurationComponent.State> {
                 override fun invoke(state: CloudResourcesConfigurationComponent.State) {
                     return PArea((branch)!!).executeRead({
@@ -211,7 +211,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
 
     fun removeTransientBoundModule(repositoryInModelServer: CloudRepository, branch: IBranch, nodeId: Long) {
         modifyState(
-            _return_P1_E0_to_Consumer_adapter(object :
+            ReturnP1E0toConsumerAdapter(object :
                 _return_P1_E0<Unit, CloudResourcesConfigurationComponent.State> {
                 override fun invoke(state: CloudResourcesConfigurationComponent.State) {
                     return PArea(branch).executeRead({
@@ -228,7 +228,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
     fun removeMappedBoundModule(repositoryInModelServer: CloudRepository, nodeId: Long) {
         val branch: IBranch = repositoryInModelServer.activeBranch.branch
         modifyState(
-            _return_P1_E0_to_Consumer_adapter<CloudResourcesConfigurationComponent.State>(object :
+            ReturnP1E0toConsumerAdapter<CloudResourcesConfigurationComponent.State>(object :
                 _return_P1_E0<Unit, CloudResourcesConfigurationComponent.State> {
                 override fun invoke(state: CloudResourcesConfigurationComponent.State) {
                     return PArea(branch).executeRead({
@@ -260,7 +260,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
 
     fun addTransientBoundModule(repositoryInModelServer: CloudRepository, nodeTreeNode: PNodeAdapter) {
         modifyState(
-            _return_P1_E0_to_Consumer_adapter(object :
+            ReturnP1E0toConsumerAdapter(object :
                 _return_P1_E0<Unit, CloudResourcesConfigurationComponent.State> {
                 override fun invoke(state: CloudResourcesConfigurationComponent.State) {
                     return PArea(nodeTreeNode.branch).executeRead({
@@ -278,7 +278,7 @@ class PersistedBindingConfiguration private constructor(private val project: Pro
             throw IllegalArgumentException("treeInRepository should not be null")
         }
         modifyState(
-            _return_P1_E0_to_Consumer_adapter(object :
+            ReturnP1E0toConsumerAdapter(object :
                 _return_P1_E0<Unit, CloudResourcesConfigurationComponent.State> {
                 override fun invoke(state: CloudResourcesConfigurationComponent.State) {
                     return PArea(nodeTreeNode!!.branch).executeRead({

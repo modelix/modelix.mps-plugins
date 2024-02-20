@@ -28,10 +28,10 @@
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Modelix History" secondary="true"
                     icon="org.modelix.model.mpsplugin.plugin.CloudHistoryTool_Tool.ICON" anchor="bottom"
-                    factoryClass="org.modelix.model.mpsplugin.plugin.CloudHistoryTool_Tool"/>
+                    factoryClass="org.modelix.model.mpsplugin.plugin.CloudHistoryToolTool"/>
         <toolWindow id="Modelix Server Connection" secondary="false"
                     icon="org.modelix.model.mpsplugin.plugin.CloudTool_Tool.ICON" anchor="bottom"
-                    factoryClass="org.modelix.model.mpsplugin.plugin.CloudTool_Tool"/>
+                    factoryClass="org.modelix.model.mpsplugin.plugin.CloudToolTool"/>
         <applicationService serviceImplementation="org.modelix.mps.sync.ModelSyncService"/>
         <backgroundPostStartupActivity implementation="org.modelix.mps.sync.ModelixSyncPluginInitializer" />
         <mps.LanguageLibrary dir="/languages" />

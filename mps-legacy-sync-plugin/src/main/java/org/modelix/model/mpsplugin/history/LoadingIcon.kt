@@ -1,14 +1,11 @@
 package org.modelix.model.mpsplugin.history
 
 import com.intellij.ui.Gray
-import jetbrains.mps.baseLanguage.closures.runtime._FunctionTypes._return_P1_E0
 import jetbrains.mps.ide.ui.tree.MPSTree
 import jetbrains.mps.ide.ui.tree.MPSTreeNode
 import jetbrains.mps.internal.collections.runtime.ISelector
-import jetbrains.mps.internal.collections.runtime.NotNullWhereFilter
 import jetbrains.mps.internal.collections.runtime.SetSequence
 import java.awt.BasicStroke
-import java.awt.Color
 import java.awt.Component
 import java.awt.Graphics
 import java.awt.Graphics2D

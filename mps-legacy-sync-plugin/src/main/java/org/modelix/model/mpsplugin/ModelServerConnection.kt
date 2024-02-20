@@ -2,7 +2,6 @@ package org.modelix.model.mpsplugin
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ProjectManagerListener
 import com.intellij.util.messages.MessageBusConnection
 import io.ktor.client.HttpClient
@@ -34,8 +33,6 @@ import org.modelix.model.api.ITransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.PNodeAdapter.Companion.wrap
-import org.modelix.model.api.addNewChild
 import org.modelix.model.area.PArea
 import org.modelix.model.client.ActiveBranch
 import org.modelix.model.client.ConnectionListener
@@ -399,7 +396,7 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
             })
             if (result == null) {
                 SharedExecutors.FIXED.submit(
-                    _Adapters._return_P0_E0_to_Runnable_adapter(object : _return_P0_E0<SNode> {
+                    Adapters.ReturnP0E0toRunnableAdapter(object : _return_P0_E0<SNode> {
                         override fun invoke(): SNode {
                             return PArea(infoTree!!.branch).executeWrite<SNode>({
                                 val t: IWriteTransaction = infoTree!!.branch.writeTransaction

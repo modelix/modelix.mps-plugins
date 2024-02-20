@@ -5,7 +5,6 @@ import jetbrains.mps.internal.collections.runtime.ISelector
 import jetbrains.mps.internal.collections.runtime.ITranslator2
 import jetbrains.mps.internal.collections.runtime.IWhereFilter
 import jetbrains.mps.internal.collections.runtime.ListSequence
-import jetbrains.mps.internal.collections.runtime.NotNullWhereFilter
 import jetbrains.mps.internal.collections.runtime.Sequence
 import jetbrains.mps.internal.collections.runtime.SetSequence
 import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations

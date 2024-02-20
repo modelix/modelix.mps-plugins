@@ -41,27 +41,27 @@ class CloudView : JPanel(BorderLayout()) {
         override fun createPopupActionGroup(node: MPSTreeNode): ActionGroup? {
             if (node is CloudRootTreeNode) {
                 return ActionManager.getInstance()
-                    .getAction(org.modelix.model.mpsplugin.plugin.CloudRootGroup_ActionGroup.ID) as ActionGroup
+                    .getAction(org.modelix.model.mpsplugin.plugin.CloudRootGroupActionGroup.ID) as ActionGroup
             }
             if (node is ModelServerTreeNode) {
                 return ActionManager.getInstance()
-                    .getAction(org.modelix.model.mpsplugin.plugin.ModelServerGroup_ActionGroup.ID) as ActionGroup
+                    .getAction(org.modelix.model.mpsplugin.plugin.ModelServerGroupActionGroup.ID) as ActionGroup
             }
             if (node is CloudNodeTreeNode) {
                 return ActionManager.getInstance()
-                    .getAction(org.modelix.model.mpsplugin.plugin.CloudNodeGroup_ActionGroup.ID) as ActionGroup
+                    .getAction(org.modelix.model.mpsplugin.plugin.CloudNodeGroupActionGroup.ID) as ActionGroup
             }
             if (node is RepositoryTreeNode) {
                 return ActionManager.getInstance()
-                    .getAction(org.modelix.model.mpsplugin.plugin.RepositoryGroup_ActionGroup.ID) as ActionGroup
+                    .getAction(org.modelix.model.mpsplugin.plugin.RepositoryGroupActionGroup.ID) as ActionGroup
             }
             if (node is CloudBranchTreeNode) {
                 return ActionManager.getInstance()
-                    .getAction(org.modelix.model.mpsplugin.plugin.CloudBranchGroup_ActionGroup.ID) as ActionGroup
+                    .getAction(org.modelix.model.mpsplugin.plugin.CloudBranchGroupActionGroup.ID) as ActionGroup
             }
             if (node is CloudBindingTreeNode) {
                 return ActionManager.getInstance()
-                    .getAction(org.modelix.model.mpsplugin.plugin.CloudBindingGroup_ActionGroup.ID) as ActionGroup
+                    .getAction(org.modelix.model.mpsplugin.plugin.CloudBindingGroupActionGroup.ID) as ActionGroup
             }
             return null
         }

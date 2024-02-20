@@ -22,7 +22,7 @@ import com.intellij.openapi.startup.StartupActivity
 
 class ModelixSyncPluginInitializer : StartupActivity.Background {
     override fun runActivity(project: Project) {
-        //service<ModelSyncService>().registerProject(project)
+        // service<ModelSyncService>().registerProject(project)
         ApplicationManager.getApplication().getService(ModelSyncService::class.java).registerProject(project)
     }
 }

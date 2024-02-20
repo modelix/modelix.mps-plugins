@@ -4,7 +4,6 @@ import jetbrains.mps.baseLanguage.closures.runtime.Wrappers._T
 import jetbrains.mps.internal.collections.runtime.CollectionSequence
 import jetbrains.mps.internal.collections.runtime.ISelector
 import jetbrains.mps.internal.collections.runtime.ListSequence
-import jetbrains.mps.internal.collections.runtime.NotNullWhereFilter
 import jetbrains.mps.internal.collections.runtime.Sequence
 import jetbrains.mps.smodel.DefaultSModelDescriptor
 import jetbrains.mps.smodel.MPSModuleRepository

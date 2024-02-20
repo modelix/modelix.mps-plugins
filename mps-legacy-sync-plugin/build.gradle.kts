@@ -1,4 +1,3 @@
-import com.jetbrains.plugin.structure.base.utils.contentBuilder.buildZipFile
 import org.jetbrains.intellij.tasks.PrepareSandboxTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.zip.ZipInputStream
@@ -119,7 +118,7 @@ tasks {
         doLast {
             val ignoredFiles = setOf(
                 "META-INF/MANIFEST.MF",
-                "org/modelix/model/mpsplugin/AllowedBinaryIncompatibilityKt.class"
+                "org/modelix/model/mpsplugin/AllowedBinaryIncompatibilityKt.class",
             )
             fun loadEntries(fileName: String) = rootProject.layout.buildDirectory
                 .dir("binary-compatibility")

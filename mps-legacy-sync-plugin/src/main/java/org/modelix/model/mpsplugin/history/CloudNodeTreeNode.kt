@@ -21,7 +21,6 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.PNodeAdapter.Companion.wrap
 import org.modelix.model.area.ContextArea.withAdditionalContext
 import org.modelix.model.area.PArea
 import org.modelix.model.mpsadapters.mps.MPSArea
@@ -97,7 +96,7 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
             }
         })
         SharedExecutors.FIXED.execute(
-            _Adapters._return_P0_E0_to_Runnable_adapter(object : _return_P0_E0<Unit> {
+            Adapters.ReturnP0E0toRunnableAdapter(object : _return_P0_E0<Unit> {
                 override fun invoke() {
                     return PArea(branch).executeRead({
                         val newText: _T<String> = _T("")
@@ -116,7 +115,7 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
                                     throw IllegalStateException("repository should not be null")
                                 }
                                 mpsRepo.modelAccess.runReadAction(
-                                    _Adapters._return_P0_E0_to_Runnable_adapter(object :
+                                    Adapters.ReturnP0E0toRunnableAdapter(object :
                                         _return_P0_E0<Unit> {
                                         override fun invoke() {
                                             return withAdditionalContext<Unit>(MPSArea(mpsRepo), {
@@ -188,7 +187,7 @@ class CloudNodeTreeNode(val branch: IBranch, val node: INode) : TextTreeNode("")
             }
         })
         SharedExecutors.FIXED.execute(
-            _Adapters._return_P0_E0_to_Runnable_adapter(object : _return_P0_E0<Unit> {
+            Adapters.ReturnP0E0toRunnableAdapter(object : _return_P0_E0<Unit> {
                 override fun invoke() {
                     return PArea(branch).executeRead<Unit>({
                         val allChildren: Iterable<INode> = node.allChildren

@@ -39,7 +39,7 @@ import org.modelix.model.mpsplugin.ProjectBinding
 import org.modelix.model.mpsplugin.ProjectModuleBinding
 import org.modelix.model.mpsplugin.SyncDirection
 import org.modelix.model.mpsplugin.TransientModuleBinding
-import org.modelix.model.mpsplugin.plugin.Mpsplugin_ApplicationPlugin
+import org.modelix.model.mpsplugin.plugin.MpspluginApplicationPlugin
 import org.modelix.mps.sync.api.IBranchConnection
 import org.modelix.mps.sync.api.IModelServerConnection
 import org.modelix.mps.sync.api.IModuleBinding
@@ -57,15 +57,15 @@ class ModelSyncService : Disposable, ISyncService {
 
     private var projects: Set<com.intellij.openapi.project.Project> = emptySet()
     private val legacyAppPluginParts = listOf(
-        org.modelix.model.mpsadapters.plugin.ApplicationPlugin_AppPluginPart(),
-        org.modelix.model.mpsplugin.plugin.ApplicationPlugin_AppPluginPart(),
+        org.modelix.model.mpsadapters.plugin.ApplicationPluginAppPluginPart(),
+        org.modelix.model.mpsplugin.plugin.ApplicationPluginAppPluginPart(),
     )
     private var serverConnections: List<ServerConnection> = emptyList()
 
     init {
         check(INSTANCE == null) { "Single instance expected" }
         INSTANCE = this
-        Mpsplugin_ApplicationPlugin().let {
+        MpspluginApplicationPlugin().let {
             it.createGroups()
             it.adjustRegularGroups()
         }
