@@ -158,6 +158,8 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
         return rootBinding
     }
 
+    fun getRootBindings() = bindings.values
+
     @Deprecated("")
     fun reconnect() {
         client.reconnect()

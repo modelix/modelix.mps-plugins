@@ -29,6 +29,8 @@ import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.model.SNodeChangeListener
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.ITreeChangeVisitorEx
@@ -265,6 +267,14 @@ class ModelBinding(val modelNodeId: Long, val model: SModel?, initialSyncDirecti
         model!!.removeChangeListener(nodeChangeListener)
         (model as SModelInternal?)!!.removeModelListener(modelListener)
         synchronizer = null
+    }
+
+    fun findCloudNodeReference(mpsNode: SNode): INode? {
+        return synchronizer?.findCloudNodeReference(mpsNode)
+    }
+
+    fun findMpsNode(cloudNodeReference: INodeReference): SNode? {
+        return synchronizer?.findMpsNode(cloudNodeReference)
     }
 
     override fun doSyncToCloud(t: IWriteTransaction) {
