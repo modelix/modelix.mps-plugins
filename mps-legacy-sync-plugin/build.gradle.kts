@@ -14,7 +14,7 @@ buildscript {
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
-    id("org.jetbrains.intellij") version "1.17.0"
+    id("org.jetbrains.intellij") version "1.17.1"
 }
 
 group = "org.modelix.mps"
