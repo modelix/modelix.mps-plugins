@@ -320,7 +320,7 @@ class ModelCloudExporter {
     /**
      * We had to copy it from https://github.com/JetBrains/MPS/blob/14b86a2f987cdd3fbcc72b9262e8b388f7a5fae3/core/persistence/source/jetbrains/mps/persistence/DefaultModelPersistence.java#L115
      */
-    private class PersistenceFacility /*package*/(modelFactory: DefaultModelPersistence?, dataSource: StreamDataSource?) :
+    private class PersistenceFacility(modelFactory: DefaultModelPersistence?, dataSource: StreamDataSource?) :
         LazyLoadFacility((modelFactory)!!, (dataSource)!!, true) {
         private val source0: StreamDataSource
             private get() {

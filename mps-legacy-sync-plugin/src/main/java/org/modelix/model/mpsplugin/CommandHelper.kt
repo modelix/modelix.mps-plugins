@@ -2,13 +2,11 @@ package org.modelix.model.mpsplugin
 
 import com.intellij.openapi.application.ApplicationManager
 import jetbrains.mps.baseLanguage.closures.runtime.Wrappers._T
-import jetbrains.mps.baseLanguage.closures.runtime._FunctionTypes._return_P1_E0
 import jetbrains.mps.baseLanguage.tuples.runtime.MultiTuple
 import jetbrains.mps.baseLanguage.tuples.runtime.Tuples
 import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.internal.collections.runtime.ISelector
 import jetbrains.mps.internal.collections.runtime.ListSequence
-import jetbrains.mps.internal.collections.runtime.NotNullWhereFilter
 import jetbrains.mps.project.Project
 import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.smodel.MPSModuleRepository

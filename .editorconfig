@@ -1,0 +1,10 @@
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+end_of_line = lf
+insert_final_newline = true
+
+[*.kt]
+# Disables the `class-naming` because classes previously generated from MPS uses underscores.
+ktlint_standard_class-naming = disabled

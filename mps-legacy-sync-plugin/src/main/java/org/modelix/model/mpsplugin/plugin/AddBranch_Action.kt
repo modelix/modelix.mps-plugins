@@ -74,7 +74,7 @@ class AddBranch_Action : BaseAction("New Branch", "", ICON) {
                     SPropertyOperations.getString(
                         branchTreeNode.branchInfo,
                         PROPS.`name$MnvL`,
-                    )
+                    ),
                 ).getKey(),
             ]
             modelServer.getClient().put(repositoryId.getBranchReference(name).getKey(), versionHash)
