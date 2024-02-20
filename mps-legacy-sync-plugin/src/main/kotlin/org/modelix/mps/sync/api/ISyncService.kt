@@ -19,9 +19,11 @@ package org.modelix.mps.sync.api
 import com.intellij.openapi.Disposable
 import io.ktor.client.HttpClient
 import io.ktor.http.Url
+import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.project.Project
 import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReference
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 
@@ -30,6 +32,26 @@ interface ISyncService {
     fun getConnections(): List<IModelServerConnection>
     fun connectServer(httpClient: HttpClient?, baseUrl: Url): IModelServerConnection
     fun connectServer(baseUrl: String) = connectServer(null, Url(baseUrl))
+
+    /**
+     * Given an MPS node find corresponding Modelix node in bindings.
+     *
+     * This methode is deliberately kept simple to hide details about bindings.
+     *
+     * Returns zero Modelix nodes, when no binding exists or the bind did not sync the MPS Nodes.
+     * Returns more than one Modelix node when multiple bindings are syncing the MPS Node.
+     */
+    fun findCloudNodeReference(mpsNode: SNode): List<INode>
+
+    /**
+     * Given a Modelix node find corresponding MPS node in bindings.
+     *
+     * This methode is deliberately kept simple to hide details about bindings.
+     *
+     * Returns zero MPS nodes, when no binding exists or the bind did not sync the Modelix Nodes.
+     * Returns more than one MPS node when multiple bindings are syncing the Modelix Node.
+     */
+    fun findMpsNode(cloudNodeReference: INodeReference): List<SNode>
 }
 
 interface IModelServerConnection : Disposable {

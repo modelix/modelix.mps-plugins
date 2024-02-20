@@ -121,6 +121,7 @@ class ModelServerConnections {
     }
 
     fun removeModelServer(repo: ModelServerConnection?) {
+        repo?.dispose()
         ListSequence.fromList(modelServers).removeElement(repo)
         // we do not automatically change the persisted configuration, to avoid cycles
         for (l: IListener in SetSequence.fromSet(listeners)) {
