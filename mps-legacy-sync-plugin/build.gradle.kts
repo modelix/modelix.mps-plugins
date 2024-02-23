@@ -131,11 +131,18 @@ tasks {
                 dir("modules") {
                     dir(solutionName) {
                         file("$solutionName.msd") {
-                            StubsSolutionGenerator(
+                            val generateString = StubsSolutionGenerator(
                                 ModuleIdAndName(ModuleId("c5e5433e-201f-43e2-ad14-a6cba8c80cd6"), solutionName),
-                                libFolder.get().asFile.listFiles().map { "\${module}/../../../../lib/${it.name}" }.sorted(),
+                                libFolder.get().asFile.listFiles().map { "\${module}/../../../../lib/${it.name}" }
+                                    .sorted(),
                                 dependencies,
                             ).generateString()
+                            // newer MPS versions use classes="provided", older MPS version use the ideaPlugin facet
+                            // TODO fix the StubsSolutionGenerator
+                            generateString.replace(
+                                """<facet type="java"/>""",
+                                """<facet classes="provided" type="java"/><facet pluginId="org.modelix.mps.sync.legacy" type="ideaPlugin" />"""
+                            )
                         }
                     }
                 }
