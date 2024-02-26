@@ -1,9 +1,6 @@
-import com.jetbrains.plugin.structure.base.utils.contentBuilder.buildZipFile
 import org.jetbrains.intellij.tasks.PrepareSandboxTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.modelix.buildtools.ModuleId
-import org.modelix.buildtools.ModuleIdAndName
-import org.modelix.buildtools.StubsSolutionGenerator
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import java.util.zip.ZipInputStream
 
 buildscript {
@@ -47,31 +44,45 @@ kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11)
     }
+    sourceSets {
+        main {
+            languageSettings {
+                apiVersion = KotlinVersion.KOTLIN_1_4.version
+            }
+        }
+    }
 }
 
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
+    fun ModuleDependency.excludedBundledLibraries() {
+        exclude(group = "org.jetbrains.kotlin")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-jdk8")
+    }
+    fun implementationWithoutBundled(dependencyNotation: String) {
+        implementation(dependencyNotation) {
+            excludedBundledLibraries()
+        }
+    }
 
-    api(libs.modelix.model.api)
+//    implementation(coreLibs.ktor.server.html.builder)
+    implementationWithoutBundled("io.ktor:ktor-server-html-builder:2.3.7")
+    implementationWithoutBundled("io.ktor:ktor-server-netty:2.3.7")
+    implementationWithoutBundled("io.ktor:ktor-server-cors:2.3.7")
+    implementationWithoutBundled("io.ktor:ktor-server-status-pages:2.3.7")
+    implementationWithoutBundled("io.github.microutils:kotlin-logging:3.0.5")
+    implementationWithoutBundled("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
 
-    implementation(libs.modelix.mps.model.adapters)
-    implementation(libs.modelix.model.client)
-    implementation(libs.modelix.model.datastructure)
-    implementation(coreLibs.ktor.client.core)
-    implementation(coreLibs.ktor.serialization.json)
-    implementation(coreLibs.trove4j)
-    implementation(coreLibs.kotlin.datetime)
-
-    implementation(coreLibs.kotlin.reflect)
-
-    // There is a usage of MakeActionParameters in ProjectMakeRunner which we might want to delete
-    compileOnly(mpsHome.map { it.files("plugins/mps-make/languages/jetbrains.mps.ide.make.jar") })
+    // contains RootDifferencePaneBase
+//    compileOnly(mpsHome.map { it.files("plugins/mps-vcs/lib/vcs-platform.jar") })
 
     testImplementation(coreLibs.kotlin.coroutines.test)
     testImplementation(coreLibs.ktor.server.test.host)
-    testImplementation(libs.modelix.model.server)
-    testImplementation(libs.modelix.authorization)
-    testImplementation(coreLibs.kotlin.reflect)
+    testImplementation(coreLibs.ktor.client.cio)
+    testImplementation(libs.zt.zip)
+//    testImplementation(libs.modelix.model.server)
+//    testImplementation(libs.modelix.authorization)
+//    testImplementation(coreLibs.kotlin.reflect)
 //    implementation(libs.ktor.server.core)
 //    implementation(libs.ktor.server.cors)
 //    implementation(libs.ktor.server.netty)
@@ -80,9 +91,9 @@ dependencies {
 //    implementation(libs.ktor.server.auth.jwt)
 //    implementation(libs.ktor.server.status.pages)
 //    implementation(libs.ktor.server.forwarded.header)
-    testImplementation(coreLibs.ktor.server.websockets)
-    testImplementation(coreLibs.ktor.server.content.negotiation)
-    implementation(coreLibs.ktor.server.resources)
+//    testImplementation(coreLibs.ktor.server.websockets)
+//    testImplementation(coreLibs.ktor.server.content.negotiation)
+//    testImplementation(coreLibs.ktor.server.resources)
 //    implementation(libs.ktor.serialization.json)
 }
 
@@ -91,7 +102,10 @@ dependencies {
 intellij {
     localPath = mpsHome.map { it.asFile.absolutePath }
     instrumentCode = false
-    plugins = listOf("jetbrains.mps.ide.make")
+    plugins = listOf(
+        "Git4Idea",
+        "jetbrains.mps.vcs",
+    )
 }
 
 tasks {
@@ -103,6 +117,7 @@ tasks {
     test {
         // tests currently fail for these versions
         enabled = !setOf(
+            211, // jetbrains.mps.vcs plugin cannot be loaded
             212, // timeout because of some deadlock
             213, // timeout because of some deadlock
             222, // timeout because of some deadlock
@@ -117,55 +132,13 @@ tasks {
         autoReloadPlugins.set(true)
     }
 
-    val mpsPluginDir = project.findProperty("mps232.plugins.dir")?.toString()?.let { file(it) }
-    val generatedStubsSolution by registering {
-        val pluginFolder = project.layout.buildDirectory.dir("idea-sandbox").dir("plugins").dir(prepareSandbox.flatMap { it.pluginName })
-        val libFolder = pluginFolder.dir("lib")
-        val languagesFolder = pluginFolder.dir("languages")
-        inputs.dir(libFolder)
-        doLast {
-            val solutionName = "org.modelix.model.sync.stubs"
-            val stubsSolutionJar = languagesFolder.get().asFile.resolve("$solutionName.jar")
-            val dependencies: List<ModuleIdAndName> = listOf(
-                ModuleIdAndName.fromString("8865b7a8-5271-43d3-884c-6fd1d9cfdd34(MPS.OpenAPI)"),
-                ModuleIdAndName.fromString("6ed54515-acc8-4d1e-a16c-9fd6cfe951ea(MPS.Core)"),
-//                ModuleIdAndName.fromString("3f233e7f-b8a6-46d2-a57f-795d56775243(Annotations)"),
-//                ModuleIdAndName.fromString("6354ebe7-c22a-4a0f-ac54-50b52ab9b065(JDK)"),
-                ModuleIdAndName.fromString("86441d7a-e194-42da-81a5-2161ec62a379(MPS.Workbench)"),
-                ModuleIdAndName.fromString("742f6602-5a2f-4313-aa6e-ae1cd4ffdc61(MPS.Platform)"),
-                ModuleIdAndName.fromString("498d89d2-c2e9-11e2-ad49-6cf049e62fe5(MPS.IDEA)"),
-            )
-            buildZipFile(stubsSolutionJar.toPath()) {
-                dir("modules") {
-                    dir(solutionName) {
-                        file("$solutionName.msd") {
-                            val generatedString = StubsSolutionGenerator(
-                                ModuleIdAndName(ModuleId("c5e5433e-201f-43e2-ad14-a6cba8c80cd6"), solutionName),
-                                libFolder.get().asFile.listFiles().map { "\${module}/../../../../lib/${it.name}" }
-                                    .sorted(),
-                                dependencies,
-                            ).generateString()
-                            // newer MPS versions use classes="provided", older MPS version use the ideaPlugin facet
-                            // TODO fix the StubsSolutionGenerator
-                            generatedString.replace(
-                                """<facet type="java"/>""",
-                                """<facet classes="provided" type="java"/><facet pluginId="org.modelix.mps.sync.legacy" type="ideaPlugin" />""",
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-    prepareSandbox {
-        finalizedBy(generatedStubsSolution)
-    }
-
+    val shortPlatformVersion = mpsVersion.replace(Regex("""20(\d\d)\.(\d+).*"""), "$1$2")
+    val mpsPluginDir = project.findProperty("mps$shortPlatformVersion.plugins.dir")?.toString()?.let { file(it) }
     if (mpsPluginDir != null && mpsPluginDir.isDirectory) {
         create<Sync>("installMpsPlugin") {
             dependsOn(prepareSandbox)
-            from(buildDir.resolve("idea-sandbox/plugins/mps-legacy-sync-plugin"))
-            into(mpsPluginDir.resolve("mps-legacy-sync-plugin"))
+            from(buildDir.resolve("idea-sandbox/plugins/mps-diff-plugin"))
+            into(mpsPluginDir.resolve("mps-diff-plugin"))
         }
     }
 
@@ -179,7 +152,6 @@ tasks {
         doLast {
             val ignoredFiles = setOf(
                 "META-INF/MANIFEST.MF",
-                "org/modelix/model/mpsplugin/AllowedBinaryIncompatibilityKt.class",
             )
             fun loadEntries(fileName: String) = rootProject.layout.buildDirectory
                 .dir("binary-compatibility")
@@ -204,7 +176,7 @@ publishing {
     publications {
         create<MavenPublication>("maven") {
             groupId = "org.modelix.mps"
-            artifactId = "legacy-sync-plugin"
+            artifactId = "diff-plugin"
             artifact(tasks.buildPlugin) {
                 extension = "zip"
             }

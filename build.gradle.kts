@@ -47,7 +47,7 @@ subprojects {
     version = rootProject.version
     group = rootProject.group
 
-    val kotlinApiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_6
+    val kotlinApiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_4
     subproject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
         kotlinOptions {
             jvmTarget = "11"
@@ -123,9 +123,9 @@ allprojects {
 
 val mpsVersion = project.findProperty("mps.version")?.toString()?.takeIf { it.isNotEmpty() }
     ?: "2021.1.4".also { ext["mps.version"] = it }
+val mpsPlatformVersion = mpsVersion.replace(Regex("""20(\d\d)\.(\d+).*"""), "$1$2").toInt()
+ext["mps.platform.version"] = mpsPlatformVersion
 println("Building for MPS version $mpsVersion")
-val mpsJavaVersion = if (mpsVersion >= "2022.2") 17 else 11
-ext["mps.java.version"] = mpsJavaVersion
 
 // Extract MPS during configuration phase, because using it in intellij.localPath requires it to already exist.
 val mpsHome = project.layout.buildDirectory.dir("mps-$mpsVersion")
