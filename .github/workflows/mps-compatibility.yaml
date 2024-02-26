@@ -12,8 +12,9 @@ jobs:
   build-mps-components:
 
     runs-on: ubuntu-latest
-
+    timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
         version:
 # Testing with the first and last version of the supported range should be enough. Breaking changes usually stay there
@@ -21,10 +22,10 @@ jobs:
 # becomes compatible again.
 #          - "2020.3.6" VersionFixer was replaced by ModuleDependencyVersions in 2021.1 (used by model-sync-plugin)
           - "2021.1.4"
-#          - "2021.2.6"
-#          - "2021.3.3"
-#          - "2022.2"
-#          - "2022.3"
+          - "2021.2.6"
+          - "2021.3.5"
+          - "2022.2.2"
+          - "2022.3.1"
           - "2023.2"
 
     steps:
@@ -37,7 +38,17 @@ jobs:
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v2
       - name: Build with ${{ matrix.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: >-
           ./gradlew --build-cache
-          mpsCompatibility
+          build
           -Pmps.version=${{ matrix.version }}
+      - name: Archive test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-report-${{ matrix.version }}
+          path: |
+            */build/test-results
+            */build/reports
