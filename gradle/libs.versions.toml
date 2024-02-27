@@ -21,4 +21,4 @@ modelix-model-datastructure = { group = "org.modelix", name = "model-datastructu
 modelix-mps-model-adapters = { group = "org.modelix.mps", name = "model-adapters", version.ref = "modelixCore" }
 kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version = "6.0.3" }
 kotlin-html = "org.jetbrains.kotlinx:kotlinx-html:0.11.0"
-zt-zip = { group = "org.zeroturnaround", name = "zt-zip", version = "1.14" }
+zt-zip = { group = "org.zeroturnaround", name = "zt-zip", version = "1.17" }
