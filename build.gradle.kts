@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformJvmPlugin
+import java.util.zip.ZipInputStream
 
 buildscript {
     dependencies {
@@ -47,7 +48,7 @@ subprojects {
     version = rootProject.version
     group = rootProject.group
 
-    val kotlinApiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_6
+    val kotlinApiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_4
     subproject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
         kotlinOptions {
             jvmTarget = "11"
@@ -123,9 +124,9 @@ allprojects {
 
 val mpsVersion = project.findProperty("mps.version")?.toString()?.takeIf { it.isNotEmpty() }
     ?: "2021.1.4".also { ext["mps.version"] = it }
+val mpsPlatformVersion = mpsVersion.replace(Regex("""20(\d\d)\.(\d+).*"""), "$1$2").toInt()
+ext["mps.platform.version"] = mpsPlatformVersion
 println("Building for MPS version $mpsVersion")
-val mpsJavaVersion = if (mpsVersion >= "2022.2") 17 else 11
-ext["mps.java.version"] = mpsJavaVersion
 
 // Extract MPS during configuration phase, because using it in intellij.localPath requires it to already exist.
 val mpsHome = project.layout.buildDirectory.dir("mps-$mpsVersion")
@@ -138,6 +139,31 @@ mpsHome.get().asFile.let { baseDir ->
     sync {
         from(zipTree({ mpsZip.singleFile }))
         into(mpsHome)
+    }
+
+    // The IntelliJ gradle plugin doesn't search in jar files when reading plugin descriptors, but the IDE does.
+    // Copy the XML files from the jars to the META-INF folders to fix that.
+    for (pluginFolder in (mpsHome.get().asFile.resolve("plugins").listFiles() ?: emptyArray())) {
+        val jars = (pluginFolder.resolve("lib").listFiles() ?: emptyArray()).filter { it.extension == "jar" }
+        for (jar in jars) {
+            jar.inputStream().use {
+                ZipInputStream(it).use { zip ->
+                    val entries = generateSequence { zip.nextEntry }
+                    for (entry in entries) {
+                        if (entry.name.substringBefore("/") != "META-INF") continue
+                        val outputFile = pluginFolder.resolve(entry.name)
+                        if (outputFile.extension != "xml") continue
+                        if (outputFile.exists()) {
+                            println("already exists: $outputFile")
+                            continue
+                        }
+                        outputFile.parentFile.mkdirs()
+                        outputFile.writeBytes(zip.readAllBytes())
+                        println("copied $outputFile")
+                    }
+                }
+            }
+        }
     }
 
     // The build number of a local IDE is expected to contain a product code, otherwise an exception is thrown.
