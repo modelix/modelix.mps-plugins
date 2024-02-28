@@ -28,3 +28,4 @@ rootProject.name = "modelix.mps-plugins"
 
 include("mps-legacy-sync-plugin")
 include("mps-diff-plugin")
+include("mps-generator-execution-plugin")
