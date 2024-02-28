@@ -15,7 +15,6 @@
  */
 
 import io.ktor.http.Url
-import kotlinx.coroutines.delay
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.model.api.PNodeReference
@@ -80,9 +79,9 @@ class FindingNodesInBindingTest : SyncPluginTestBase("projectWithOneEmptyModel")
     }
 
     fun `test can find cloud nodes and MPS nodes when connection by legacy API`() = runTestWithSyncService { syncService ->
-        // Using ModelCloudImportUtils.copyAndSyncInModelixAsIndependentModule
-        // instead of IBranchConnection.bindModule is the legacy API
-        // The old API must be supported as it is used in actions like CopyAndSyncPhysicalModuleOnCloud_Action
+        // Using the legacy API ModelCloudImportUtils.copyAndSyncInModelixAsIndependentModule
+        // instead of IBranchConnection.bindModule.
+        // The legacy API must be supported as it is used in actions like CopyAndSyncPhysicalModuleOnCloud_Action
 
         // Arrange: Create data
         val classConcept = resolveMPSConcept("jetbrains.mps.baseLanguage.ClassConcept")
@@ -130,16 +129,5 @@ class FindingNodesInBindingTest : SyncPluginTestBase("projectWithOneEmptyModel")
         assertEquals(2, cloudNodes.size)
         assertEquals(newRootNode, mpsNodeFromFirstSecondCloudNode)
         assertEquals(mpsNodeFromFirstCloudNode, mpsNodeFromFirstSecondCloudNode)
-    }
-
-    private suspend fun delayUntil(condition: () -> Boolean) {
-        var remainingDelays = 30
-        while (!condition()) {
-            delay(1000)
-            remainingDelays--
-            if (remainingDelays == 0) {
-                throw IllegalStateException("Waited too long.")
-            }
-        }
     }
 }

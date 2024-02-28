@@ -3,7 +3,6 @@ package org.modelix.model.mpsplugin
 import jetbrains.mps.baseLanguage.closures.runtime.Wrappers._T
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.internal.collections.runtime.ListSequence
-import jetbrains.mps.internal.collections.runtime.Sequence
 import jetbrains.mps.progress.EmptyProgressMonitor
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.Project
@@ -14,18 +13,14 @@ import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.jetbrains.mps.openapi.language.SProperty
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
-import org.jetbrains.mps.openapi.model.SReference
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.util.ProgressMonitor
 import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.PNodeAdapter.Companion.wrap
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.mps.NodeToSNodeAdapter
-import org.modelix.model.mpsadapters.mps.SConceptAdapter
 import org.modelix.model.mpsadapters.mps.SModelAsNode
 import org.modelix.model.mpsadapters.mps.SModuleAsNode
-import org.modelix.model.mpsadapters.mps.SNodeToNodeAdapter
 import org.modelix.model.mpsplugin.history.CloudNodeTreeNode
 import org.modelix.model.mpsplugin.history.CloudNodeTreeNodeBinding
 import org.modelix.model.mpsplugin.plugin.PersistedBindingConfiguration
@@ -114,7 +109,7 @@ object ModelCloudImportUtils {
         progress: ProgressMonitor?,
     ): INode? {
         // First create the module
-        val cloudModuleNode: INode? = treeInRepository.createModule(module!!.moduleName)
+        val cloudModuleNode: INode = treeInRepository.createModule(module!!.moduleName)
         replicatePhysicalModule(treeInRepository, cloudModuleNode, module, null, progress)
         return cloudModuleNode
     }
@@ -172,8 +167,8 @@ object ModelCloudImportUtils {
      */
     fun replicatePhysicalModule(
         treeInRepository: CloudRepository,
-        cloudModule: INode?,
-        physicalModule: SModule?,
+        cloudModule: INode,
+        physicalModule: SModule,
         modelMappingConsumer: Consumer<PhysicalToCloudModelMapping?>?,
         progress: ProgressMonitor?,
     ) {
@@ -181,7 +176,7 @@ object ModelCloudImportUtils {
         if (_progress.value == null) {
             _progress.value = EmptyProgressMonitor()
         }
-        val sModuleAsNode: SModuleAsNode? = SModuleAsNode.Companion.wrap(physicalModule)
+        val sModuleAsNode = SModuleAsNode(physicalModule)
         treeInRepository.runWrite(object : Consumer<PNodeAdapter?> {
             override fun accept(rootNode: PNodeAdapter?) {
                 INodeUtils.copyProperty(cloudModule, sModuleAsNode, PROPS.`name$MnvL`.name)
@@ -227,8 +222,8 @@ object ModelCloudImportUtils {
      *
      * @return the created cloud model
      */
-    fun copyPhysicalModel(treeInRepository: CloudRepository, cloudModule: INode?, physicalModel: SModel?): INode? {
-        val originalModel: INode? = SModelAsNode.Companion.wrap(physicalModel)
+    fun copyPhysicalModel(treeInRepository: CloudRepository, cloudModule: INode?, physicalModel: SModel): INode {
+        val originalModel = SModelAsNode(physicalModel)
         val cloudModel: INode = treeInRepository.createNode(
             cloudModule,
             LINKS.`models$h3QT`,
@@ -239,44 +234,11 @@ object ModelCloudImportUtils {
                     INodeUtils.copyProperty(cloudModel, originalModel, PROPS.`id$lDUo`.name)
                     INodeUtils.cloneChildren(cloudModel, originalModel, LINKS.`modelImports$8DOI`.name)
                     INodeUtils.cloneChildren(cloudModel, originalModel, LINKS.`usedLanguages$QK4E`.name)
-                    for (physicalRoot: SNode in Sequence.fromIterable<SNode>(
-                        physicalModel!!.rootNodes,
-                    )) {
-                        val cloudRoot: INode = cloudModel.addNewChild(
-                            LINKS.`rootNodes$jxXY`.name,
-                            -1,
-                            SConceptAdapter.Companion.wrap(physicalRoot.concept),
-                        )
-                        replicatePhysicalNode(cloudRoot, physicalRoot)
-                    }
+                    INodeUtils.cloneChildren(cloudModel, originalModel, LINKS.`rootNodes$jxXY`.name)
                 }
             },
         )
         return cloudModel
-    }
-
-    /**
-     * This takes a cloud node already created and a physical node.
-     * It then ensures that the cloud node is exactly as the original physical node.
-     *
-     * It operates recursively on children.
-     */
-    private fun replicatePhysicalNode(cloudNode: INode, physicalNode: SNode) {
-        MPSNodeMapping.mapToMpsNode(cloudNode, physicalNode)
-        for (prop: SProperty in Sequence.fromIterable(physicalNode.properties)) {
-            cloudNode.setPropertyValue(prop.name, physicalNode.getProperty(prop))
-        }
-        for (ref: SReference in Sequence.fromIterable(physicalNode.references)) {
-            cloudNode.setReferenceTarget(ref.role, SNodeToNodeAdapter.Companion.wrap(ref.targetNode))
-        }
-        for (physicalChild: SNode in Sequence.fromIterable(physicalNode.children)) {
-            val cloudChild: INode = cloudNode.addNewChild(
-                physicalChild.containmentLink!!.name,
-                -1,
-                SConceptAdapter.Companion.wrap(physicalChild.concept),
-            )
-            replicatePhysicalNode(cloudChild, physicalChild)
-        }
     }
 
     private object PROPS {

@@ -33,6 +33,7 @@ import jetbrains.mps.library.contributor.LibDescriptor
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.smodel.adapter.structure.concept.InvalidConcept
 import jetbrains.mps.smodel.language.LanguageRegistry
+import kotlinx.coroutines.delay
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jetbrains.mps.openapi.language.SAbstractConcept
@@ -64,6 +65,30 @@ import kotlin.io.path.absolutePathString
 
 @Suppress("removal")
 abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlatformTestCase() {
+
+    companion object {
+        suspend fun delayUntil(
+            checkIntervalMilliseconds: Long = 1000,
+            timeoutMilliseconds: Long = 30_000,
+            condition: () -> Boolean,
+        ) {
+            check(checkIntervalMilliseconds > 0) {
+                "checkIntervalMilliseconds must be positive."
+            }
+            check(timeoutMilliseconds > 0) {
+                "timeoutMilliseconds must be positive."
+            }
+            var remainingDelays = timeoutMilliseconds / checkIntervalMilliseconds
+            while (!condition()) {
+                if (remainingDelays == 0L) {
+                    throw IllegalStateException("Waited too long.")
+                }
+                delay(checkIntervalMilliseconds)
+                remainingDelays--
+            }
+        }
+    }
+
     protected val baseUrl = "http://localhost/v2/"
     protected lateinit var httpClient: HttpClient
     protected lateinit var syncService: ISyncService

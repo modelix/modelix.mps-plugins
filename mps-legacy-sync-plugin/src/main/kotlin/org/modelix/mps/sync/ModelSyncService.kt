@@ -113,7 +113,7 @@ class ModelSyncService : Disposable, ISyncService {
     private fun getRootBindings() = ModelServerConnections.instance.modelServers
         .flatMap(ModelServerConnection::getRootBindings)
 
-    private fun flushAllBindings() {
+    override fun flushAllBindings() {
         getRootBindings().forEach { it.syncQueue.flush() }
     }
 
