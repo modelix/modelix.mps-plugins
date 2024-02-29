@@ -1,6 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
-import java.util.zip.ZipInputStream
 
 buildscript {
     dependencies {
@@ -72,8 +71,8 @@ dependencies {
     implementationWithoutBundled("io.github.microutils:kotlin-logging:3.0.5")
     implementationWithoutBundled("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
 
-    // contains RootDifferencePaneBase
-//    compileOnly(mpsHome.map { it.files("plugins/mps-vcs/lib/vcs-platform.jar") })
+    compileOnly(mpsHome.map { it.files("languages/languageDesign/jetbrains.mps.lang.core.jar") })
+    // compileOnly(mpsHome.map { it.files("languages/make/jetbrains.mps.make.facets.jar") })
 
     testImplementation(coreLibs.kotlin.coroutines.test)
     testImplementation(coreLibs.ktor.server.test.host)
@@ -136,32 +135,8 @@ tasks {
     if (mpsPluginDir != null && mpsPluginDir.isDirectory) {
         create<Sync>("installMpsPlugin") {
             dependsOn(prepareSandbox)
-            from(buildDir.resolve("idea-sandbox/plugins/mps-diff-plugin"))
-            into(mpsPluginDir.resolve("mps-diff-plugin"))
-        }
-    }
-
-    val checkBinaryCompatibility by registering {
-        group = "verification"
-        doLast {
-            val ignoredFiles = setOf(
-                "META-INF/MANIFEST.MF",
-            )
-            fun loadEntries(fileName: String) = rootProject.layout.buildDirectory
-                .dir("binary-compatibility")
-                .dir(project.name)
-                .file(fileName)
-                .get().asFile.inputStream().use {
-                    val zip = ZipInputStream(it)
-                    val entries = generateSequence { zip.nextEntry }
-                    entries.associate { it.name to "size:${it.size},crc:${it.crc}" }
-                } - ignoredFiles
-            val entriesA = loadEntries("a.jar")
-            val entriesB = loadEntries("b.jar")
-            val mismatches = (entriesA.keys + entriesB.keys).map { it to (entriesA[it] to entriesB[it]) }.filter { it.second.first != it.second.second }
-            check(mismatches.isEmpty()) {
-                "The following files have a different content:\n" + mismatches.joinToString("\n") { "  ${it.first}: ${it.second.first} != ${it.second.second}" }
-            }
+            from(buildDir.resolve("idea-sandbox/plugins/mps-generator-execution-plugin"))
+            into(mpsPluginDir.resolve("mps-generator-execution-plugin"))
         }
     }
 }
@@ -170,7 +145,7 @@ publishing {
     publications {
         create<MavenPublication>("maven") {
             groupId = "org.modelix.mps"
-            artifactId = "diff-plugin"
+            artifactId = "genertor-execution-plugin"
             artifact(tasks.buildPlugin) {
                 extension = "zip"
             }

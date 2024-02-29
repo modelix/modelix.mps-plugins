@@ -8,6 +8,7 @@ module.exports = {
         "deps",
         "mps-legacy-sync-plugin",
         "mps-diff-plugin",
+        "generator"
       ],
     ],
     "subject-case": [0, 'never'],
