@@ -58,42 +58,23 @@ dependencies {
         exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
         exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-jdk8")
     }
-    fun implementationWithoutBundled(dependencyNotation: String) {
+    fun implementationWithoutBundled(dependencyNotation: Provider<*>) {
         implementation(dependencyNotation) {
             excludedBundledLibraries()
         }
     }
 
-//    implementation(coreLibs.ktor.server.html.builder)
-    implementationWithoutBundled("io.ktor:ktor-server-html-builder:2.3.7")
-    implementationWithoutBundled("io.ktor:ktor-server-netty:2.3.7")
-    implementationWithoutBundled("io.ktor:ktor-server-cors:2.3.7")
-    implementationWithoutBundled("io.ktor:ktor-server-status-pages:2.3.7")
-    implementationWithoutBundled("io.github.microutils:kotlin-logging:3.0.5")
-    implementationWithoutBundled("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
-
-    // contains RootDifferencePaneBase
-//    compileOnly(mpsHome.map { it.files("plugins/mps-vcs/lib/vcs-platform.jar") })
+    implementationWithoutBundled(coreLibs.ktor.server.html.builder)
+    implementationWithoutBundled(coreLibs.ktor.server.netty)
+    implementationWithoutBundled(coreLibs.ktor.server.cors)
+    implementationWithoutBundled(coreLibs.ktor.server.status.pages)
+    implementationWithoutBundled(coreLibs.kotlin.logging)
+    implementationWithoutBundled(coreLibs.kotlin.coroutines.swing)
 
     testImplementation(coreLibs.kotlin.coroutines.test)
     testImplementation(coreLibs.ktor.server.test.host)
     testImplementation(coreLibs.ktor.client.cio)
     testImplementation(libs.zt.zip)
-//    testImplementation(libs.modelix.model.server)
-//    testImplementation(libs.modelix.authorization)
-//    testImplementation(coreLibs.kotlin.reflect)
-//    implementation(libs.ktor.server.core)
-//    implementation(libs.ktor.server.cors)
-//    implementation(libs.ktor.server.netty)
-//    implementation(libs.ktor.server.html.builder)
-//    implementation(libs.ktor.server.auth)
-//    implementation(libs.ktor.server.auth.jwt)
-//    implementation(libs.ktor.server.status.pages)
-//    implementation(libs.ktor.server.forwarded.header)
-//    testImplementation(coreLibs.ktor.server.websockets)
-//    testImplementation(coreLibs.ktor.server.content.negotiation)
-//    testImplementation(coreLibs.ktor.server.resources)
-//    implementation(libs.ktor.serialization.json)
 }
 
 // Configure Gradle IntelliJ Plugin
