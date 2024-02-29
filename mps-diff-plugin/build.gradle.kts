@@ -70,7 +70,7 @@ dependencies {
     implementationWithoutBundled("io.ktor:ktor-server-cors:2.3.7")
     implementationWithoutBundled("io.ktor:ktor-server-status-pages:2.3.7")
     implementationWithoutBundled("io.github.microutils:kotlin-logging:3.0.5")
-    implementationWithoutBundled("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
+    implementationWithoutBundled("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
 
     // contains RootDifferencePaneBase
 //    compileOnly(mpsHome.map { it.files("plugins/mps-vcs/lib/vcs-platform.jar") })

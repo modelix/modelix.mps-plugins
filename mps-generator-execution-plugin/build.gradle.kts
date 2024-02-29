@@ -69,7 +69,7 @@ dependencies {
     implementationWithoutBundled("io.ktor:ktor-server-cors:2.3.7")
     implementationWithoutBundled("io.ktor:ktor-server-status-pages:2.3.7")
     implementationWithoutBundled("io.github.microutils:kotlin-logging:3.0.5")
-    implementationWithoutBundled("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
+    implementationWithoutBundled("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
 
     compileOnly(mpsHome.map { it.files("languages/languageDesign/jetbrains.mps.lang.core.jar") })
     // compileOnly(mpsHome.map { it.files("languages/make/jetbrains.mps.make.facets.jar") })
