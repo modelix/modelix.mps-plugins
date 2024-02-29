@@ -68,7 +68,7 @@ dependencies {
     implementationWithoutBundled("io.ktor:ktor-server-html-builder:2.3.7")
     implementationWithoutBundled("io.ktor:ktor-server-netty:2.3.7")
     implementationWithoutBundled("io.ktor:ktor-server-cors:2.3.7")
-    implementationWithoutBundled("io.ktor:ktor-server-status-pages:2.3.7")
+    implementationWithoutBundled("io.ktor:ktor-server-status-pages:2.3.8")
     implementationWithoutBundled("io.github.microutils:kotlin-logging:3.0.5")
     implementationWithoutBundled("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
 
