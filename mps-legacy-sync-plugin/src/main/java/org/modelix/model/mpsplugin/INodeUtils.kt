@@ -1,9 +1,6 @@
 package org.modelix.model.mpsplugin
 
-import jetbrains.mps.baseLanguage.tuples.runtime.MultiTuple
-import jetbrains.mps.baseLanguage.tuples.runtime.Tuples
 import jetbrains.mps.internal.collections.runtime.ListSequence
-import jetbrains.mps.internal.collections.runtime.MapSequence
 import jetbrains.mps.internal.collections.runtime.Sequence
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import org.jetbrains.mps.openapi.language.SConcept
@@ -14,7 +11,6 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.PNodeAdapter.Companion.wrap
 import org.modelix.model.mpsadapters.mps.SConceptAdapter
 import java.util.LinkedList
 import java.util.Objects
@@ -115,77 +111,84 @@ object INodeUtils {
         }
     }
 
-    fun copyPropertyIfNecessary(_this: INode, original: INode, property: SProperty) {
-        if (Objects.equals(original.getPropertyValue(property.name), _this.getPropertyValue(property.name))) {
+    fun copyPropertyIfNecessary(copiedNode: INode, originalNode: INode, property: SProperty) {
+        if (Objects.equals(originalNode.getPropertyValue(property.name), copiedNode.getPropertyValue(property.name))) {
             return
         }
-        copyProperty(_this, original, property)
+        copyProperty(copiedNode, originalNode, property)
     }
 
-    fun replicateChild(_this: INode?, role: String, original: INode?): INode {
-        try {
-            val equivalenceMap: Map<INode?, INode> = MapSequence.fromMap(HashMap())
-            val postponedReferencesAssignments: List<Tuples._3<INode, String, INode>> =
-                ListSequence.fromList(LinkedList())
-            val result: INode =
-                replicateChildHelper(_this, role, original, equivalenceMap, postponedReferencesAssignments)
-            for (postponedRefAssignment: Tuples._3<INode, String, INode> in ListSequence.fromList(
-                postponedReferencesAssignments,
-            )) {
-                var target: INode? = postponedRefAssignment._2()
-                if (MapSequence.fromMap(equivalenceMap).containsKey(target)) {
-                    target = MapSequence.fromMap(equivalenceMap).get(target)
-                }
-                postponedRefAssignment._0().setReferenceTarget(postponedRefAssignment._1(), target)
+    fun replicateChild(copiedParent: INode, role: String, originalChild: INode): INode {
+        return replicateChildren(copiedParent, role, listOf(originalChild)).single()
+    }
+
+    data class PostponedReferenceAssignments(
+        val copiedNode: INode,
+        val referenceRole: String,
+        val originalTarget: INode,
+    )
+
+    private fun replicateChildren(copiedParent: INode, role: String, originalChildren: Iterable<INode>): List<INode> {
+        val equivalenceMap = mutableMapOf<INode, INode>()
+        val postponedReferencesAssignments = mutableListOf<PostponedReferenceAssignments>()
+        val resultNodes = mutableListOf<INode>()
+        for (originalChild in originalChildren) {
+            try {
+                val result = replicateChildHelper(copiedParent, role, originalChild, equivalenceMap, postponedReferencesAssignments)
+                resultNodes.add(result)
+            } catch (e: Exception) {
+                throw RuntimeException(
+                    "Unable to replicate child in role " + role + ". Original child: " + originalChild + ", Copied parent: " + copiedParent,
+                    e,
+                )
             }
-            return result
-        } catch (e: Exception) {
-            throw RuntimeException(
-                "Unable to replicate child in role " + role + ". Original: " + original + ", This: " + _this,
-                e,
-            )
         }
+        for (postponedRefAssignment in postponedReferencesAssignments) {
+            val copiedNode = postponedRefAssignment.copiedNode
+            val referenceRole = postponedRefAssignment.referenceRole
+            val copiedTarget = equivalenceMap[postponedRefAssignment.originalTarget]
+            val targetToSet = copiedTarget ?: postponedRefAssignment.originalTarget
+            copiedNode.setReferenceTarget(referenceRole, targetToSet)
+        }
+        return resultNodes
     }
 
-    fun cloneChildren(_this: INode?, original: INode?, role: String) {
-        removeAllChildrenWithRole(_this, role)
-        for (originalChild: INode? in Sequence.fromIterable(
-            original!!.getChildren(role),
-        )) {
-            replicateChild(_this, role, originalChild)
-        }
+    fun cloneChildren(copiedParent: INode, originalParent: INode, role: String) {
+        removeAllChildrenWithRole(copiedParent, role)
+        replicateChildren(copiedParent, role, originalParent.getChildren(role))
     }
 
     fun replicateChildHelper(
-        _this: INode?,
+        copiedParent: INode,
         role: String,
-        original: INode?,
-        equivalenceMap: Map<INode?, INode>?,
-        postponedReferencesAssignments: List<Tuples._3<INode, String, INode>>?,
+        original: INode,
+        equivalenceMap: MutableMap<INode, INode>,
+        postponedReferencesAssignments: MutableList<PostponedReferenceAssignments>,
     ): INode {
-        val concept: IConcept? = original!!.concept
-        var copy: INode? = null
-        try {
-            copy = _this!!.addNewChild(role, -1, concept)
+        val concept: IConcept? = original.concept
+        checkNotNull(concept)
+        val copy = try {
+            val addedChild = copiedParent.addNewChild(role, -1, concept)
+            equivalenceMap[original] = addedChild
+            addedChild
         } catch (e: Exception) {
             throw RuntimeException(
-                "Unable to add child to " + _this + " with role " + role + " and concept " + concept,
+                "Unable to add child to " + copiedParent + " with role " + role + " and concept " + concept,
                 e,
             )
         }
-        for (property: IProperty in ListSequence.fromList<IProperty>(concept!!.getAllProperties())) {
+        for (property: IProperty in concept.getAllProperties()) {
             copy.setPropertyValue(property.name, original.getPropertyValue(property.name))
         }
-        for (childLink: IChildLink in ListSequence.fromList<IChildLink>(concept.getAllChildLinks())) {
-            for (child: INode? in ListSequence.fromList<INode>(getChidlrenAsList(original, childLink.name))) {
+        for (childLink: IChildLink in concept.getAllChildLinks()) {
+            for (child: INode in getChidlrenAsList(original, childLink.name)) {
                 replicateChildHelper(copy, childLink.name, child, equivalenceMap, postponedReferencesAssignments)
             }
         }
-        for (refLink: IReferenceLink in ListSequence.fromList<IReferenceLink>(concept.getAllReferenceLinks())) {
-            val target: INode? = original.getReferenceTarget(refLink.name)
-            if (target != null) {
-                ListSequence.fromList(postponedReferencesAssignments)
-                    .addElement(MultiTuple.from(copy, refLink.name, target))
+        for (refLink: IReferenceLink in concept.getAllReferenceLinks()) {
+            val originalTarget: INode? = original.getReferenceTarget(refLink.name)
+            if (originalTarget != null) {
+                postponedReferencesAssignments.add(PostponedReferenceAssignments(copy, refLink.name, originalTarget))
             }
         }
         return copy

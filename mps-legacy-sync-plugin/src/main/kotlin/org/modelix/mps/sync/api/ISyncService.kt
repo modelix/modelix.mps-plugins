@@ -40,6 +40,11 @@ interface ISyncService {
      *
      * Returns zero Modelix nodes, when no binding exists or the bind did not sync the MPS Nodes.
      * Returns more than one Modelix node when multiple bindings are syncing the MPS Node.
+     *
+     * This high-level API attempts to synchronize and wait for outstanding synchronizations
+     * between MPS and the model server before looking up nodes in bindings.
+     * The synchronization is always scheduled on a different thread which will try to acquire a write and read lock.
+     * To not deadlock your program, do not call this method while holding a write lock or read lock.
      */
     fun findCloudNodeReference(mpsNode: SNode): List<INode>
 
@@ -50,8 +55,22 @@ interface ISyncService {
      *
      * Returns zero MPS nodes, when no binding exists or the bind did not sync the Modelix Nodes.
      * Returns more than one MPS node when multiple bindings are syncing the Modelix Node.
+     *
+     * This high-level API attempts to synchronize and wait for outstanding synchronizations
+     * between MPS and the model server before looking up nodes in bindings.
+     * The synchronization is always scheduled on a different thread which will try to acquire a write and read lock.
+     * To not deadlock your program, do not call this method while holding a write lock or read lock.
      */
     fun findMpsNode(cloudNodeReference: INodeReference): List<SNode>
+
+    /**
+     * Synchronize all bindings between MPS and the model server.
+     * The call blocks until all synchronizations are finished or timeout.
+     *
+     * The synchronization is always scheduled on a different thread which will try to acquire a write and read lock.
+     * To not deadlock your program, do not call this method while holding a write lock or read lock.
+     */
+    fun flushAllBindings()
 }
 
 interface IModelServerConnection : Disposable {
