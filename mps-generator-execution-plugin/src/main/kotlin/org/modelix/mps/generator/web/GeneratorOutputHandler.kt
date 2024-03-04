@@ -5,7 +5,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.application.createApplicationPlugin
-import io.ktor.server.html.respondHtml
 import io.ktor.server.response.header
 import io.ktor.server.response.respondOutputStream
 import io.ktor.server.response.respondRedirect
@@ -18,6 +17,7 @@ import io.ktor.util.pipeline.PipelineContext
 import jetbrains.mps.smodel.MPSModuleRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.html.FlowContent
+import kotlinx.html.HTML
 import kotlinx.html.a
 import kotlinx.html.body
 import kotlinx.html.br
@@ -25,9 +25,11 @@ import kotlinx.html.div
 import kotlinx.html.h1
 import kotlinx.html.h2
 import kotlinx.html.head
+import kotlinx.html.html
 import kotlinx.html.id
 import kotlinx.html.meta
 import kotlinx.html.pre
+import kotlinx.html.stream.createHTML
 import kotlinx.html.style
 import kotlinx.html.table
 import kotlinx.html.td
@@ -55,7 +57,7 @@ class GeneratorOutputHandlerImpl(val generator: AsyncGenerator) {
             val modules: List<Pair<String, String>> = repository.modelAccess.computeRead {
                 repository.modules.map { (it.moduleName ?: "") to it.moduleId.toString() }.toList()
             }
-            call.respondHtml {
+            call.respondHtmlSafe {
                 body {
                     div {
                         +"Choose a module for generation:"
@@ -83,7 +85,7 @@ class GeneratorOutputHandlerImpl(val generator: AsyncGenerator) {
                 call.respondText("Module not found: $moduleIdStr", status = HttpStatusCode.NotFound)
                 return@get
             }
-            call.respondHtml {
+            call.respondHtmlSafe {
                 body {
                     div {
                         +"Choose a model for generation:"
@@ -161,7 +163,7 @@ class GeneratorOutputHandlerImpl(val generator: AsyncGenerator) {
             get {
                 val generatorOutput: AsyncGenerator.GeneratorOutput = generator.getTextGenOutput(getModel())
                 val files = getFilesIfCompleted(generatorOutput) ?: return@get
-                call.respondHtml {
+                call.respondHtmlSafe {
                     body {
                         generateFullOutput(generatorOutput)
                     }
@@ -177,7 +179,7 @@ class GeneratorOutputHandlerImpl(val generator: AsyncGenerator) {
 
     private suspend fun PipelineContext<Unit, ApplicationCall>.getFilesIfCompleted(output: AsyncGenerator.GeneratorOutput): List<AsyncGenerator.GeneratedFile>? {
         return if (output.outputFiles.isActive) {
-            call.respondHtml {
+            call.respondHtmlSafe {
                 head {
                     meta {
                         httpEquiv = "refresh"
@@ -198,7 +200,7 @@ class GeneratorOutputHandlerImpl(val generator: AsyncGenerator) {
         } else if (output.outputFiles.isCompleted) {
             output.outputFiles.getCompleted()
         } else {
-            call.respondHtml {
+            call.respondHtmlSafe {
                 body {
                     div {
                         +"Generation failed"
@@ -286,4 +288,15 @@ class GeneratorOutputHandlerImpl(val generator: AsyncGenerator) {
             }
         }
     }
+}
+
+/**
+ * respondHtml fails to respond anything if an exception is thrown in the body and an error handler is installed
+ * that tries to respond an error page.
+ */
+suspend fun ApplicationCall.respondHtmlSafe(status: HttpStatusCode = HttpStatusCode.OK, block: HTML.() -> Unit) {
+    val htmlText = createHTML().html {
+        block()
+    }
+    respondText(htmlText, ContentType.Text.Html, status)
 }
