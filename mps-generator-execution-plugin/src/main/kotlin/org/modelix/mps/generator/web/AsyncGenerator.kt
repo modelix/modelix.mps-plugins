@@ -72,13 +72,15 @@ class AsyncGenerator {
 
             val projects = ProjectManager.getInstance().openedProjects
             val project: Project = projects.first()
+            val textGenName =
+                resolveFacetName("jetbrains.mps.make.facets.TextGen", "jetbrains.mps.lang.core.TextGen")
             val scr: IScript =
                 ScriptBuilder(project.getComponent<FacetRegistry>(FacetRegistry::class.java))
                     .withFacetNames(
-                        resolveFacetName("Generate"),
-                        resolveFacetName("TextGen"),
-                        resolveFacetName("Make"),
-                    ).withFinalTarget(ITarget.Name(resolveFacetName("TextGen").toString() + ".textGenToMemory"))
+                        resolveFacetName("jetbrains.mps.make.facets.Generate", "jetbrains.mps.lang.core.Generate"),
+                        textGenName,
+                        resolveFacetName("jetbrains.mps.make.facets.Make", "jetbrains.mps.lang.core.Make"),
+                    ).withFinalTarget(ITarget.Name("$textGenName.textGenToMemory"))
                     .toScript()
             val messageHandler: IMessageHandler = object : IMessageHandler {
                 override fun handle(message: IMessage) {
@@ -118,19 +120,15 @@ class AsyncGenerator {
         return generationResult
     }
 
-    private fun resolveFacetName(shortName: String): IFacet.Name {
+    private fun resolveFacetName(vararg alternativeNames: String): IFacet.Name {
         // Some facets where moved to a different package in MPS 2022.3
         // See https://github.com/JetBrains/MPS/commit/e15a11d4b5e84ff3372365cdab832c56b68b7050
-        // To make the plugin compatible with version before and after the renaming we use the short name only and
-        // look up their fully qualified name.
+        // To make the plugin compatible with version before and after the renaming we have to look up the correct name.
         val facetRegistry = ProjectManager.getInstance().openedProjects.mapNotNull { it.getComponent(FacetRegistry::class.java) }.first()
-        val registeredNames = facetRegistry.allFacets().keys
-        val matchingNames = registeredNames.filter { it.name == shortName }
-        return when (matchingNames.size) {
-            0 -> throw IllegalArgumentException("Facet '$shortName' not found in $registeredNames")
-            1 -> matchingNames[0]
-            else -> throw IllegalArgumentException("Multiple facets found for '$shortName': $matchingNames")
-        }
+        val resolvedFacet = alternativeNames.asSequence().mapNotNull { facetRegistry.lookup(IFacet.Name(it)) }.firstOrNull()
+        return requireNotNull(resolvedFacet) {
+            "None of the facet names found: $alternativeNames"
+        }.name
     }
 
     private fun computeModelHash(model: SModel): String? {

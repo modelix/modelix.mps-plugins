@@ -128,7 +128,7 @@ publishing {
     publications {
         create<MavenPublication>("maven") {
             groupId = "org.modelix.mps"
-            artifactId = "genertor-execution-plugin"
+            artifactId = "generator-execution-plugin"
             artifact(tasks.buildPlugin) {
                 extension = "zip"
             }
