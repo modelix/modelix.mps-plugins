@@ -20,10 +20,8 @@ import jetbrains.mps.model.ModelDeleteHelper
 import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.ModuleId
-import jetbrains.mps.project.Project
 import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.project.structure.modules.SolutionDescriptor
-import jetbrains.mps.refactoring.Renamer
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
@@ -223,8 +221,15 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                     return
                 }
 
-                val activeProject = ActiveMpsProjectInjector.activeMpsProject as Project
-                Renamer(activeProject).renameModule(sModule, newValue)
+                /*
+                 * Additional TODO in MODELIX-726:
+                 * MPS 2022.2.2 introduced a breaking API change to the Renamer class. The change is not backwards
+                 * compatible so we have to find a common way for renaming module that works for MPS versions before
+                 * and after this breaking change.
+                 *
+                 * val activeProject = ActiveMpsProjectInjector.activeMpsProject as Project
+                 * Renamer(activeProject).renameModule(sModule, newValue)
+                 */
             }
         } else if (role == BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion.getSimpleName()) {
             try {
