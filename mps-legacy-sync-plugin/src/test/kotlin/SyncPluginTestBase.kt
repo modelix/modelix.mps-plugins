@@ -286,7 +286,7 @@ private fun NodeData.normalize(): NodeData {
 
 private fun normalizeNodeData(node: NodeData, originalIds: MutableMap<String, String>): NodeData {
     var filteredChildren = node.children
-    var filteredProperties = node.properties.minus(NodeData.ID_PROPERTY_KEY).minus("\$originalId")
+    var filteredProperties = node.properties.minus(NodeData.ID_PROPERTY_KEY).minus("\$originalId").minus("#mpsNodeId#")
     var replacedId = (originalIds[node.id] ?: node.id)
     var replacedRole = node.role
     when (node.concept) {
