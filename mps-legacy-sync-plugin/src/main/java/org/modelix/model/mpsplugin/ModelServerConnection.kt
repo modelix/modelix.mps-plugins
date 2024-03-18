@@ -47,6 +47,7 @@ import org.modelix.model.mpsadapters.mps.SConceptAdapter
 import org.modelix.model.mpsadapters.mps.SNodeAPI
 import org.modelix.model.mpsplugin.plugin.EModelixExecutionMode
 import org.modelix.model.mpsplugin.plugin.ModelixConfigurationSystemProperties
+import org.modelix.mps.sync.ModelSyncService
 import java.util.Arrays
 import java.util.Objects
 import java.util.function.Consumer
@@ -95,11 +96,13 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
         val workspaceTokenProvider: () -> String? = { InstanceJwtToken.token }
         val tokenProvider: (() -> String?)? =
             (if (ModelixConfigurationSystemProperties.executionMode == EModelixExecutionMode.PROJECTOR) workspaceTokenProvider else null)
+        val syncService = ApplicationManager.getApplication().getService(ModelSyncService::class.java)
+        val httpClient = providedHttpClient ?: syncService.httpClient
         client = RestWebModelClient(
             baseUrl,
             tokenProvider,
             Arrays.asList(ConnectionListenerForForbiddenMessage(baseUrl)),
-            providedHttpClient,
+            httpClient,
         )
         val connectedFirstTime: Wrappers._boolean = Wrappers._boolean(true)
         client.addStatusListener({ oldStatus: RestWebModelClient.ConnectionStatus?, newStatus: RestWebModelClient.ConnectionStatus ->

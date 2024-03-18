@@ -22,6 +22,7 @@ import io.ktor.client.HttpClient
 import io.ktor.http.Url
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.delay
+import org.apache.log4j.LogManager
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.project.Project
@@ -56,15 +57,16 @@ import kotlin.time.ExperimentalTime
 class ModelSyncService : Disposable, ISyncService {
 
     companion object {
+        private val LOG = LogManager.getLogger(ModelSyncService::class.java)
         var INSTANCE: ModelSyncService? = null
     }
 
-    private var projects: Set<com.intellij.openapi.project.Project> = emptySet()
     private val legacyAppPluginParts = listOf(
         org.modelix.model.mpsadapters.plugin.ApplicationPlugin_AppPluginPart(),
         org.modelix.model.mpsplugin.plugin.ApplicationPlugin_AppPluginPart(),
     )
     private var serverConnections: List<ServerConnection> = emptyList()
+    var httpClient: HttpClient? = null
 
     init {
         check(INSTANCE == null) { "Single instance expected" }
@@ -84,11 +86,12 @@ class ModelSyncService : Disposable, ISyncService {
     }
 
     fun registerProject(project: com.intellij.openapi.project.Project) {
-        projects += project
+        project.getService(ModelSyncProjectService::class.java)
     }
 
     fun unregisterProject(project: com.intellij.openapi.project.Project) {
-        projects -= project
+        project.getService(ModelSyncProjectService::class.java)
+            .dispose()
     }
 
     override fun getBindings(): List<org.modelix.mps.sync.api.IBinding> {
@@ -182,6 +185,13 @@ class ModelSyncService : Disposable, ISyncService {
         override fun dispose() {
             serverConnections -= this
             ModelServerConnections.instance.removeModelServer(legacyConnection)
+            try {
+                httpClient?.close()
+                httpClient = null
+            } catch (e: Throwable) {
+                LOG.error("Failed to close client.", e)
+                throw e
+            }
         }
 
         private inner class ActiveBranchAdapter(val repositoryId: RepositoryId, val legacyActiveBranch: ActiveBranch) : IBranchConnection {

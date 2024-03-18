@@ -70,7 +70,7 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
         suspend fun delayUntil(
             checkIntervalMilliseconds: Long = 1000,
             timeoutMilliseconds: Long = 30_000,
-            condition: () -> Boolean,
+            condition: suspend () -> Boolean,
         ) {
             check(checkIntervalMilliseconds > 0) {
                 "checkIntervalMilliseconds must be positive."
@@ -97,9 +97,10 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
     protected lateinit var initialDumpFromMPS: NodeData
     protected val defaultBranchRef = RepositoryId("default").getBranchReference()
 
-    protected val mpsProject: MPSProject get() {
-        return checkNotNull(ProjectHelper.fromIdeaProject(project)) { "MPS project not loaded" }
-    }
+    protected val mpsProject: MPSProject
+        get() {
+            return checkNotNull(ProjectHelper.fromIdeaProject(project)) { "MPS project not loaded" }
+        }
 
     protected val projectAsNode: ProjectAsNode get() = org.modelix.model.mpsadapters.mps.ProjectAsNode(mpsProject)
 
@@ -150,11 +151,16 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
             KeyValueLikeModelServer(repositoriesManager).init(this)
         }
         httpClient = client
+        postModelServerSetup()
         block()
+    }
+
+    open suspend fun postModelServerSetup() {
     }
 
     protected fun runTestWithSyncService(body: suspend (ISyncService) -> Unit) = runTestWithModelServer {
         val syncService = ApplicationManager.getApplication().getService(ModelSyncService::class.java)
+        syncService.httpClient = httpClient
         try {
             this@SyncPluginTestBase.syncService = syncService
             syncService.registerProject(project)
@@ -176,7 +182,11 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
                     SetLibraryContributor.fromSet(
                         "repositoryconcepts",
                         setOf(
-                            LibDescriptor(mpsProject.fileSystem.getFile(Path.of("repositoryconcepts").absolutePathString())),
+                            LibDescriptor(
+                                mpsProject.fileSystem.getFile(
+                                    Path.of("repositoryconcepts").absolutePathString(),
+                                ),
+                            ),
                         ),
                     ),
                 ),
@@ -248,7 +258,8 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
     }
 
     protected fun resolveMPSConcept(languageName: String, conceptName: String): SAbstractConcept {
-        val baseLanguage = LanguageRegistry.getInstance(mpsProject.repository).allLanguages.single { it.qualifiedName == languageName }
+        val baseLanguage =
+            LanguageRegistry.getInstance(mpsProject.repository).allLanguages.single { it.qualifiedName == languageName }
         val classConcept = baseLanguage.concepts.single { it.name == conceptName }
         check(classConcept !is InvalidConcept)
         return classConcept
@@ -284,6 +295,7 @@ private fun normalizeNodeData(node: NodeData, originalIds: MutableMap<String, St
             filteredProperties -= "name"
             filteredProperties -= BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getUID()
         }
+
         "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895" -> { // Module
             // TODO remove this filter and fix the test
             filteredChildren = filteredChildren.filter { it.role == "models" }
@@ -295,6 +307,7 @@ private fun normalizeNodeData(node: NodeData, originalIds: MutableMap<String, St
                 replacedId = "mps-module:" + node.properties["id"] + "(" + node.properties["name"] + ")"
             }
         }
+
         "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/2206727074858242429" -> { // SingleLanguageDependency
             // TODO remove this filter and fix the test
             replacedId = null
