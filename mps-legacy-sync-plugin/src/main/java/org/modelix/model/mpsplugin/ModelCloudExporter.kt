@@ -67,7 +67,6 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.CLVersion.Companion.loadFromHash
 import org.modelix.model.lazy.PrefetchCache.Companion.with
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.metameta.MetaModelBranch
 import org.modelix.model.mpsadapters.mps.SConceptAdapter
 import org.modelix.model.mpsplugin.ModelCloudExporter.PersistenceFacility
 import java.io.File
@@ -181,7 +180,7 @@ class ModelCloudExporter {
         }
         return repositoryInModelServer!!.computeRead<List<Solution>>({
             val tree: CLTree = version.getTree()
-            val branch: IBranch = MetaModelBranch(PBranch(tree, IdGeneratorDummy()))
+            val branch: IBranch = PBranch(tree, IdGeneratorDummy())
             PArea(branch).executeRead({
                 with<List<Solution>>(tree, {
                     val t: ITransaction = branch.transaction
