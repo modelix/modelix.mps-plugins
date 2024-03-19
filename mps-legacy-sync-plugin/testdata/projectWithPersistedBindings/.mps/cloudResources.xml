@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CloudResources">
+    <option name="mappedModules">
+      <set>
+        <option value="http://localhost/default#NewSolution" />
+      </set>
+    </option>
+    <option name="modelServers">
+      <set>
+        <option value="http://localhost/" />
+      </set>
+    </option>
+  </component>
+</project>

@@ -114,17 +114,17 @@ class CloudProjectViewExtension(private val project: Project?) {
         }
     }
 
+    var waitForProjectTreeTimer: Timer? = null
+
     fun init() {
         cloudTreeNode = TextTreeNode("Cloud")
         cloudTreeNode!!.icon = ROOT_ICON
-        waitForProjectTree(object : _void_P1_E0<ProjectTree?> {
-            override fun invoke(tree: ProjectTree?) {
-                treeModel = TreeModelUtil.getModel(tree)
-                treeModel!!.addTreeModelListener(treeListener)
-                project!!.repository.addRepositoryListener(repositoryListener)
-                updateModules()
-            }
-        })
+        waitForProjectTree { tree ->
+            treeModel = TreeModelUtil.getModel(tree)
+            treeModel!!.addTreeModelListener(treeListener)
+            project!!.repository.addRepositoryListener(repositoryListener)
+            updateModules()
+        }
     }
 
     private fun waitForProjectTree(callback: _void_P1_E0<in ProjectTree>) {
@@ -146,6 +146,10 @@ class CloudProjectViewExtension(private val project: Project?) {
                 },
             )
             timer.value!!.start()
+            assert(waitForProjectTreeTimer == null) {
+                "waitForProjectTreeTimer should not have been initialized."
+            }
+            waitForProjectTreeTimer = timer.value
         }
     }
 
@@ -164,6 +168,7 @@ class CloudProjectViewExtension(private val project: Project?) {
         }
 
     fun dispose() {
+        waitForProjectTreeTimer?.stop()
         project!!.repository.removeRepositoryListener(repositoryListener)
         if (treeModel != null) {
             treeModel!!.removeTreeModelListener(treeListener)
@@ -233,7 +238,7 @@ class CloudProjectViewExtension(private val project: Project?) {
     }
 
     fun updateModules() {
-        val root: MPSTreeNode? = projectTree!!.rootNode
+        val root: MPSTreeNode? = projectTree?.rootNode
         if (root == null) {
             return
         }
