@@ -1,6 +1,6 @@
 plugins {
     id("org.jetbrains.kotlin.jvm")
-    id("org.jetbrains.intellij") version "1.16.0"
+    id("org.jetbrains.intellij") version "1.17.2"
 }
 
 group = "org.modelix.mps"
@@ -68,7 +68,7 @@ tasks {
 
     patchPluginXml {
         sinceBuild.set("203")
-        untilBuild.set("231.*")
+        untilBuild.set("232.*")
     }
 
     buildSearchableOptions {

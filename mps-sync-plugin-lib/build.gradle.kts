@@ -7,12 +7,6 @@ repositories {
     maven { url = uri("https://www.jetbrains.com/intellij-repository/releases") }
 }
 
-kotlin {
-    compilerOptions {
-        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_6)
-    }
-}
-
 // use the given MPS version, or 2022.2 (last version with JAVA 11) as default
 val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2020.3.6"
 
