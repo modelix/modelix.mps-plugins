@@ -96,8 +96,11 @@ class ModelServerConnection @JvmOverloads constructor(baseUrl: String, providedH
         val workspaceTokenProvider: () -> String? = { InstanceJwtToken.token }
         val tokenProvider: (() -> String?)? =
             (if (ModelixConfigurationSystemProperties.executionMode == EModelixExecutionMode.PROJECTOR) workspaceTokenProvider else null)
-        val syncService = ApplicationManager.getApplication().getService(ModelSyncService::class.java)
-        val httpClient = providedHttpClient ?: syncService.httpClient
+        // Do not use ApplicationManager.getApplication().getService(ModelSyncService::class.java) here
+        // because this code might get called from ModelSyncService.<init>.
+        // This will cause MPS to try to create the ModelSyncService a second time and fail.
+        val syncService = ModelSyncService.INSTANCE
+        val httpClient = providedHttpClient ?: syncService?.httpClient
         client = RestWebModelClient(
             baseUrl,
             tokenProvider,
