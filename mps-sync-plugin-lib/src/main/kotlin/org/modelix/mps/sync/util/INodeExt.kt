@@ -21,22 +21,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.PropertyFromName
-import org.modelix.model.data.NodeData
 import org.modelix.model.mpsadapters.MPSNode
-
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun INode.mappedMpsNodeID(): String? {
-    return try {
-        val nodeIdProperty = PropertyFromName(NodeData.ID_PROPERTY_KEY)
-        this.getPropertyValue(nodeIdProperty)
-    } catch (e: RuntimeException) {
-        throw RuntimeException(
-            "Failed to retrieve the ${NodeData.ID_PROPERTY_KEY} property in mappedMpsNodeID. The INode is $this , concept: ${this.concept}",
-            e,
-        )
-    }
-}
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun INode.nodeIdAsLong(): Long =
@@ -79,9 +64,7 @@ fun INode.isSingleLanguageDependency(): Boolean {
 fun INode.isModelImport(): Boolean {
     val concept = this.concept ?: return false
     val isModelReference = concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.ModelReference)
-    // we have to use roleInParent, because getContainmentLink() is sometimes null, when roleInParent is not
-    val isModelImportRole =
-        this.roleInParent == BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports.getSimpleName()
+    val isModelImportRole = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports == this.getContainmentLink()
     return isModelReference && isModelImportRole
 }
 

@@ -39,7 +39,6 @@ import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.mappedMpsNodeID
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
@@ -81,7 +80,6 @@ class SNodeFactory(
             // 1. create node
             val mpsNodeId = getMpsNodeId(iNode)
             val sNode = jetbrains.mps.smodel.SNode(concept, mpsNodeId)
-            val nodeId = iNode.nodeIdAsLong()
 
             // 2. add to parent
             val parent = iNode.parent
@@ -115,7 +113,7 @@ class SNodeFactory(
         }
 
     private fun getMpsNodeId(iNode: INode): SNodeId {
-        val mpsNodeIdAsString = iNode.mappedMpsNodeID()
+        val mpsNodeIdAsString = iNode.getOriginalReference()
         val mpsId = mpsNodeIdAsString?.let { PersistenceFacade.getInstance().createNodeId(it) }
         return if (mpsId != null) {
             mpsId
