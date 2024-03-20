@@ -166,7 +166,17 @@ class SyncServiceImpl : SyncService {
     private fun registerLanguages(project: MPSProject): MPSLanguageRepository {
         val repository = project.repository
         val mpsLanguageRepo = MPSLanguageRepository(repository)
-        ILanguageRepository.register(mpsLanguageRepo)
+
+        // workaround for MODELIX-832: make the repo's priority lower than the default repo's
+        val mpsRepoWithLowerPriority = object : ILanguageRepository by mpsLanguageRepo {
+            override fun getPriority() = -1
+
+            override fun hashCode() = mpsLanguageRepo.hashCode()
+            override fun equals(other: Any?) = other != null && other == mpsLanguageRepo
+            override fun toString() = mpsLanguageRepo.toString()
+        }
+
+        ILanguageRepository.register(mpsRepoWithLowerPriority)
         return mpsLanguageRepo
     }
 
