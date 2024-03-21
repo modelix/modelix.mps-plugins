@@ -110,6 +110,7 @@ tasks {
     }
 
     runIde {
+        systemProperty("idea.platform.prefix", "Idea")
         autoReloadPlugins.set(true)
     }
 
