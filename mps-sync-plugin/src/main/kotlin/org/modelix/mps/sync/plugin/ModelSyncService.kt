@@ -41,7 +41,6 @@ import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.INode
-import org.modelix.model.api.runSynchronized
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
@@ -56,12 +55,11 @@ class ModelSyncService : Disposable {
     private val logger = KotlinLogging.logger {}
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
     private var server: String? = null
-    val syncService: SyncServiceImpl
+
+    private val syncService = SyncServiceImpl()
+    val activeClients = mutableSetOf<ModelClientV2>()
 
     init {
-        logger.info { "============================================ ModelSyncService init" }
-        syncService = SyncServiceImpl()
-
         logger.info { "============================================ Registering sync actions" }
         registerSyncActions()
 
@@ -76,9 +74,15 @@ class ModelSyncService : Disposable {
         callback: (() -> Unit),
     ) {
         coroutineScope.launch {
-            logger.info { "Connection to server: $url" }
-            syncService.connectModelServer(URL(url), jwt, callback)
-            logger.info { "Connected to server: $url" }
+            try {
+                logger.info { "Connection to server: $url" }
+                val client = syncService.connectModelServer(URL(url), jwt)
+                activeClients.add(client)
+                logger.info { "Connected to server: $url" }
+                callback()
+            } catch (ex: Exception) {
+                logger.error(ex) { "Unable to connect" }
+            }
         }
     }
 
@@ -87,9 +91,15 @@ class ModelSyncService : Disposable {
         callback: (() -> Unit),
     ) {
         coroutineScope.launch {
-            logger.info { "disconnecting to server: ${modelClient.baseUrl}" }
-            syncService.disconnectModelServer(modelClient, callback)
-            logger.info { "disconnected server: ${modelClient.baseUrl}" }
+            try {
+                logger.info { "disconnecting to server: ${modelClient.baseUrl}" }
+                syncService.disconnectModelServer(modelClient)
+                activeClients.remove(modelClient)
+                callback()
+                logger.info { "disconnected server: ${modelClient.baseUrl}" }
+            } catch (ex: Exception) {
+                logger.error(ex) { "Unable to disconnect" }
+            }
         }
     }
 
@@ -106,8 +116,8 @@ class ModelSyncService : Disposable {
                     BranchReference(RepositoryId(repositoryID), branchName),
                     module,
                 ).forEach { it.activate() }
-            } catch (e: Exception) {
-                logger.error(e) { "Error while binding module" }
+            } catch (ex: Exception) {
+                logger.error(ex) { "Error while binding module" }
             }
         }
     }
@@ -122,13 +132,12 @@ class ModelSyncService : Disposable {
         ensureStopped()
     }
 
+    @Synchronized
     private fun ensureStopped() {
         logger.info { "============================================  ensureStopped" }
-        runSynchronized(this) {
-            if (server == null) return
-            logger.info { "stopping modelix server" }
-            server = null
-        }
+        if (server == null) return
+        logger.info { "stopping modelix server" }
+        server = null
     }
 
     private fun registerSyncActions() {

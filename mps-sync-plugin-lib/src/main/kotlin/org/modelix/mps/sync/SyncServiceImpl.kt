@@ -23,7 +23,6 @@ import org.modelix.mps.sync.mps.RepositoryChangeListener
 import org.modelix.mps.sync.tasks.FuturesWaitQueue
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
-import java.net.ConnectException
 import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -33,7 +32,7 @@ class SyncServiceImpl : SyncService {
     private val mpsProjectInjector = ActiveMpsProjectInjector
 
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
-    val activeClients = mutableSetOf<ModelClientV2>()
+    private val activeClients = mutableSetOf<ModelClientV2>()
     private val replicatedModelByBranchReference = mutableMapOf<BranchReference, ReplicatedModel>()
     private val changeListenerByReplicatedModel = mutableMapOf<ReplicatedModel, IBranchListener>()
 
@@ -45,7 +44,6 @@ class SyncServiceImpl : SyncService {
         ILanguageRepository.default.javaClass
     }
 
-    // todo add afterActivate to allow async refresh
     override suspend fun connectModelServer(
         serverURL: URL,
         jwt: String,
@@ -58,15 +56,10 @@ class SyncServiceImpl : SyncService {
             return it
         }
 
+        logger.info { "Connecting to $serverURL" }
         // TODO: use JWT here
-        val modelClientV2: ModelClientV2 = ModelClientV2.builder().url(serverURL.toString()).build()
-        try {
-            logger.info { "Connecting to $serverURL" }
-            modelClientV2.init()
-        } catch (e: ConnectException) {
-            logger.warn { "Unable to connect: ${e.message} / ${e.cause}" }
-            throw e
-        }
+        val modelClientV2 = ModelClientV2.builder().url(serverURL.toString()).build()
+        modelClientV2.init()
 
         logger.info { "Connection to $serverURL successful" }
         activeClients.add(modelClientV2)
