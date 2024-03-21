@@ -20,6 +20,7 @@ val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.is
 if (!mpsToIdeaMap.containsKey(mpsVersion)) {
     throw GradleException("Build for the given MPS version '$mpsVersion' is not supported.")
 }
+val mpsHome = rootProject.layout.buildDirectory.dir("mps-$mpsVersion")
 // identify the corresponding intelliJ platform version used by the MPS version
 val ideaVersion = mpsToIdeaMap.getValue(mpsVersion)
 println("Building for MPS version $mpsVersion and IntelliJ version $ideaVersion")
@@ -45,7 +46,9 @@ dependencies {
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
-    version.set(ideaVersion)
+    localPath = mpsHome.map { it.asFile.absolutePath }
+    instrumentCode = false
+    plugins = listOf("jetbrains.mps.ide.make")
 }
 
 tasks {
@@ -76,6 +79,7 @@ tasks {
     }
 
     runIde {
+        systemProperty("idea.platform.prefix", "Idea")
         autoReloadPlugins.set(true)
     }
 
