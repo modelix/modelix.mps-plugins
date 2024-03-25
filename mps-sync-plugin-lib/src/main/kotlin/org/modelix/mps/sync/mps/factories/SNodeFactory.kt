@@ -17,7 +17,6 @@
 package org.modelix.mps.sync.mps.factories
 
 import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
-import jetbrains.mps.smodel.adapter.structure.ref.SReferenceLinkAdapter2
 import org.jetbrains.mps.openapi.language.SAbstractConcept
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.language.SInterfaceConcept
@@ -31,6 +30,7 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.PropertyFromName
+import org.modelix.model.api.ReferenceLinkFromName
 import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSReferenceLink
@@ -136,10 +136,13 @@ class SNodeFactory(
             val sourceNodeId = iNode.nodeIdAsLong()
             val source = nodeMap.getNode(sourceNodeId)!!
 
-            val sReferenceLink = (it.first as MPSReferenceLink).link
-            val reference = SReferenceLinkAdapter2(sReferenceLink.id, sReferenceLink.name)
-            val targetNodeId = it.second.nodeIdAsLong()
+            val reference = when (it.first) {
+                is MPSReferenceLink -> (it.first as MPSReferenceLink).link
+                is ReferenceLinkFromName -> source.concept.referenceLinks.first { refLink -> refLink.name == it.first.name }
+                else -> null
+            }!!
 
+            val targetNodeId = it.second.nodeIdAsLong()
             resolvableReferences.add(ResolvableReference(source, reference, targetNodeId))
         }
     }
