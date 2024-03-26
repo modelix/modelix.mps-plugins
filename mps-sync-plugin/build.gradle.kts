@@ -32,6 +32,9 @@ dependencies {
 
     implementation(libs.modelix.model.api)
     implementation(libs.modelix.model.client)
+    implementation(libs.modelix.modelql.core)
+    implementation(libs.modelix.modelql.untyped)
+
     implementation(project(":mps-sync-plugin-lib"))
 
     // extracting jars from zipped products

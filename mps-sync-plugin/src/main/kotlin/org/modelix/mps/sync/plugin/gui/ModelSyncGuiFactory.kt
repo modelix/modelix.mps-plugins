@@ -32,12 +32,12 @@ import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.INode
-import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2
-import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.modelql.core.toList
+import org.modelix.modelql.untyped.allChildren
+import org.modelix.modelql.untyped.ofConcept
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.plugin.ModelSyncService
@@ -107,7 +107,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val repoModel = DefaultComboBoxModel<RepositoryId>()
         private val branchModel = DefaultComboBoxModel<BranchReference>()
 
-        private val moduleModel = DefaultComboBoxModel<INodeWithName>()
+        private val moduleModel = DefaultComboBoxModel<ModuleIdWithName>()
 
         init {
             logger.info { "-------------------------------------------- ModelSyncGui init" }
@@ -216,7 +216,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             inputBox.add(branchPanel)
 
             val modulePanel = JPanel()
-            val moduleCB = ComboBox<INodeWithName>()
+            val moduleCB = ComboBox<ModuleIdWithName>()
             moduleCB.model = moduleModel
             moduleCB.renderer = CustomCellRenderer()
             modulePanel.add(JLabel("Remote Module:  "))
@@ -229,7 +229,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                     modelSyncService.bindModule(
                         existingConnectionsModel.selectedItem as ModelClientV2,
                         (branchModel.selectedItem as BranchReference).branchName,
-                        (moduleModel.selectedItem as INodeWithName).node,
+                        (moduleModel.selectedItem as ModuleIdWithName).id,
                         (repoModel.selectedItem as RepositoryId).id,
                     )
                 }
@@ -316,19 +316,20 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             if (existingConnectionsModel.size != 0 && repoModel.size != 0 && branchModel.size != 0) {
                 val client = existingConnectionsModel.selectedItem as ModelClientV2
                 val branchReference = branchModel.selectedItem as BranchReference
-                val branch = client.getReplicatedModel(branchReference).start()
-                branch.runRead {
-                    val children = branch.getRootNode().allChildren.map {
-                        val name = it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
-                            ?: it.toString()
-                        INodeWithName(it, name)
-                    }
 
-                    moduleModel.removeAllElements()
-                    moduleModel.addAll(children.toList())
-                    if (moduleModel.size > 0) {
-                        moduleModel.selectedItem = moduleModel.getElementAt(0)
-                    }
+                val moduleNodes = client.query(branchReference) {
+                    it.allChildren().ofConcept(BuiltinLanguages.MPSRepositoryConcepts.Module).toList()
+                }.map {
+                    val name = it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+                        ?: it.toString()
+                    val id = it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
+                    ModuleIdWithName(id, name)
+                }
+
+                moduleModel.removeAllElements()
+                moduleModel.addAll(moduleNodes.toList())
+                if (moduleModel.size > 0) {
+                    moduleModel.selectedItem = moduleModel.getElementAt(0)
                 }
             }
         }
@@ -373,7 +374,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                 is ModelClientV2 -> value.baseUrl
                 is RepositoryId -> value.toString()
                 is BranchReference -> value.branchName
-                is INodeWithName -> value.name
+                is ModuleIdWithName -> value.name
                 else -> return super.getListCellRendererComponent(list, null, index, isSelected, cellHasFocus)
             }
             return super.getListCellRendererComponent(list, formatted, index, isSelected, cellHasFocus)
@@ -381,4 +382,4 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
     }
 }
 
-data class INodeWithName(val node: INode, val name: String)
+data class ModuleIdWithName(val id: String, val name: String)

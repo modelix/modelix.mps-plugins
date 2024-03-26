@@ -2,7 +2,6 @@ package org.modelix.mps.sync
 
 import com.intellij.openapi.project.Project
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.model.api.INode
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import java.net.URL
@@ -14,7 +13,7 @@ interface SyncService {
     suspend fun bindModule(
         client: ModelClientV2,
         branchReference: BranchReference,
-        module: INode,
+        moduleId: String,
         callback: (() -> Unit)? = null,
     ): Iterable<IBinding>
 

@@ -138,7 +138,7 @@ class SNodeFactory(
 
             val reference = when (it.first) {
                 is MPSReferenceLink -> (it.first as MPSReferenceLink).link
-                is ReferenceLinkFromName -> source.concept.referenceLinks.first { refLink -> refLink.name == it.first.name }
+                is ReferenceLinkFromName -> source.concept.referenceLinks.first { refLink -> refLink.name == it.first.getSimpleName() }
                 else -> null
             }!!
 

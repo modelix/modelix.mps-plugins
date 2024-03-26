@@ -40,7 +40,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.model.api.INode
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
@@ -106,7 +105,7 @@ class ModelSyncService : Disposable {
     fun bindModule(
         client: ModelClientV2,
         branchName: String,
-        module: INode,
+        moduleId: String,
         repositoryID: String,
     ) {
         coroutineScope.launch {
@@ -114,7 +113,7 @@ class ModelSyncService : Disposable {
                 syncService.bindModule(
                     client,
                     BranchReference(RepositoryId(repositoryID), branchName),
-                    module,
+                    moduleId,
                 ).forEach { it.activate() }
             } catch (ex: Exception) {
                 logger.error(ex) { "Error while binding module" }

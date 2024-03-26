@@ -9,7 +9,6 @@ import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.ILanguageRepository
-import org.modelix.model.api.INode
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
@@ -82,7 +81,7 @@ class SyncServiceImpl : SyncService {
     override suspend fun bindModule(
         client: ModelClientV2,
         branchReference: BranchReference,
-        module: INode,
+        moduleId: String,
         callback: (() -> Unit)?,
     ): Iterable<IBinding> {
         // fetch replicated model and branch content
@@ -115,7 +114,7 @@ class SyncServiceImpl : SyncService {
         // transform the model
         val targetProject = mpsProjectInjector.activeMpsProject!!
         val languageRepository = registerLanguages(targetProject)
-        val bindings = ITreeToSTreeTransformer(branch, languageRepository).transform(module)
+        val bindings = ITreeToSTreeTransformer(branch, languageRepository).transform(moduleId)
 
         // register replicated model change listener
         if (!replicateModelIsAlreadySynched) {
