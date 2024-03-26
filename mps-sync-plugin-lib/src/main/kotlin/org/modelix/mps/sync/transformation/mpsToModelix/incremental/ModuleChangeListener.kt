@@ -54,8 +54,8 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
 
-    private val moduleSynchronizer = ModuleSynchronizer(branch)
-    private val modelSynchronizer = ModelSynchronizer(branch)
+    private val moduleSynchronizer = ModuleSynchronizer(branch, false)
+    private val modelSynchronizer = ModelSynchronizer(branch, false, false)
     private val nodeSynchronizer = NodeSynchronizer(branch)
 
     private val moduleChangeSyncInProgress = synchronizedLinkedHashSet<SModule>()

@@ -46,13 +46,13 @@ import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModuleSynchronizer(private val branch: IBranch) {
+class ModuleSynchronizer(private val branch: IBranch, private val ignoreImports: Boolean) {
 
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
 
-    private val modelSynchronizer = ModelSynchronizer(branch, postponeReferenceResolution = true)
+    private val modelSynchronizer = ModelSynchronizer(branch, postponeReferenceResolution = true, ignoreImports)
 
     fun addModuleAndActivate(module: AbstractModule) {
         addModule(module, true).continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
@@ -75,8 +75,17 @@ class ModuleSynchronizer(private val branch: IBranch) {
 
             synchronizeModuleProperties(cloudModule, module)
 
-            // synchronize dependencies
-            module.declaredDependencies.waitForCompletionOfEachTask(collectResults = true) { addDependency(module, it) }
+            return@enqueue if (!ignoreImports) {
+                // synchronize dependencies
+                module.declaredDependencies.waitForCompletionOfEachTask(collectResults = true) {
+                    addDependency(
+                        module,
+                        it,
+                    )
+                }
+            } else {
+                CompletableFuture.completedFuture(listOf(listOf<IBinding>()))
+            }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) { unflattenedBindings ->
             @Suppress("UNCHECKED_CAST")
             (unflattenedBindings as Iterable<Iterable<IBinding>>).flatten()

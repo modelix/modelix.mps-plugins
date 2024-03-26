@@ -34,12 +34,18 @@ import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.util.CompletableFutureDefaultResult
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
+import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution: Boolean = false) {
+class ModelSynchronizer(
+    private val branch: IBranch,
+    postponeReferenceResolution: Boolean = false,
+    private val ignoreImports: Boolean,
+) {
 
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
@@ -75,8 +81,12 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
             // synchronize root nodes
             model.rootNodes.waitForCompletionOfEachTask { nodeSynchronizer.addNode(it) }
         }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
-            // synchronize model imports
-            model.modelImports.waitForCompletionOfEachTask { addModelImport(model, it) }
+            return@continueWith if (!ignoreImports) {
+                // synchronize model imports
+                model.modelImports.waitForCompletionOfEachTask { addModelImport(model, it) }
+            } else {
+                CompletableFuture.completedFuture(CompletableFutureDefaultResult)
+            }
         }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // synchronize language dependencies
             model.importedLanguageIds().waitForCompletionOfEachTask { addLanguageDependency(model, it) }

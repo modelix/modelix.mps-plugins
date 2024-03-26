@@ -23,6 +23,7 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
+import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
@@ -33,12 +34,14 @@ import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.modelql.core.toList
 import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.ofConcept
 import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.plugin.ModelSyncService
 import org.modelix.mps.sync.plugin.icons.CloudIcons
@@ -108,6 +111,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val branchModel = DefaultComboBoxModel<BranchReference>()
 
         private val moduleModel = DefaultComboBoxModel<ModuleIdWithName>()
+
+        private val ignoreImportsCB = JBCheckBox()
 
         init {
             logger.info { "-------------------------------------------- ModelSyncGui init" }
@@ -255,6 +260,59 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             }
             bindingsPanel.add(unbindButton)
             inputBox.add(bindingsPanel)
+
+            inputBox.add(JSeparator())
+
+            val createBranchPanel = JPanel()
+            val versionHash = JBTextField(TEXTFIELD_WIDTH)
+            versionHash.text = "baseVersionHash (model-server -> repositories -> branch -> history)"
+            createBranchPanel.add(versionHash)
+
+            val newBranchName = JBTextField(TEXTFIELD_WIDTH)
+            newBranchName.text = "newBranchName"
+            createBranchPanel.add(newBranchName)
+
+            val createBranchButton = JButton("Create and connect to branch")
+            createBranchButton.addActionListener {
+                coroutineScope.launch {
+                    try {
+                        val client = modelSyncService.activeClients.first()
+                        val repositoryId = repoModel.selectedItem as RepositoryId
+
+                        val version = versionHash.text
+                        logger.info { "Loading version $version" }
+                        val loadedVersion = client.loadVersion(repositoryId, version, null)
+
+                        val branchName = newBranchName.text
+                        logger.info { "Create branch $branchName based on $version" }
+                        val newBranch = BranchReference(repositoryId, branchName)
+                        client.push(newBranch, loadedVersion, null)
+
+                        val rm = client.getReplicatedModel(newBranch)
+                        rm.start()
+
+                        logger.info { "Connection to $branchName is established" }
+                        ReplicatedModelRegistry.model = rm
+                    } catch (ex: Exception) {
+                        logger.error(ex) { "Unexpected error while creating branch" }
+                    }
+                }
+            }
+            createBranchPanel.add(createBranchButton)
+            inputBox.add(createBranchPanel)
+
+            inputBox.add(JSeparator())
+
+            val ignoreImportsPanel = JPanel()
+
+            val ignoreImportsLabel = JLabel("Ignore imports")
+            ignoreImportsPanel.add(ignoreImportsLabel)
+            ignoreImportsCB.addActionListener {
+                ShouldIgnore.yes = ignoreImportsCB.isSelected
+            }
+
+            ignoreImportsPanel.add(ignoreImportsCB)
+            inputBox.add(ignoreImportsPanel)
 
             return inputBox
         }

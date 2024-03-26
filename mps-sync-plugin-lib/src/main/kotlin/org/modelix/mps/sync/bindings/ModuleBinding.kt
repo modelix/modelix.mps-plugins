@@ -16,19 +16,15 @@
 
 package org.modelix.mps.sync.bindings
 
-import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.IBinding
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
-import org.modelix.mps.sync.tasks.SyncDirection
-import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
-import org.modelix.mps.sync.util.waitForCompletionOfEach
+import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -72,7 +68,8 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
     }
 
     override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<Any?> {
-        if (isDisposed) {
+        return CompletableFuture<Any?>().completeWithDefault()
+        /*if (isDisposed) {
             return CompletableFuture.completedFuture(null)
         }
 
@@ -85,18 +82,18 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
                     val modelBindings = bindingsRegistry.getModelBindings(module)
 
                     /*
-                     * deactivate child models' bindings and wait for their successful completion
-                     * throws ExecutionException if any deactivation failed
-                     */
+         * deactivate child models' bindings and wait for their successful completion
+         * throws ExecutionException if any deactivation failed
+         */
                     return@enqueue modelBindings?.waitForCompletionOfEach { it.deactivate(removeFromServer) }
                 }
             }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
             synchronized(this) {
                 /*
-                 * delete the binding, because if binding exists then module is assumed to exist,
-                 * i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
-                 */
+         * delete the binding, because if binding exists then module is assumed to exist,
+         * i.e. RepositoryChangeListener.moduleRemoved(...) will not delete the module
+         */
                 bindingsRegistry.removeModuleBinding(this)
                 isActivated = false
             }
@@ -106,11 +103,11 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
                 try {
                     if (!removeFromServer && !moduleDeletedLocally) {
                         /*
-                         * if we just delete it locally, then we have to call ModuleDeleteHelper manually.
-                         * otherwise, MPS will call us via the event-handler chain starting from
-                         * ModuleDeleteHelper.deleteModules --> RepositoryChangeListener -->
-                         * moduleListener.deactivate(removeFromServer = true)
-                         */
+         * if we just delete it locally, then we have to call ModuleDeleteHelper manually.
+         * otherwise, MPS will call us via the event-handler chain starting from
+         * ModuleDeleteHelper.deleteModules --> RepositoryChangeListener -->
+         * moduleListener.deactivate(removeFromServer = true)
+         */
                         ModuleDeleteHelper(ActiveMpsProjectInjector.activeMpsProject!!)
                             .deleteModules(listOf(module), false, true)
                         moduleDeletedLocally = true
@@ -118,9 +115,9 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
                 } catch (ex: Exception) {
                     logger.error(ex) { "Exception occurred while deactivating ${name()}." }
                     /*
-                     * if any error occurs, then we put the binding back to let the rest of the application know that
-                     * it exists
-                     */
+         * if any error occurs, then we put the binding back to let the rest of the application know that
+         * it exists
+         */
                     bindingsRegistry.addModuleBinding(this)
                     activate()
                     throw ex
@@ -142,7 +139,7 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
             }
 
             callback?.run()
-        }.getResult()
+        }.getResult()*/
     }
 
     override fun name() = "Binding of Module \"${module.moduleName}\""

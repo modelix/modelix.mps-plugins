@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.transformation.mpsToModelix.initial
 
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SNode
@@ -42,6 +43,8 @@ class NodeSynchronizer(
     private val branch: IBranch,
     private val resolvableReferences: MutableCollection<CloudResolvableReference>? = null,
 ) {
+
+    private val logger = KotlinLogging.logger {}
 
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
@@ -113,11 +116,15 @@ class NodeSynchronizer(
     }
 
     private fun setReferenceInTheCloud(cloudNode: INode, modelixReferenceLink: IReferenceLink, mpsTargetNode: SNode?) {
-        val cloudTargetNode = mpsTargetNode?.let {
-            val targetNodeId = nodeMap[mpsTargetNode]!!
-            branch.getNode(targetNodeId)
+        try {
+            val cloudTargetNode = mpsTargetNode?.let {
+                val targetNodeId = nodeMap[mpsTargetNode]!!
+                branch.getNode(targetNodeId)
+            }
+            cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
+        } catch (ex: NullPointerException) {
+            logger.warn { "Cloud target node ($mpsTargetNode) is not found for reference Link $modelixReferenceLink from sourceNode ${cloudNode.nodeIdAsLong()}" }
         }
-        cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
     }
 
     fun setProperty(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) =

@@ -38,7 +38,7 @@ import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelChangeListener(branch: IBranch, private val binding: ModelBinding) : SModelListener {
 
-    private val modelSynchronizer = ModelSynchronizer(branch)
+    private val modelSynchronizer = ModelSynchronizer(branch, false, false)
     private val nodeSynchronizer = NodeSynchronizer(branch)
 
     override fun importAdded(event: SModelImportEvent) {
