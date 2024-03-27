@@ -28,6 +28,7 @@ import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeListener
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
+import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -71,7 +72,7 @@ class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
 
     override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<Any?> {
         if (isDisposed) {
-            return CompletableFuture.completedFuture(null)
+            return CompletableFuture<Any?>().completeWithDefault()
         }
 
         return syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {

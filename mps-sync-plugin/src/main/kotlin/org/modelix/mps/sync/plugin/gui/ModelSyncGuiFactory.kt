@@ -32,12 +32,12 @@ import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.INode
-import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2
-import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.modelql.core.toList
+import org.modelix.modelql.untyped.allChildren
+import org.modelix.modelql.untyped.ofConcept
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.plugin.ModelSyncService
@@ -46,6 +46,7 @@ import java.awt.Component
 import java.awt.FlowLayout
 import java.awt.event.ActionEvent
 import java.awt.event.ItemEvent
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.Box
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListCellRenderer
@@ -86,6 +87,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private val logger = KotlinLogging.logger {}
+        private val coroutineScope = CoroutineScope(Dispatchers.Default)
+        private val isFetchingModulesListFromServer = AtomicBoolean()
 
         val contentPanel = JPanel()
         val bindingsRefresher: BindingsComboBoxRefresher
@@ -104,7 +107,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val repoModel = DefaultComboBoxModel<RepositoryId>()
         private val branchModel = DefaultComboBoxModel<BranchReference>()
 
-        private val moduleModel = DefaultComboBoxModel<INodeWithName>()
+        private val moduleModel = DefaultComboBoxModel<ModuleIdWithName>()
 
         init {
             logger.info { "-------------------------------------------- ModelSyncGui init" }
@@ -192,7 +195,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             repoCB.renderer = CustomCellRenderer()
             repoCB.addActionListener {
                 if (it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
-                    populateBranchCB()
+                    callOnlyIfNotFetching(::populateBranchCB)
                 }
             }
             repoPanel.add(JLabel("Remote Repo:   "))
@@ -205,7 +208,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             branchCB.renderer = CustomCellRenderer()
             branchCB.addActionListener {
                 if (it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
-                    populateModuleCB()
+                    callOnlyIfNotFetching(::populateModuleCB)
                 }
             }
             branchPanel.add(JLabel("Remote Branch: "))
@@ -213,7 +216,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             inputBox.add(branchPanel)
 
             val modulePanel = JPanel()
-            val moduleCB = ComboBox<INodeWithName>()
+            val moduleCB = ComboBox<ModuleIdWithName>()
             moduleCB.model = moduleModel
             moduleCB.renderer = CustomCellRenderer()
             modulePanel.add(JLabel("Remote Module:  "))
@@ -226,7 +229,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                     modelSyncService.bindModule(
                         existingConnectionsModel.selectedItem as ModelClientV2,
                         (branchModel.selectedItem as BranchReference).branchName,
-                        (moduleModel.selectedItem as INodeWithName).node,
+                        (moduleModel.selectedItem as ModuleIdWithName).id,
                         (repoModel.selectedItem as RepositoryId).id,
                     )
                 }
@@ -259,7 +262,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private fun triggerRefresh() {
             populateProjectsCB()
             populateConnectionsCB()
-            populateRepoCB()
+            callOnlyIfNotFetching(::populateRepoCB)
         }
 
         private fun populateProjectsCB() {
@@ -271,59 +274,78 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private fun populateConnectionsCB() {
+            val activeClients = modelSyncService.activeClients
+
             existingConnectionsModel.removeAllElements()
-            existingConnectionsModel.addAll(modelSyncService.syncService.activeClients)
+            existingConnectionsModel.addAll(activeClients)
             if (existingConnectionsModel.size > 0) {
                 existingConnectionsModel.selectedItem = existingConnectionsModel.getElementAt(0)
             }
         }
 
-        private fun populateRepoCB() {
+        private suspend fun populateRepoCB() {
             if (existingConnectionsModel.size != 0) {
-                val item = existingConnectionsModel.selectedItem as ModelClientV2
-                CoroutineScope(Dispatchers.Default).launch {
-                    repoModel.removeAllElements()
-                    repoModel.addAll(item.listRepositories())
-                    if (repoModel.size > 0) {
-                        repoModel.selectedItem = repoModel.getElementAt(0)
-                        populateBranchCB()
-                    }
+                val client = existingConnectionsModel.selectedItem as ModelClientV2
+                val repositories = client.listRepositories()
+
+                repoModel.removeAllElements()
+                repoModel.addAll(repositories)
+                if (repoModel.size > 0) {
+                    repoModel.selectedItem = repoModel.getElementAt(0)
+                    populateBranchCB()
                 }
             }
         }
 
-        private fun populateBranchCB() {
+        private suspend fun populateBranchCB() {
             if (existingConnectionsModel.size != 0 && repoModel.size != 0) {
-                CoroutineScope(Dispatchers.Default).launch {
-                    val branches =
-                        (existingConnectionsModel.selectedItem as ModelClientV2).listBranches(repoModel.selectedItem as RepositoryId)
-                    branchModel.removeAllElements()
-                    branchModel.addAll(branches)
-                    if (branchModel.size > 0) {
-                        branchModel.selectedItem = branchModel.getElementAt(0)
-                        populateModuleCB()
-                    }
+                val client = existingConnectionsModel.selectedItem as ModelClientV2
+                val repositoryId = repoModel.selectedItem as RepositoryId
+                val branches = client.listBranches(repositoryId)
+
+                branchModel.removeAllElements()
+                branchModel.addAll(branches)
+                if (branchModel.size > 0) {
+                    branchModel.selectedItem = branchModel.getElementAt(0)
+                    populateModuleCB()
                 }
             }
         }
 
-        private fun populateModuleCB() {
+        private suspend fun populateModuleCB() {
             if (existingConnectionsModel.size != 0 && repoModel.size != 0 && branchModel.size != 0) {
-                CoroutineScope(Dispatchers.Default).launch {
-                    val branch =
-                        (existingConnectionsModel.selectedItem as ModelClientV2).getReplicatedModel(branchModel.selectedItem as BranchReference)
-                            .start()
-                    branch.runRead {
-                        moduleModel.removeAllElements()
-                        val children = branch.getRootNode().allChildren.map {
-                            val name = it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
-                                ?: it.toString()
-                            INodeWithName(it, name)
-                        }
-                        moduleModel.addAll(children.toList())
-                    }
-                    if (moduleModel.size > 0) {
-                        moduleModel.selectedItem = moduleModel.getElementAt(0)
+                val client = existingConnectionsModel.selectedItem as ModelClientV2
+                val branchReference = branchModel.selectedItem as BranchReference
+
+                val moduleNodes = client.query(branchReference) {
+                    it.allChildren().ofConcept(BuiltinLanguages.MPSRepositoryConcepts.Module).toList()
+                }.map {
+                    val name = it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+                        ?: it.toString()
+                    val id = it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
+                    ModuleIdWithName(id, name)
+                }
+
+                moduleModel.removeAllElements()
+                moduleModel.addAll(moduleNodes.toList())
+                if (moduleModel.size > 0) {
+                    moduleModel.selectedItem = moduleModel.getElementAt(0)
+                }
+            }
+        }
+
+        @Synchronized
+        private fun callOnlyIfNotFetching(action: suspend () -> Unit) {
+            if (!isFetchingModulesListFromServer.get()) {
+                isFetchingModulesListFromServer.set(true)
+
+                coroutineScope.launch {
+                    try {
+                        action()
+                    } catch (ex: Exception) {
+                        logger.error(ex) { "Unexpected error" }
+                    } finally {
+                        isFetchingModulesListFromServer.set(false)
                     }
                 }
             }
@@ -352,7 +374,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                 is ModelClientV2 -> value.baseUrl
                 is RepositoryId -> value.toString()
                 is BranchReference -> value.branchName
-                is INodeWithName -> value.name
+                is ModuleIdWithName -> value.name
                 else -> return super.getListCellRendererComponent(list, null, index, isSelected, cellHasFocus)
             }
             return super.getListCellRendererComponent(list, formatted, index, isSelected, cellHasFocus)
@@ -360,4 +382,4 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
     }
 }
 
-data class INodeWithName(val node: INode, val name: String)
+data class ModuleIdWithName(val id: String, val name: String)

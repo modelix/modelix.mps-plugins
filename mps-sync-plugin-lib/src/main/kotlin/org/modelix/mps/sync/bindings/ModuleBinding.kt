@@ -28,6 +28,7 @@ import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
+import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.waitForCompletionOfEach
 import java.util.concurrent.CompletableFuture
 
@@ -73,7 +74,7 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
 
     override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<Any?> {
         if (isDisposed) {
-            return CompletableFuture.completedFuture(null)
+            return CompletableFuture<Any?>().completeWithDefault()
         }
 
         return syncQueue.enqueue(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
