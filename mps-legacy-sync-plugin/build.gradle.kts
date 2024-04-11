@@ -63,6 +63,7 @@ dependencies {
     implementation(coreLibs.kotlin.datetime)
 
     implementation(coreLibs.kotlin.reflect)
+    implementation(coreLibs.ktor.server.resources)
 
     // There is a usage of MakeActionParameters in ProjectMakeRunner which we might want to delete
     compileOnly(mpsHome.map { it.files("plugins/mps-make/languages/jetbrains.mps.ide.make.jar") })
@@ -72,18 +73,8 @@ dependencies {
     testImplementation(libs.modelix.model.server)
     testImplementation(libs.modelix.authorization)
     testImplementation(coreLibs.kotlin.reflect)
-//    implementation(libs.ktor.server.core)
-//    implementation(libs.ktor.server.cors)
-//    implementation(libs.ktor.server.netty)
-//    implementation(libs.ktor.server.html.builder)
-//    implementation(libs.ktor.server.auth)
-//    implementation(libs.ktor.server.auth.jwt)
-//    implementation(libs.ktor.server.status.pages)
-//    implementation(libs.ktor.server.forwarded.header)
     testImplementation(coreLibs.ktor.server.websockets)
     testImplementation(coreLibs.ktor.server.content.negotiation)
-    implementation(coreLibs.ktor.server.resources)
-//    implementation(libs.ktor.serialization.json)
 }
 
 // Configure Gradle IntelliJ Plugin
@@ -94,19 +85,44 @@ intellij {
     plugins = listOf("jetbrains.mps.ide.make")
 }
 
+data class TestPartition(val partitionName: String, val partitionPattern: String)
+// Some test need to run in isolation from other tests.
+// A test task (Test::class) runs all tests in the same JVM and same MPS instance.
+val testClassPartitionsToRunInIsolation = listOf(
+    // `ProjectorAutoBindingTest` sets system properties to enable `EModelixExecutionMode.PROJECTOR`.
+    // The system properties should not influence the other tests.
+    // Also, currently the execution mode is application-specific and not project-specific.
+    TestPartition("ProjectorAutoBindingTest", "**/ProjectorAutoBindingTest.class"),
+)
+
+// Tests currently fail for these versions because of some deadlock.
+// The deadlock does not seem to be caused by our test code.
+// Even an unmodified `HeavyPlatformTestCase` hangs.
+val enableTests = !setOf(212, 213, 222).contains(mpsPlatformVersion)
+
 tasks {
     patchPluginXml {
-        sinceBuild.set("211") // 203 not supported, because VersionFixer was replaced by ModuleDependencyVersions in 211
+        sinceBuild.set("211") // 203 is not supported, because VersionFixer was replaced by ModuleDependencyVersions in 211
         untilBuild.set("232.10072.781")
     }
 
     test {
-        // tests currently fail for these versions
-        enabled = !setOf(
-            212, // timeout because of some deadlock
-            213, // timeout because of some deadlock
-            222, // timeout because of some deadlock
-        ).contains(mpsPlatformVersion)
+        enabled = enableTests
+        useJUnit {
+            setExcludes(testClassPartitionsToRunInIsolation.map { it.partitionPattern })
+        }
+    }
+
+    for (testClassToRunInIsolation in testClassPartitionsToRunInIsolation) {
+        val testTask = register("test${testClassToRunInIsolation.partitionName}", Test::class) {
+            enabled = enableTests
+            useJUnit {
+                include(testClassToRunInIsolation.partitionPattern)
+            }
+        }
+        check {
+            dependsOn(testTask)
+        }
     }
 
     buildSearchableOptions {

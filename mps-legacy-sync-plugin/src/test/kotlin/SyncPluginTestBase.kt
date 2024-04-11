@@ -70,6 +70,7 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
         suspend fun delayUntil(
             checkIntervalMilliseconds: Long = 1000,
             timeoutMilliseconds: Long = 30_000,
+            exceptionMessage: String? = "Waited too long.",
             condition: suspend () -> Boolean,
         ) {
             check(checkIntervalMilliseconds > 0) {
