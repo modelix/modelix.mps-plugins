@@ -27,4 +27,4 @@ kotlin-html = "org.jetbrains.kotlinx:kotlinx-html:0.11.0"
 kotlin-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinCoroutines" }
 
 zt-zip = { group = "org.zeroturnaround", name = "zt-zip", version = "1.17" }
-logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.5.3" }
+logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.5.4" }
