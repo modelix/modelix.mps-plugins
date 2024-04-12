@@ -154,7 +154,7 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
             cloudTargetModelId == it.getReferenceTarget(targetModelReference)?.getPropertyValue(idProperty)
         } != null
         if (modelImportExists) {
-            logger.warn { "Model import for Model ${targetModel.name} from Model ${source.name} will not be synchronized, because it already exists on the server." }
+            logger.warn { "Model Import for Model ${targetModel.name} from Model ${source.name} will not be synchronized, because it already exists on the server." }
         } else {
             val cloudModelReference =
                 cloudParentNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.ModelReference)

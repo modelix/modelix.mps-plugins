@@ -23,7 +23,6 @@ import jetbrains.mps.extapi.model.SModelBase
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 
@@ -45,9 +44,6 @@ class ModelSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val model = event.getData(CONTEXT_MODEL)!! as SModelBase
-
-            val binding = BindingsRegistry.getModelBinding(model)
-            require(binding == null) { "Model is already synchronized to server." }
 
             val replicatedModel = ReplicatedModelRegistry.model
             require(replicatedModel != null) { "Synchronization to server has not been established yet" }

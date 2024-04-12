@@ -22,6 +22,7 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
@@ -65,11 +66,7 @@ class NodeSynchronizer(
             val cloudParentNode = branch.getNode(parentNodeId)
 
             // duplicate check
-            val nodeExists = cloudParentNode.getChildren(childLink)
-                .firstOrNull { node.nodeId.toString() == it.getOriginalReference() } != null
-            if (nodeExists) {
-                throw Exception("Node ${node.name} already exists on server, therefore it will not be synched. Remove its parent node or its parent model and synchronize the parent model from the server instead.")
-            }
+            throwExceptionIfChildNotExists(cloudParentNode, childLink, node)
 
             val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
 
@@ -108,6 +105,10 @@ class NodeSynchronizer(
         mpsConcept.containmentLinks.forEach { containmentLink ->
             mpsNode.getChildren(containmentLink).forEach { mpsChild ->
                 val childLink = MPSChildLink(containmentLink)
+
+                // duplicate check
+                throwExceptionIfChildNotExists(cloudNode, childLink, mpsChild)
+
                 val mpsChildConcept = mpsChild.concept
                 val cloudChildNode = cloudNode.addNewChild(childLink, -1, MPSConcept(mpsChildConcept))
 
@@ -116,6 +117,18 @@ class NodeSynchronizer(
 
                 synchronizeNodeToCloud(mpsChildConcept, mpsChild, cloudChildNode)
             }
+        }
+    }
+
+    private fun throwExceptionIfChildNotExists(
+        cloudParentNode: INode,
+        childLink: IChildLink,
+        node: SNode,
+    ) {
+        val nodeExists = cloudParentNode.getChildren(childLink)
+            .firstOrNull { node.nodeId.toString() == it.getOriginalReference() } != null
+        if (nodeExists) {
+            throw Exception("Node ${node.name} already exists on server, therefore it will not be synched. Remove its parent node or its parent model and synchronize the parent model from the server instead.")
         }
     }
 
