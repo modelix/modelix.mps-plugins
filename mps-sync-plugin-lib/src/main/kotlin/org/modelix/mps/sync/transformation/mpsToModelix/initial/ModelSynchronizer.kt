@@ -17,6 +17,7 @@
 package org.modelix.mps.sync.transformation.mpsToModelix.initial
 
 import jetbrains.mps.extapi.model.SModelBase
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
@@ -41,6 +42,7 @@ import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution: Boolean = false) {
 
+    private val logger = KotlinLogging.logger {}
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
@@ -62,11 +64,20 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
 
     fun addModel(model: SModelBase) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
-            val moduleModelixId = nodeMap[model.module]!!
-            val models = BuiltinLanguages.MPSRepositoryConcepts.Module.models
-
+            val parentModule = model.module!!
+            val moduleModelixId = nodeMap[parentModule]!!
             val cloudModule = branch.getNode(moduleModelixId)
-            val cloudModel = cloudModule.addNewChild(models, -1, BuiltinLanguages.MPSRepositoryConcepts.Model)
+            val childLink = BuiltinLanguages.MPSRepositoryConcepts.Module.models
+
+            // duplicate check
+            val modelId = model.modelId.toString()
+            val modelExists = cloudModule.getChildren(childLink)
+                .firstOrNull { modelId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) } != null
+            if (modelExists) {
+                throw Exception("Model ${model.name} in Module ${parentModule.moduleName} already exists on the server, therefore it and its parent module will not be synchronized completely. Remove the parent module from the project and synchronize it from the server instead.")
+            }
+
+            val cloudModel = cloudModule.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.Model)
 
             nodeMap.put(model, cloudModel.nodeIdAsLong())
 
@@ -96,11 +107,17 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
         }
 
     private fun synchronizeModelProperties(cloudModel: INode, model: SModel) {
-        cloudModel.setPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id, model.modelId.toString())
+        cloudModel.setPropertyValue(
+            BuiltinLanguages.MPSRepositoryConcepts.Model.id,
+            // if you change this property here, please also change above where we check if the model already exists in its parent node
+            model.modelId.toString(),
+        )
+
         cloudModel.setPropertyValue(
             BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name,
             model.name.value,
         )
+
         if (model.name.hasStereotype()) {
             cloudModel.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype,
@@ -123,83 +140,109 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
 
     private fun addModelImportToCloud(source: SModel, targetModel: SModel) {
         val modelixId = nodeMap[source]!!
-
-        val modelImportsLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
-        val modelReferenceConcept = BuiltinLanguages.MPSRepositoryConcepts.ModelReference
-
         val cloudParentNode = branch.getNode(modelixId)
-        val cloudModelReference = cloudParentNode.addNewChild(modelImportsLink, -1, modelReferenceConcept)
+        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
 
-        nodeMap.put(source, targetModel.reference, cloudModelReference.nodeIdAsLong())
-
-        // warning: might be fragile, because we synchronize the fields by hand
+        val targetModelReference = BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model
         val targetModelModelixId = nodeMap[targetModel]!!
         val cloudTargetModel = branch.getNode(targetModelModelixId)
-        cloudModelReference.setReferenceTarget(
-            BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model,
-            cloudTargetModel,
-        )
+        val idProperty = BuiltinLanguages.MPSRepositoryConcepts.Model.id
+        val cloudTargetModelId = cloudTargetModel.getPropertyValue(idProperty)
+
+        // duplicate check and sync
+        val modelImportExists = cloudParentNode.getChildren(childLink).firstOrNull {
+            cloudTargetModelId == it.getReferenceTarget(targetModelReference)?.getPropertyValue(idProperty)
+        } != null
+        if (modelImportExists) {
+            logger.warn { "Model import for Model ${targetModel.name} from Model ${source.name} will not be synchronized, because it already exists on the server." }
+        } else {
+            val cloudModelReference =
+                cloudParentNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.ModelReference)
+
+            nodeMap.put(source, targetModel.reference, cloudModelReference.nodeIdAsLong())
+
+            // warning: might be fragile, because we synchronize the fields by hand
+            cloudModelReference.setReferenceTarget(targetModelReference, cloudTargetModel)
+        }
     }
 
     fun addLanguageDependency(model: SModel, language: SLanguage) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val modelixId = nodeMap[model]!!
-
-            val languageModuleReference = language.sourceModuleReference
+            val cloudNode = branch.getNode(modelixId)
             val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
 
-            val cloudNode = branch.getNode(modelixId)
-            val cloudLanguageDependency =
-                cloudNode.addNewChild(
-                    childLink,
-                    -1,
-                    BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency,
+            val languageModuleReference = language.sourceModuleReference
+            val targetLanguageName = languageModuleReference?.moduleName
+            val targetLanguageId = languageModuleReference?.moduleId.toString()
+
+            // duplicate check and sync
+            val dependencyExists = cloudNode.getChildren(childLink)
+                .firstOrNull { targetLanguageId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) } != null
+            if (dependencyExists) {
+                logger.warn { "Model ${model.name}'s Language Dependency for $targetLanguageName will not be synchronized, because it already exists on the server." }
+            } else {
+                val cloudLanguageDependency =
+                    cloudNode.addNewChild(
+                        childLink,
+                        -1,
+                        BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency,
+                    )
+
+                nodeMap.put(model, languageModuleReference, cloudLanguageDependency.nodeIdAsLong())
+
+                // warning: might be fragile, because we synchronize the properties by hand
+                cloudLanguageDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                    targetLanguageName,
                 )
 
-            nodeMap.put(model, languageModuleReference, cloudLanguageDependency.nodeIdAsLong())
+                cloudLanguageDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                    targetLanguageId,
+                )
 
-            // warning: might be fragile, because we synchronize the properties by hand
-            cloudLanguageDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
-                languageModuleReference?.moduleName,
-            )
-
-            cloudLanguageDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
-                languageModuleReference?.moduleId.toString(),
-            )
-
-            cloudLanguageDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version,
-                model.module.getUsedLanguageVersion(language).toString(),
-            )
+                cloudLanguageDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version,
+                    model.module.getUsedLanguageVersion(language).toString(),
+                )
+            }
         }
 
     fun addDevKitDependency(model: SModel, devKit: SModuleReference) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val modelixId = nodeMap[model]!!
+            val cloudNode = branch.getNode(modelixId)
+            val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
 
             val repository = model.repository
             val devKitModuleId = devKit.moduleId
             val devKitModule = repository.getModule(devKitModuleId)
+            val devKitName = devKitModule?.moduleName
+            val devKitId = devKitModule?.moduleId.toString()
 
-            val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
+            // duplicate check and sync
+            val dependencyExists = cloudNode.getChildren(childLink)
+                .firstOrNull { devKitId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) } != null
+            if (dependencyExists) {
+                logger.warn { "Model ${model.name}'s DevKit Dependency for $devKitName will not be synchronized, because it already exists on the server." }
+            } else {
+                val cloudDevKitDependency =
+                    cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
 
-            val cloudNode = branch.getNode(modelixId)
-            val cloudDevKitDependency =
-                cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
-            nodeMap.put(model, devKit, cloudDevKitDependency.nodeIdAsLong())
+                nodeMap.put(model, devKit, cloudDevKitDependency.nodeIdAsLong())
 
-            // warning: might be fragile, because we synchronize the properties by hand
-            cloudDevKitDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
-                devKitModule?.moduleName,
-            )
+                // warning: might be fragile, because we synchronize the properties by hand
+                cloudDevKitDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
+                    devKitName,
+                )
 
-            cloudDevKitDependency.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
-                devKitModule?.moduleId.toString(),
-            )
+                cloudDevKitDependency.setPropertyValue(
+                    BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
+                    devKitId,
+                )
+            }
         }
 
     fun resolveModelImportsInTask() =

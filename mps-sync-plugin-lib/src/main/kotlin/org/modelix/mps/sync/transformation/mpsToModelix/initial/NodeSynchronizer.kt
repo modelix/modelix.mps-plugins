@@ -63,6 +63,14 @@ class NodeSynchronizer(
 
             val mpsConcept = node.concept
             val cloudParentNode = branch.getNode(parentNodeId)
+
+            // duplicate check
+            val nodeExists = cloudParentNode.getChildren(childLink)
+                .firstOrNull { node.nodeId.toString() == it.getOriginalReference() } != null
+            if (nodeExists) {
+                throw Exception("Node ${node.name} already exists on server, therefore it will not be synched. Remove its parent node or its parent model and synchronize the parent model from the server instead.")
+            }
+
             val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
 
             // save the modelix ID and the SNode in the map
@@ -82,9 +90,8 @@ class NodeSynchronizer(
             val modelixProperty = PropertyFromName(it.name)
             cloudNode.setPropertyValue(modelixProperty, mpsValue)
         }
-        // save MPS Node ID explicitly
-        val mpsNodeIdProperty = PropertyFromName(NodeData.ID_PROPERTY_KEY)
-        cloudNode.setPropertyValue(mpsNodeIdProperty, mpsNode.nodeId.toString())
+        // Save MPS Node ID explicitly. If you change this property here, please also change above where we check if the node already exists in its parent.
+        cloudNode.setPropertyValue(PropertyFromName(NodeData.ID_PROPERTY_KEY), mpsNode.nodeId.toString())
 
         // synchronize references
         mpsConcept.referenceLinks.forEach {
