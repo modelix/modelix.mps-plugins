@@ -214,6 +214,14 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             branchPanel.add(JLabel("Remote Branch: "))
             branchPanel.add(branchCB)
             inputBox.add(branchPanel)
+            val connectBranchButton = JButton("Connect to Branch without downloading Modules")
+            connectBranchButton.addActionListener {
+                modelSyncService.connectToBranch(
+                    existingConnectionsModel.selectedItem as ModelClientV2,
+                    branchModel.selectedItem as BranchReference,
+                )
+            }
+            branchPanel.add(connectBranchButton)
 
             val modulePanel = JPanel()
             val moduleCB = ComboBox<ModuleIdWithName>()
@@ -223,10 +231,10 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             modulePanel.add(moduleCB)
 
             val bindButton = JButton("Bind Selected")
-            bindButton.addActionListener { _: ActionEvent? ->
+            bindButton.addActionListener {
                 if (existingConnectionsModel.size > 0) {
                     logger.info { "Binding Module ${moduleName.text} to project: ${ActiveMpsProjectInjector.activeMpsProject?.name}" }
-                    modelSyncService.bindModule(
+                    modelSyncService.bindModuleFromServer(
                         existingConnectionsModel.selectedItem as ModelClientV2,
                         (branchModel.selectedItem as BranchReference).branchName,
                         (moduleModel.selectedItem as ModuleIdWithName).id,

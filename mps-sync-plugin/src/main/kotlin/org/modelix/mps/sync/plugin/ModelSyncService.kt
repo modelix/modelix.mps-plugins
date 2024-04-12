@@ -35,6 +35,8 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.components.Service
+import jetbrains.mps.extapi.model.SModelBase
+import jetbrains.mps.project.AbstractModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -85,6 +87,44 @@ class ModelSyncService : Disposable {
         }
     }
 
+    fun connectToBranch(
+        client: ModelClientV2,
+        branchReference: BranchReference,
+    ) {
+        coroutineScope.launch {
+            try {
+                logger.info { "Connecting to branch $branchReference" }
+                syncService.connectToBranch(client, branchReference)
+                logger.info { "Connection to branch $branchReference is established" }
+            } catch (ex: Exception) {
+                logger.error(ex) { "Unable to connect to branch" }
+            }
+        }
+    }
+
+    fun bindModuleFromServer(
+        client: ModelClientV2,
+        branchName: String,
+        moduleId: String,
+        repositoryID: String,
+    ) {
+        coroutineScope.launch {
+            try {
+                syncService.bindModuleFromServer(
+                    client,
+                    BranchReference(RepositoryId(repositoryID), branchName),
+                    moduleId,
+                ).forEach { it.activate() }
+            } catch (ex: Exception) {
+                logger.error(ex) { "Error while binding module" }
+            }
+        }
+    }
+
+    fun bindModuleFromMps(module: AbstractModule) = syncService.bindModuleFromMps(module)
+
+    fun bindModelFromMps(model: SModelBase) = syncService.bindModelFromMps(model)
+
     fun disconnectServer(
         modelClient: ModelClientV2,
         callback: (() -> Unit),
@@ -98,25 +138,6 @@ class ModelSyncService : Disposable {
                 logger.info { "disconnected server: ${modelClient.baseUrl}" }
             } catch (ex: Exception) {
                 logger.error(ex) { "Unable to disconnect" }
-            }
-        }
-    }
-
-    fun bindModule(
-        client: ModelClientV2,
-        branchName: String,
-        moduleId: String,
-        repositoryID: String,
-    ) {
-        coroutineScope.launch {
-            try {
-                syncService.bindModule(
-                    client,
-                    BranchReference(RepositoryId(repositoryID), branchName),
-                    moduleId,
-                ).forEach { it.activate() }
-            } catch (ex: Exception) {
-                logger.error(ex) { "Error while binding module" }
             }
         }
     }

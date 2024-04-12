@@ -19,7 +19,7 @@ package org.modelix.mps.sync.tasks
 import com.intellij.util.containers.headTail
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
+import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.MpsCommandHelper
 import org.modelix.mps.sync.util.completeWithDefault
@@ -148,8 +148,8 @@ object SyncQueue : AutoCloseable {
         when (lock) {
             SyncLock.MPS_WRITE -> MpsCommandHelper.runInUndoTransparentCommand(runnable)
             SyncLock.MPS_READ -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction(runnable)
-            SyncLock.MODELIX_READ -> ReplicatedModelRegistry.model!!.getBranch().runRead(runnable)
-            SyncLock.MODELIX_WRITE -> ReplicatedModelRegistry.model!!.getBranch().runWrite(runnable)
+            SyncLock.MODELIX_READ -> BranchRegistry.branch!!.runRead(runnable)
+            SyncLock.MODELIX_WRITE -> BranchRegistry.branch!!.runWrite(runnable)
             SyncLock.NONE -> runnable.invoke()
         }
     }

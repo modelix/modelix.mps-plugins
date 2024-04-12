@@ -57,13 +57,14 @@ class ModuleSynchronizer(private val branch: IBranch) {
     private val modelSynchronizer = ModelSynchronizer(branch, postponeReferenceResolution = true)
 
     fun addModuleAndActivate(module: AbstractModule) {
-        addModule(module, true).continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
-            @Suppress("UNCHECKED_CAST")
-            (it as? Iterable<IBinding>)?.forEach(IBinding::activate)
-        }
+        addModule(module, true)
+            .continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
+                @Suppress("UNCHECKED_CAST")
+                (it as Iterable<IBinding>).forEach(IBinding::activate)
+            }
     }
 
-    private fun addModule(
+    fun addModule(
         module: AbstractModule,
         isTransformationStartingModule: Boolean = false,
     ): ContinuableSyncTask =

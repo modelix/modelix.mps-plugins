@@ -19,12 +19,12 @@ package org.modelix.mps.sync.plugin.action
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
+import com.intellij.openapi.components.service
 import jetbrains.mps.extapi.model.SModelBase
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
-import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
+import org.modelix.mps.sync.plugin.ModelSyncService
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSyncAction : AnAction {
@@ -44,12 +44,7 @@ class ModelSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val model = event.getData(CONTEXT_MODEL)!! as SModelBase
-
-            val replicatedModel = ReplicatedModelRegistry.model
-            require(replicatedModel != null) { "Synchronization to server has not been established yet" }
-
-            val branch = replicatedModel.getBranch()
-            ModelSynchronizer(branch).addModelAndActivate(model)
+            service<ModelSyncService>().bindModelFromMps(model)
         } catch (ex: Exception) {
             logger.error(ex) { "Model sync error occurred" }
         }
