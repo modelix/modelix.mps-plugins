@@ -332,7 +332,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                         ?: it.toString()
                     val id = it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
                     ModuleIdWithName(id, name)
-                }
+                }.sortedBy { it.name }
 
                 moduleModel.removeAllElements()
                 moduleModel.addAll(moduleNodes.toList())
