@@ -58,14 +58,6 @@ class ModuleSynchronizer(private val branch: IBranch) {
 
     private val modelSynchronizer = ModelSynchronizer(branch, postponeReferenceResolution = true)
 
-    fun addModuleAndActivate(module: AbstractModule) {
-        addModule(module, true)
-            .continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
-                @Suppress("UNCHECKED_CAST")
-                (it as Iterable<IBinding>).forEach(IBinding::activate)
-            }
-    }
-
     fun addModule(
         module: AbstractModule,
         isTransformationStartingModule: Boolean = false,
@@ -122,10 +114,6 @@ class ModuleSynchronizer(private val branch: IBranch) {
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
         ) { dependencyBindings ->
-            if (dependencyBindings is ItemAlreadySynchronizer) {
-                return@continueWith dependencyBindings
-            }
-
             // resolve references only after all dependent (and contained) modules and models have been transformed
             if (isTransformationStartingModule) {
                 resolveCrossModelReferences()

@@ -111,7 +111,7 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
                 }
                 future
             }
-        }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { it ->
+        }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             errorHandlerWrapper(it, module) {
                 // add new dependencies
                 val iModuleNodeId = nodeMap[module]!!

@@ -100,7 +100,7 @@ class SyncServiceImpl : SyncService {
 
         // warning: blocking call
         @Suppress("UNCHECKED_CAST")
-        val bindings = ModuleSynchronizer(branch).addModule(module).getResult().get() as Iterable<IBinding>
+        val bindings = ModuleSynchronizer(branch).addModule(module, true).getResult().get() as Iterable<IBinding>
         logger.info { "Module and ModelBindings for Module ${module.moduleName} are created" }
 
         return bindings
@@ -112,8 +112,12 @@ class SyncServiceImpl : SyncService {
         val branch = BranchRegistry.branch
         require(branch != null) { "Connect to a server and branch before synchronizing a model" }
 
-        // warning: blocking call
-        val binding = ModelSynchronizer(branch).addModel(model).getResult().get() as IBinding
+        val synchronizer = ModelSynchronizer(branch)
+        // synchronize model. Warning: blocking call
+        val binding = synchronizer.addModel(model).getResult().get() as IBinding
+        // wait until the model imports are synced. Warning: blocking call
+        synchronizer.resolveModelImportsInTask().getResult().get()
+
         logger.info { "ModelBinding for ${model.name} is created" }
         return binding
     }
