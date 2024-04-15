@@ -74,7 +74,7 @@ class ModelixTreeChangeVisitor(
             }
 
             val iNode = getNode(nodeId)
-            val iReferenceLink = iNode.getReferenceLinks().find { it.getSimpleName() == role }
+            val iReferenceLink = iNode.getReferenceLinks().find { it.getSimpleName() == role || it.getUID() == role }
             val targetINode = iReferenceLink?.let { iNode.getReferenceTarget(it) }
             val targetSNode = targetINode?.let { nodeMap.getNode(it.nodeIdAsLong()) }
 

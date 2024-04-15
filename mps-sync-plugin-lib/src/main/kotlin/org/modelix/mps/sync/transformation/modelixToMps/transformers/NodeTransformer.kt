@@ -31,6 +31,7 @@ import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.factories.SNodeFactory
 import org.modelix.mps.sync.mps.util.addDevKit
@@ -175,7 +176,7 @@ class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLan
     }
 
     fun nodePropertyChanged(sNode: SNode, role: String, nodeId: Long, newValue: String?) {
-        val sProperty = sNode.concept.properties.find { it.name == role }
+        val sProperty = sNode.concept.properties.find { it.name == role || MPSProperty(it).getUID() == role }
         if (sProperty == null) {
             logger.error { "Node ($nodeId)'s concept (${sNode.concept.name}) does not have property called $role." }
             return
