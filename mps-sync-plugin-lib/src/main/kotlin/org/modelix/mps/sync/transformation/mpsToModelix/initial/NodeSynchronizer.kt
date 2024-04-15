@@ -31,6 +31,7 @@ import org.modelix.model.api.getNode
 import org.modelix.model.data.NodeData
 import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
+import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
@@ -87,8 +88,8 @@ class NodeSynchronizer(
     ) {
         // synchronize properties
         mpsConcept.properties.forEach {
+            val modelixProperty = MPSProperty(it)
             val mpsValue = mpsNode.getProperty(it)
-            val modelixProperty = PropertyFromName(it.name)
             cloudNode.setPropertyValue(modelixProperty, mpsValue)
         }
         // Save MPS Node ID explicitly. If you change this property here, please also change above where we check if the node already exists in its parent.
