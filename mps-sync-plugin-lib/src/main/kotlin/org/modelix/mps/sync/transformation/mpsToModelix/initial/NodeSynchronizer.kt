@@ -65,15 +65,19 @@ class NodeSynchronizer(
             val mpsConcept = node.concept
             val cloudParentNode = branch.getNode(parentNodeId)
 
-            // duplicate check
-            throwExceptionIfChildNotExists(cloudParentNode, childLink, node)
+            try {
+                // duplicate check
+                throwExceptionIfChildExists(cloudParentNode, childLink, node)
+                val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
+                nodeMap.put(node, cloudChildNode.nodeIdAsLong())
 
-            val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
-
-            // save the modelix ID and the SNode in the map
-            nodeMap.put(node, cloudChildNode.nodeIdAsLong())
-
-            synchronizeNodeToCloud(mpsConcept, node, cloudChildNode)
+                synchronizeNodeToCloud(mpsConcept, node, cloudChildNode)
+            } catch (ex: ChildNodeExists) {
+                // rethrow if node is not mapped yet
+                if (!nodeMap.isMappedToModelix(ex.node)) {
+                    throw ex
+                }
+            }
         }
 
     private fun synchronizeNodeToCloud(
@@ -107,12 +111,10 @@ class NodeSynchronizer(
                 val childLink = MPSChildLink(containmentLink)
 
                 // duplicate check
-                throwExceptionIfChildNotExists(cloudNode, childLink, mpsChild)
+                throwExceptionIfChildExists(cloudNode, childLink, mpsChild)
 
                 val mpsChildConcept = mpsChild.concept
                 val cloudChildNode = cloudNode.addNewChild(childLink, -1, MPSConcept(mpsChildConcept))
-
-                // save the modelix ID and the SNode in the map
                 nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
 
                 synchronizeNodeToCloud(mpsChildConcept, mpsChild, cloudChildNode)
@@ -120,15 +122,14 @@ class NodeSynchronizer(
         }
     }
 
-    private fun throwExceptionIfChildNotExists(
-        cloudParentNode: INode,
-        childLink: IChildLink,
-        node: SNode,
-    ) {
-        val nodeExists = cloudParentNode.getChildren(childLink)
-            .firstOrNull { node.nodeId.toString() == it.getOriginalReference() } != null
+    private fun throwExceptionIfChildExists(cloudParentNode: INode, childLink: IChildLink, node: SNode) {
+        val children = cloudParentNode.getChildren(childLink)
+        val nodeExists = children.firstOrNull { node.nodeId.toString() == it.getOriginalReference() } != null
         if (nodeExists) {
-            throw Exception("Node ${node.name} already exists on server, therefore it will not be synched. Remove its parent node or its parent model and synchronize the parent model from the server instead.")
+            throw ChildNodeExists(
+                node,
+                "Node ${node.name} already exists on server, therefore it will not be synched. Remove its parent node or its parent model and synchronize the parent model from the server instead.",
+            )
         }
     }
 
@@ -181,12 +182,11 @@ class NodeSynchronizer(
     }
 }
 
-@UnstableModelixFeature(
-    reason = "The new modelix MPS plugin is under construction",
-    intendedFinalization = "2024.1",
-)
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 data class CloudResolvableReference(
     val sourceNode: INode,
     val referenceLink: IReferenceLink,
     val mpsTargetNode: SNode?,
 )
+
+class ChildNodeExists(val node: SNode, message: String) : Exception(message)

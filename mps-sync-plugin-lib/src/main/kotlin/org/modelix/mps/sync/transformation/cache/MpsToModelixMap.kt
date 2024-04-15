@@ -31,7 +31,7 @@ import org.modelix.mps.sync.util.synchronizedMap
 /**
  * WARNING:
  * - use with caution, otherwise this cache may cause memory leaks
- * - if you add a new Map as a field in the class, then please also add it to the `remove` and `isMappedToMps` methods below
+ * - if you add a new Map as a field in the class, then please also add it to the `remove`, `isMappedToMps`, and `isMappedToModelix` methods below
  */
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object MpsToModelixMap {
@@ -213,6 +213,22 @@ object MpsToModelixMap {
         )
         return modelixId != null && idMaps.stream().anyMatch { it.contains(modelixId) }
     }
+
+    fun isMappedToModelix(item: Any): Boolean =
+        when (item) {
+            is SNode -> get(item)
+            is SModel -> get(item)
+            is SModelId -> get(item)
+            is SModule -> get(item)
+            is SModuleId -> get(item)
+            is SModuleReference -> {
+                modelWithOutgoingModuleReferenceToModelixId.keys.firstOrNull { it.moduleReference == item }
+                    ?: moduleWithOutgoingModuleReferenceToModelixId.keys.firstOrNull { it.moduleReference == item }
+            }
+
+            is SModelReference -> modelWithOutgoingModelReferenceToModelixId.keys.firstOrNull { it.modelReference == item }
+            else -> null
+        } != null
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")

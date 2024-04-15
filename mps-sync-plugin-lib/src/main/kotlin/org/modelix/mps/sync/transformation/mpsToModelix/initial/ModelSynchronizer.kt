@@ -31,6 +31,7 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
+import org.modelix.mps.sync.modelix.ItemAlreadySynchronizer
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -74,29 +75,43 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
             val modelExists = cloudModule.getChildren(childLink)
                 .firstOrNull { modelId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) } != null
             if (modelExists) {
-                throw Exception("Model ${model.name} in Module ${parentModule.moduleName} already exists on the server, therefore it and its parent module will not be synchronized completely. Remove the parent module from the project and synchronize it from the server instead.")
+                if (nodeMap.isMappedToModelix(model)) {
+                    return@enqueue ItemAlreadySynchronizer(model)
+                } else {
+                    throw Exception("Model ${model.name} in Module ${parentModule.moduleName} already exists on the server, therefore it and its parent module will not be synchronized completely. Remove the parent module from the project and synchronize it from the server instead.")
+                }
             }
 
             val cloudModel = cloudModule.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.Model)
-
             nodeMap.put(model, cloudModel.nodeIdAsLong())
-
             synchronizeModelProperties(cloudModel, model)
 
             // synchronize root nodes
             model.rootNodes.waitForCompletionOfEachTask { nodeSynchronizer.addNode(it) }
-        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { statusToken ->
+            if (statusToken is ItemAlreadySynchronizer) {
+                return@continueWith statusToken
+            }
+
             // synchronize model imports
             model.modelImports.waitForCompletionOfEachTask { addModelImport(model, it) }
-        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { statusToken ->
+            if (statusToken is ItemAlreadySynchronizer) {
+                return@continueWith statusToken
+            }
+
             // synchronize language dependencies
             model.importedLanguageIds().waitForCompletionOfEachTask { addLanguageDependency(model, it) }
-        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { statusToken ->
+            if (statusToken is ItemAlreadySynchronizer) {
+                return@continueWith statusToken
+            }
+
             // synchronize devKits
             model.importedDevkits().waitForCompletionOfEachTask { addDevKitDependency(model, it) }
-        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) { statusToken ->
             val isDescriptorModel = model.name.value.endsWith("@descriptor")
-            if (isDescriptorModel) {
+            if (isDescriptorModel || statusToken is ItemAlreadySynchronizer) {
                 EmptyBinding()
             } else {
                 // register binding

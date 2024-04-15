@@ -35,6 +35,7 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
+import org.modelix.mps.sync.modelix.ItemAlreadySynchronizer
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
@@ -44,6 +45,7 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.bindTo
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
+import java.util.Collections
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -77,21 +79,31 @@ class ModuleSynchronizer(private val branch: IBranch) {
             val moduleExists = rootNode.getChildren(childLink)
                 .firstOrNull { moduleId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) } != null
             if (moduleExists) {
-                throw Exception("Module ${module.moduleName} already exists on the server, therefore it will not be synchronized. Remove it from the project and synchronize it from the server instead.")
+                if (nodeMap.isMappedToModelix(module)) {
+                    return@enqueue ItemAlreadySynchronizer(module)
+                } else {
+                    throw Exception("Module ${module.moduleName} already exists on the server, therefore it will not be synchronized. Remove it from the project and synchronize it from the server instead.")
+                }
             }
 
             val cloudModule = rootNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.Module)
-
             nodeMap.put(module, cloudModule.nodeIdAsLong())
-
             synchronizeModuleProperties(cloudModule, module)
 
             // synchronize dependencies
             module.declaredDependencies.waitForCompletionOfEachTask(collectResults = true) { addDependency(module, it) }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) { unflattenedBindings ->
-            @Suppress("UNCHECKED_CAST")
-            (unflattenedBindings as Iterable<Iterable<IBinding>>).flatten()
+            if (unflattenedBindings is Iterable<*>) {
+                @Suppress("UNCHECKED_CAST")
+                (unflattenedBindings as Iterable<Iterable<IBinding>>).flatten()
+            } else {
+                unflattenedBindings
+            }
         }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { dependencyBindings ->
+            if (dependencyBindings is ItemAlreadySynchronizer) {
+                return@continueWith dependencyBindings
+            }
+
             // synchronize models
             val modelSynchedFuture =
                 module.models.waitForCompletionOfEachTask { modelSynchronizer.addModel(it as SModelBase) }
@@ -110,12 +122,20 @@ class ModuleSynchronizer(private val branch: IBranch) {
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
         ) { dependencyBindings ->
+            if (dependencyBindings is ItemAlreadySynchronizer) {
+                return@continueWith dependencyBindings
+            }
+
             // resolve references only after all dependent (and contained) modules and models have been transformed
             if (isTransformationStartingModule) {
                 resolveCrossModelReferences()
             }
             dependencyBindings
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) { dependencyBindings ->
+            if (dependencyBindings is ItemAlreadySynchronizer) {
+                return@continueWith Collections.emptySet<IBinding>()
+            }
+
             // register binding
             val binding = ModuleBinding(module, branch)
             bindingsRegistry.addModuleBinding(binding)
