@@ -64,8 +64,11 @@ interface ISyncService {
     fun findMpsNode(cloudNodeReference: INodeReference): List<SNode>
 
     /**
-     * Synchronize all bindings between MPS and the model server.
+     * Synchronize all bindings between MPS and the local Modelix branch.
      * The call blocks until all synchronizations are finished or timeout.
+     *
+     * It is not guaranteed that after invocation, the local Modelix branch has been synced to the model server.
+     * Synchronizing to the model server happens asynchronously in the background.
      *
      * The synchronization is always scheduled on a different thread which will try to acquire a write and read lock.
      * To not deadlock your program, do not call this method while holding a write lock or read lock.
