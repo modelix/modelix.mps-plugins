@@ -44,7 +44,8 @@ class ModuleSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val module = event.getData(CONTEXT_MODULE)!! as AbstractModule
-            service<ModelSyncService>().bindModuleFromMps(module)
+            val bindings = service<ModelSyncService>().bindModuleFromMps(module)
+            bindings.forEach { it.activate() }
         } catch (ex: Exception) {
             logger.error(ex) { "Module sync error occurred" }
         }

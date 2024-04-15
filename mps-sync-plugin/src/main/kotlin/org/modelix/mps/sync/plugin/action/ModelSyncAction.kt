@@ -44,7 +44,8 @@ class ModelSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val model = event.getData(CONTEXT_MODEL)!! as SModelBase
-            service<ModelSyncService>().bindModelFromMps(model)
+            val binding = service<ModelSyncService>().bindModelFromMps(model)
+            binding.activate()
         } catch (ex: Exception) {
             logger.error(ex) { "Model sync error occurred" }
         }
