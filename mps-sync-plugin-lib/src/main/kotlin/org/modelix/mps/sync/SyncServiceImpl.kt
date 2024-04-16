@@ -4,9 +4,8 @@ import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
@@ -30,7 +29,7 @@ class SyncServiceImpl : SyncService {
     private val logger = KotlinLogging.logger {}
     private val mpsProjectInjector = ActiveMpsProjectInjector
 
-    private val coroutineScope = CoroutineScope(Dispatchers.Default)
+    private val dispatcher = Dispatchers.Default
     private val activeClients = mutableSetOf<ModelClientV2>()
 
     init {
@@ -39,9 +38,9 @@ class SyncServiceImpl : SyncService {
         ILanguageRepository.default.javaClass
     }
 
-    override suspend fun connectModelServer(
+    override fun connectModelServer(
         serverURL: URL,
-        jwt: String,
+        jwt: String?,
         callback: (() -> Unit)?,
     ): ModelClientV2 {
         // avoid reconnect to existing server
@@ -52,9 +51,10 @@ class SyncServiceImpl : SyncService {
         }
 
         logger.info { "Connecting to $serverURL" }
-        // TODO: use JWT here
-        val modelClientV2 = ModelClientV2.builder().url(serverURL.toString()).build()
-        modelClientV2.init()
+        val modelClientV2 = ModelClientV2.builder().url(serverURL.toString()).authToken { jwt }.build()
+        runBlocking(dispatcher) {
+            modelClientV2.init()
+        }
 
         logger.info { "Connection to $serverURL successful" }
         activeClients.add(modelClientV2)
@@ -64,14 +64,15 @@ class SyncServiceImpl : SyncService {
         return modelClientV2
     }
 
-    override suspend fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch {
+    override fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch {
         val targetProject = mpsProjectInjector.activeMpsProject!!
         val languageRepository = registerLanguages(targetProject)
-
-        return BranchRegistry.setBranch(client, branchReference, languageRepository, targetProject)
+        return runBlocking(dispatcher) {
+            BranchRegistry.setBranch(client, branchReference, languageRepository, targetProject)
+        }
     }
 
-    override suspend fun bindModuleFromServer(
+    override fun bindModuleFromServer(
         client: ModelClientV2,
         branchReference: BranchReference,
         moduleId: String,
@@ -137,8 +138,7 @@ class SyncServiceImpl : SyncService {
     }
 
     override fun dispose() {
-        // cancel all running coroutines
-        coroutineScope.cancel()
+        // dispose task and wait queues
         SyncQueue.close()
         FuturesWaitQueue.close()
         // dispose replicated model
