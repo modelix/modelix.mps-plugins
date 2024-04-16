@@ -13,6 +13,7 @@ import java.util.concurrent.CompletableFuture
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 interface SyncService {
 
+    @Throws(io.ktor.client.network.sockets.ConnectTimeoutException::class)
     fun connectModelServer(serverURL: URL, jwt: String? = null, callback: (() -> Unit)? = null): ModelClientV2
 
     fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch
@@ -24,9 +25,9 @@ interface SyncService {
         callback: (() -> Unit)? = null,
     ): Iterable<IBinding>
 
-    fun bindModuleFromMps(module: AbstractModule): Iterable<IBinding>
+    fun bindModuleFromMps(module: AbstractModule, branch: IBranch): Iterable<IBinding>
 
-    fun bindModelFromMps(model: SModelBase): IBinding
+    fun bindModelFromMps(model: SModelBase, branch: IBranch): IBinding
 
     fun disconnectModelServer(client: ModelClientV2, callback: (() -> Unit)? = null)
 

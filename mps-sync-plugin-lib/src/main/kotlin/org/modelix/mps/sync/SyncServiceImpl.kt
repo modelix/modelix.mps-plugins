@@ -38,6 +38,7 @@ class SyncServiceImpl : SyncService {
         ILanguageRepository.default.javaClass
     }
 
+    @Throws(io.ktor.client.network.sockets.ConnectTimeoutException::class)
     override fun connectModelServer(
         serverURL: URL,
         jwt: String?,
@@ -93,11 +94,8 @@ class SyncServiceImpl : SyncService {
         return bindings
     }
 
-    override fun bindModuleFromMps(module: AbstractModule): Iterable<IBinding> {
+    override fun bindModuleFromMps(module: AbstractModule, branch: IBranch): Iterable<IBinding> {
         logger.info { "Binding Module ${module.moduleName} to the server" }
-
-        val branch = BranchRegistry.branch
-        require(branch != null) { "Connect to a server and branch before synchronizing a module" }
 
         // warning: blocking call
         @Suppress("UNCHECKED_CAST")
@@ -107,11 +105,8 @@ class SyncServiceImpl : SyncService {
         return bindings
     }
 
-    override fun bindModelFromMps(model: SModelBase): IBinding {
+    override fun bindModelFromMps(model: SModelBase, branch: IBranch): IBinding {
         logger.info { "Binding Model ${model.name} to the server" }
-
-        val branch = BranchRegistry.branch
-        require(branch != null) { "Connect to a server and branch before synchronizing a model" }
 
         val synchronizer = ModelSynchronizer(branch)
         // synchronize model. Warning: blocking call

@@ -35,10 +35,12 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.api.IBranch
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
@@ -111,9 +113,9 @@ class ModelSyncService : Disposable {
         }
     }
 
-    fun bindModuleFromMps(module: AbstractModule) = syncService.bindModuleFromMps(module)
+    fun bindModuleFromMps(module: AbstractModule, branch: IBranch) = syncService.bindModuleFromMps(module, branch)
 
-    fun bindModelFromMps(model: SModelBase) = syncService.bindModelFromMps(model)
+    fun bindModelFromMps(model: SModelBase, branch: IBranch) = syncService.bindModelFromMps(model, branch)
 
     fun disconnectServer(
         modelClient: ModelClientV2,
@@ -129,6 +131,8 @@ class ModelSyncService : Disposable {
             logger.error(ex) { "Unable to disconnect" }
         }
     }
+
+    fun setActiveProject(project: Project) = syncService.setActiveProject(project)
 
     fun ensureStarted() {
         logger.info { "============================================  ensureStarted" }

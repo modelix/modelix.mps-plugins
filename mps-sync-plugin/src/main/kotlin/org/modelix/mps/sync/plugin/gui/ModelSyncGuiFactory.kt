@@ -181,7 +181,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             projectCB.renderer = CustomCellRenderer()
             projectCB.addItemListener {
                 if (it.stateChange == ItemEvent.SELECTED) {
-                    ActiveMpsProjectInjector.setActiveProject(it.item as Project)
+                    modelSyncService.setActiveProject(it.item as Project)
                 }
             }
 

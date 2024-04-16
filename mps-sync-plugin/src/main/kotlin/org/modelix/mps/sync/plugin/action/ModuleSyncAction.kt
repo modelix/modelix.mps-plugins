@@ -24,6 +24,7 @@ import jetbrains.mps.project.AbstractModule
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.plugin.ModelSyncService
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -44,7 +45,10 @@ class ModuleSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         try {
             val module = event.getData(CONTEXT_MODULE)!! as AbstractModule
-            val bindings = service<ModelSyncService>().bindModuleFromMps(module)
+            val branch = BranchRegistry.branch
+            require(branch != null) { "Connect to a server and branch before synchronizing a module" }
+
+            val bindings = service<ModelSyncService>().bindModuleFromMps(module, branch)
             bindings.forEach { it.activate() }
         } catch (ex: Exception) {
             logger.error(ex) { "Module sync error occurred" }

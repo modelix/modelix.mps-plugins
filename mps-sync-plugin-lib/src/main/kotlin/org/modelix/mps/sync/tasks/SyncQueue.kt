@@ -16,13 +16,13 @@
 
 package org.modelix.mps.sync.tasks
 
-import com.intellij.util.containers.headTail
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.MpsCommandHelper
 import org.modelix.mps.sync.util.completeWithDefault
+import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -79,17 +79,21 @@ object SyncQueue : AutoCloseable {
         tasks.add(task)
         try {
             scheduleFlush()
-        } catch (ex: Exception) {
+        } catch (t: Throwable) {
             if (!threadPool.isShutdown) {
-                logger.error(ex) { "Task is cancelled, because an Exception occurred in the ThreadPool of the SyncQueue." }
+                logger.error(t) { "Task is cancelled, because an Exception occurred in the ThreadPool of the SyncQueue." }
             }
-            task.result.completeExceptionally(ex)
+            task.result.completeExceptionally(t)
         }
     }
 
     private fun scheduleFlush() {
         threadPool.submit {
-            doFlush()
+            try {
+                doFlush()
+            } catch (t: Throwable) {
+                logger.error(t) { "Running the SyncQueue Tasks on Thread ${Thread.currentThread()} failed." }
+            }
         }
     }
 
@@ -115,7 +119,7 @@ object SyncQueue : AutoCloseable {
                 taskResult.complete(result)
             }
         } else {
-            val lockHeadAndTail = locks.toList().headTail()
+            val lockHeadAndTail = locks.toList().customHeadTail()
             val lockHead = lockHeadAndTail.first
 
             runWithLock(lockHead) {
@@ -152,5 +156,16 @@ object SyncQueue : AutoCloseable {
             SyncLock.MODELIX_WRITE -> BranchRegistry.branch!!.runWrite(runnable)
             SyncLock.NONE -> runnable.invoke()
         }
+    }
+}
+
+// List.headTail does not work in some MPS versions (e.g. 2020.3.6), therefore we reimplemented the method
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun <T> List<T>.customHeadTail(): Pair<T, List<T>> {
+    require(this.isNotEmpty()) { "Not enough values" }
+    return if (this.size == 1) {
+        Pair(this.first(), Collections.emptyList())
+    } else {
+        Pair(this.first(), this.subList(1, this.size))
     }
 }
