@@ -343,7 +343,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                     try {
                         action()
                     } catch (ex: Exception) {
-                        logger.error(ex) { "Unexpected error" }
+                        logger.error(ex) { "Failed to fetch data from server." }
                     } finally {
                         isFetchingModulesListFromServer.set(false)
                     }
