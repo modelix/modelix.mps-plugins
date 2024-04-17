@@ -139,8 +139,8 @@ class SNodeFactory(
             val reference = when (it.first) {
                 is MPSReferenceLink -> (it.first as MPSReferenceLink).link
                 is ReferenceLinkFromName -> source.concept.referenceLinks.first { refLink -> refLink.name == it.first.getSimpleName() }
-                else -> null
-            }!!
+                else -> throw IllegalArgumentException("Reference ${it.first} of INode $iNode is neither an MPSReferenceLink nor a ReferenceLinkFromName")
+            }
 
             val targetNodeId = it.second.nodeIdAsLong()
             resolvableReferences.add(ResolvableReference(source, reference, targetNodeId))
