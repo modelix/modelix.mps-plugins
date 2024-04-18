@@ -31,7 +31,6 @@ class SyncServiceImpl : SyncService {
     private val mpsProjectInjector = ActiveMpsProjectInjector
 
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
-    private val activeClients = mutableSetOf<ModelClientV2>()
     private val replicatedModelByBranchReference = mutableMapOf<BranchReference, ReplicatedModel>()
     private val changeListenerByReplicatedModel = mutableMapOf<ReplicatedModel, IBranchListener>()
 
@@ -48,20 +47,11 @@ class SyncServiceImpl : SyncService {
         jwt: String,
         callback: (() -> Unit)?,
     ): ModelClientV2 {
-        // avoid reconnect to existing server
-        val client = activeClients.find { it.baseUrl == serverURL.toString() }
-        client?.let {
-            logger.info { "Using already existing connection to $serverURL" }
-            return it
-        }
-
         logger.info { "Connecting to $serverURL" }
         // TODO: use JWT here
         val modelClientV2 = ModelClientV2.builder().url(serverURL.toString()).build()
         modelClientV2.init()
-
         logger.info { "Connection to $serverURL successful" }
-        activeClients.add(modelClientV2)
 
         callback?.invoke()
 
@@ -73,7 +63,6 @@ class SyncServiceImpl : SyncService {
         callback: (() -> Unit)?,
     ) {
         // TODO what shall happen with the bindings if we disconnect from model server?
-        activeClients.remove(client)
         client.close()
         callback?.invoke()
     }
@@ -148,8 +137,6 @@ class SyncServiceImpl : SyncService {
         // unregister change listeners
         resetProjectWithChangeListener()
         changeListenerByReplicatedModel.forEach { it.key.getBranch().removeListener(it.value) }
-        // dispose the clients
-        activeClients.forEach { it.close() }
         // dispose all bindings
         BindingsRegistry.getModuleBindings().forEach { it.deactivate(removeFromServer = false) }
         BindingsRegistry.getModelBindings().forEach { it.deactivate(removeFromServer = false) }

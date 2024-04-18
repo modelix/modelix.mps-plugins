@@ -38,6 +38,7 @@ import com.intellij.openapi.components.Service
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.client2.ModelClientV2
@@ -56,7 +57,6 @@ class ModelSyncService : Disposable {
     private var server: String? = null
 
     private val syncService = SyncServiceImpl()
-    val activeClients = mutableSetOf<ModelClientV2>()
 
     init {
         logger.info { "============================================ Registering sync actions" }
@@ -70,35 +70,36 @@ class ModelSyncService : Disposable {
     fun connectModelServer(
         url: String,
         jwt: String,
-        callback: (() -> Unit),
-    ) {
-        coroutineScope.launch {
+        callback: (() -> Unit)? = null,
+    ): ModelClientV2? {
+        return runBlocking(coroutineScope.coroutineContext) {
+            var client: ModelClientV2? = null
             try {
                 logger.info { "Connection to server: $url" }
-                val client = syncService.connectModelServer(URL(url), jwt)
-                activeClients.add(client)
+                client = syncService.connectModelServer(URL(url), jwt, callback)
                 logger.info { "Connected to server: $url" }
-                callback()
             } catch (ex: Exception) {
                 logger.error(ex) { "Unable to connect" }
             }
+            return@runBlocking client
         }
     }
 
     fun disconnectServer(
         modelClient: ModelClientV2,
-        callback: (() -> Unit),
-    ) {
-        coroutineScope.launch {
+        callback: (() -> Unit)? = null,
+    ): ModelClientV2? {
+        var client: ModelClientV2? = modelClient
+        return runBlocking(coroutineScope.coroutineContext) {
             try {
-                logger.info { "disconnecting to server: ${modelClient.baseUrl}" }
-                syncService.disconnectModelServer(modelClient)
-                activeClients.remove(modelClient)
-                callback()
-                logger.info { "disconnected server: ${modelClient.baseUrl}" }
+                logger.info { "Disconnecting from server: ${modelClient.baseUrl}" }
+                syncService.disconnectModelServer(modelClient, callback)
+                logger.info { "Disconnected from server: ${modelClient.baseUrl}" }
+                client = null
             } catch (ex: Exception) {
                 logger.error(ex) { "Unable to disconnect" }
             }
+            return@runBlocking client
         }
     }
 

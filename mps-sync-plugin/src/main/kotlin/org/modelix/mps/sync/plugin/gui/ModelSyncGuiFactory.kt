@@ -115,7 +115,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             bindingsRefresher = BindingsComboBoxRefresher(this)
             contentPanel.layout = FlowLayout()
             contentPanel.add(createInputBox())
-            triggerRefresh()
+            populateProjectsCB()
 
             // TODO fixme: hardcoded values
             serverURL.text = "http://127.0.0.1:28101/v2"
@@ -133,7 +133,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             urlPanel.add(serverURL)
 
             val refreshButton = JButton("Refresh All")
-            refreshButton.addActionListener { triggerRefresh() }
+            refreshButton.addActionListener { populateProjectsCB() }
             urlPanel.add(refreshButton)
             inputBox.add(urlPanel)
 
@@ -143,11 +143,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
             val connectProjectButton = JButton("Connect")
             connectProjectButton.addActionListener { _: ActionEvent ->
-                modelSyncService.connectModelServer(
-                    serverURL.text,
-                    jwt.text,
-                    ::triggerRefresh,
-                )
+                val client = modelSyncService.connectModelServer(serverURL.text, jwt.text)
+                triggerRefresh(client)
             }
             jwtPanel.add(connectProjectButton)
             inputBox.add(jwtPanel)
@@ -156,21 +153,23 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
             val connectionsPanel = JPanel()
             val existingConnectionsCB = ComboBox<ModelClientV2>()
+            existingConnectionsCB.isEnabled = false
             existingConnectionsCB.model = existingConnectionsModel
             existingConnectionsCB.renderer = CustomCellRenderer()
-            connectionsPanel.add(JLabel("Existing Conn.:"))
+            connectionsPanel.add(JLabel("Existing Connection:"))
             connectionsPanel.add(existingConnectionsCB)
 
-            val disConnectProjectButton = JButton("Disconnect")
-            disConnectProjectButton.addActionListener { _: ActionEvent? ->
+            val disconnectProjectButton = JButton("Disconnect")
+            disconnectProjectButton.addActionListener { _: ActionEvent? ->
                 if (existingConnectionsModel.size > 0) {
-                    modelSyncService.disconnectServer(
-                        existingConnectionsModel.selectedItem as ModelClientV2,
-                        ::triggerRefresh,
-                    )
+                    val originalClient = existingConnectionsModel.selectedItem as ModelClientV2
+                    val clientAfterDisconnect = modelSyncService.disconnectServer(originalClient)
+                    if (clientAfterDisconnect == null) {
+                        triggerRefresh(null)
+                    }
                 }
             }
-            connectionsPanel.add(disConnectProjectButton)
+            connectionsPanel.add(disconnectProjectButton)
             inputBox.add(connectionsPanel)
 
             inputBox.add(JSeparator())
@@ -224,13 +223,20 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
             val bindButton = JButton("Bind Selected")
             bindButton.addActionListener { _: ActionEvent? ->
-                if (existingConnectionsModel.size > 0) {
+                val selectedConnection = existingConnectionsModel.selectedItem
+                val selectedBranch = branchModel.selectedItem
+                val selectedModule = moduleModel.selectedItem
+                val selectedRepo = repoModel.selectedItem
+                val inputsExist =
+                    listOf(selectedConnection, selectedBranch, selectedModule, selectedRepo).all { it != null }
+
+                if (inputsExist) {
                     logger.info { "Binding Module ${moduleName.text} to project: ${ActiveMpsProjectInjector.activeMpsProject?.name}" }
                     modelSyncService.bindModule(
-                        existingConnectionsModel.selectedItem as ModelClientV2,
-                        (branchModel.selectedItem as BranchReference).branchName,
-                        (moduleModel.selectedItem as ModuleIdWithName).id,
-                        (repoModel.selectedItem as RepositoryId).id,
+                        selectedConnection as ModelClientV2,
+                        (selectedBranch as BranchReference).branchName,
+                        (selectedModule as ModuleIdWithName).id,
+                        (selectedRepo as RepositoryId).id,
                     )
                 }
             }
@@ -259,9 +265,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             return inputBox
         }
 
-        private fun triggerRefresh() {
-            populateProjectsCB()
-            populateConnectionsCB()
+        private fun triggerRefresh(client: ModelClientV2?) {
+            populateConnectionsCB(client)
             callOnlyIfNotFetching(::populateRepoCB)
         }
 
@@ -273,17 +278,17 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             }
         }
 
-        private fun populateConnectionsCB() {
-            val activeClients = modelSyncService.activeClients
-
+        private fun populateConnectionsCB(client: ModelClientV2?) {
             existingConnectionsModel.removeAllElements()
-            existingConnectionsModel.addAll(activeClients)
-            if (existingConnectionsModel.size > 0) {
+            if (client != null) {
+                existingConnectionsModel.addAll(listOf(client))
                 existingConnectionsModel.selectedItem = existingConnectionsModel.getElementAt(0)
             }
         }
 
         private suspend fun populateRepoCB() {
+            repoModel.removeAllElements()
+
             if (existingConnectionsModel.size != 0) {
                 val client = existingConnectionsModel.selectedItem as ModelClientV2
                 val repositories = client.listRepositories()
@@ -292,27 +297,32 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                 repoModel.addAll(repositories)
                 if (repoModel.size > 0) {
                     repoModel.selectedItem = repoModel.getElementAt(0)
-                    populateBranchCB()
                 }
             }
+
+            populateBranchCB()
         }
 
         private suspend fun populateBranchCB() {
+            branchModel.removeAllElements()
+
             if (existingConnectionsModel.size != 0 && repoModel.size != 0) {
                 val client = existingConnectionsModel.selectedItem as ModelClientV2
                 val repositoryId = repoModel.selectedItem as RepositoryId
                 val branches = client.listBranches(repositoryId)
 
-                branchModel.removeAllElements()
                 branchModel.addAll(branches)
                 if (branchModel.size > 0) {
                     branchModel.selectedItem = branchModel.getElementAt(0)
-                    populateModuleCB()
                 }
             }
+
+            populateModuleCB()
         }
 
         private suspend fun populateModuleCB() {
+            moduleModel.removeAllElements()
+
             if (existingConnectionsModel.size != 0 && repoModel.size != 0 && branchModel.size != 0) {
                 val client = existingConnectionsModel.selectedItem as ModelClientV2
                 val branchReference = branchModel.selectedItem as BranchReference
@@ -326,7 +336,6 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                     ModuleIdWithName(id, name)
                 }
 
-                moduleModel.removeAllElements()
                 moduleModel.addAll(moduleNodes.toList())
                 if (moduleModel.size > 0) {
                     moduleModel.selectedItem = moduleModel.getElementAt(0)
