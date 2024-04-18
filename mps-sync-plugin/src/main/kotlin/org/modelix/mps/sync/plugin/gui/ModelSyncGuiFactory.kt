@@ -46,7 +46,7 @@ import java.awt.Component
 import java.awt.FlowLayout
 import java.awt.event.ActionEvent
 import java.awt.event.ItemEvent
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.ReentrantLock
 import javax.swing.Box
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListCellRenderer
@@ -88,7 +88,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
         private val logger = KotlinLogging.logger {}
         private val coroutineScope = CoroutineScope(Dispatchers.Default)
-        private val isFetchingModulesListFromServer = AtomicBoolean()
+        private val mutex = ReentrantLock()
 
         val contentPanel = JPanel()
         val bindingsRefresher: BindingsComboBoxRefresher
@@ -343,19 +343,15 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             }
         }
 
-        @Synchronized
         private fun callOnlyIfNotFetching(action: suspend () -> Unit) {
-            if (!isFetchingModulesListFromServer.get()) {
-                isFetchingModulesListFromServer.set(true)
-
-                coroutineScope.launch {
-                    try {
-                        action()
-                    } catch (ex: Exception) {
-                        logger.error(ex) { "Failed to fetch data from server." }
-                    } finally {
-                        isFetchingModulesListFromServer.set(false)
-                    }
+            coroutineScope.launch {
+                try {
+                    mutex.lock()
+                    action()
+                } catch (ex: Exception) {
+                    logger.error(ex) { "Failed to fetch data from server." }
+                } finally {
+                    mutex.unlock()
                 }
             }
         }
