@@ -40,8 +40,6 @@ import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.bindTo
-import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.getModel
 import org.modelix.mps.sync.util.isDevKitDependency
 import org.modelix.mps.sync.util.isModel
@@ -49,7 +47,6 @@ import org.modelix.mps.sync.util.isModule
 import org.modelix.mps.sync.util.isSingleLanguageDependency
 import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 import kotlin.reflect.KFunction2
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -77,24 +74,18 @@ class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLan
         nodeFactoryMethod: KFunction2<Long, SModel?, ContinuableSyncTask> = nodeFactory::createNode,
     ) = syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
         val iNode = branch.getNode(nodeId)
-        val future = CompletableFuture<Any?>()
-
         val modelId = iNode.getModel()?.nodeIdAsLong()
         val model = nodeMap.getModel(modelId)
         val isTransformed = nodeMap.isMappedToMps(nodeId)
         if (isTransformed) {
             logger.info { "Node $nodeId is already transformed." }
-            future.completeWithDefault()
         } else {
             if (model == null) {
                 logger.info { "Node $nodeId(${iNode.concept?.getLongName() ?: "concept null"}) was not transformed, because model is null." }
-                future.completeWithDefault()
             } else {
-                nodeFactoryMethod.invoke(nodeId, model).getResult().bindTo(future)
+                return@enqueue nodeFactoryMethod.invoke(nodeId, model).getResult()
             }
         }
-
-        future
     }
 
     fun transformLanguageOrDevKitDependency(iNode: INode): ContinuableSyncTask {

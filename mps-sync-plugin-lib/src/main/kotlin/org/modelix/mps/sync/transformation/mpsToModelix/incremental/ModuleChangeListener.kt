@@ -34,12 +34,12 @@ import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
+import org.modelix.mps.sync.tasks.SyncTaskAction
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
-import org.modelix.mps.sync.util.bindTo
 import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
@@ -99,17 +99,15 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
                 val iName = iModule.getPropertyValue(nameProperty)
                 val actualName = module.moduleName!!
 
-                val future = CompletableFuture<Any?>()
                 if (actualName != iName) {
                     nodeSynchronizer.setProperty(
                         nameProperty,
                         actualName,
                         sourceNodeIdProducer = { iModuleNodeId },
-                    ).getResult().bindTo(future)
+                    ).getResult()
                 } else {
-                    future.completeWithDefault()
+                    null
                 }
-                future
             }
         }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { it ->
             errorHandlerWrapper(it, module) {
@@ -144,7 +142,6 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
             errorHandlerWrapper(it, module) { bindings ->
                 @Suppress("UNCHECKED_CAST")
                 (bindings as Iterable<Iterable<IBinding>>).flatten().forEach(IBinding::activate)
-                CompletableFuture<Any?>().completeWithDefault()
             }
         }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // resolve model imports (that had not been resolved, because the corresponding module/model were not uploaded yet)
@@ -214,10 +211,18 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
     private fun errorHandlerWrapper(
         input: Any?,
         module: SModule,
-        func: (Any?) -> CompletableFuture<Any?>,
+        func: SyncTaskAction,
     ): Any? {
         try {
-            return func.invoke(input).exceptionally { removeModuleFromSyncInProgressAndRethrow(module, it) }
+            val result = func.invoke(input)
+            return if (result is CompletableFuture<*>) {
+                @Suppress("UNCHECKED_CAST")
+                (result as CompletableFuture<Any?>).exceptionally {
+                    removeModuleFromSyncInProgressAndRethrow(module, it)
+                }
+            } else {
+                result
+            }
         } catch (t: Throwable) {
             removeModuleFromSyncInProgressAndRethrow(module, t)
             // should never reach beyond this point, because the method above rethrows the throwable anyway

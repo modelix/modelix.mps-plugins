@@ -18,7 +18,6 @@ package org.modelix.mps.sync.tasks
 
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.util.completeWithDefault
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
@@ -50,7 +49,7 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
             if (collectResults) {
                 continuation.complete(Collections.emptyList<Any?>())
             } else {
-                continuation.completeWithDefault()
+                continuation.complete(null)
             }
             return
         }
@@ -141,12 +140,8 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
                         } else {
                             null
                         }
+                        continuation.complete(result)
 
-                        if (result == null) {
-                            continuation.completeWithDefault()
-                        } else {
-                            continuation.complete(result)
-                        }
                         continue
                     }
 
