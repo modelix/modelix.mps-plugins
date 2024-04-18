@@ -29,6 +29,7 @@ import com.intellij.ui.content.ContentFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
@@ -46,7 +47,6 @@ import java.awt.Component
 import java.awt.FlowLayout
 import java.awt.event.ActionEvent
 import java.awt.event.ItemEvent
-import java.util.concurrent.locks.ReentrantLock
 import javax.swing.Box
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListCellRenderer
@@ -88,7 +88,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
         private val logger = KotlinLogging.logger {}
         private val coroutineScope = CoroutineScope(Dispatchers.Default)
-        private val mutex = ReentrantLock()
+        private val mutex = Semaphore(1)
 
         val contentPanel = JPanel()
         val bindingsRefresher: BindingsComboBoxRefresher
@@ -101,13 +101,22 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val moduleName = JBTextField(TEXTFIELD_WIDTH)
         private val jwt = JBTextField(TEXTFIELD_WIDTH)
 
-        private val openProjectModel = DefaultComboBoxModel<Project>()
-        private val existingConnectionsModel = DefaultComboBoxModel<ModelClientV2>()
-        private val existingBindingModel = DefaultComboBoxModel<IBinding>()
-        private val repoModel = DefaultComboBoxModel<RepositoryId>()
-        private val branchModel = DefaultComboBoxModel<BranchReference>()
+        private val connectionsCB = ComboBox<ModelClientV2>()
+        private val projectsCB = ComboBox<Project>()
+        private val reposCB = ComboBox<RepositoryId>()
+        private val branchesCB = ComboBox<BranchReference>()
+        private val modulesCB = ComboBox<ModuleIdWithName>()
 
-        private val moduleModel = DefaultComboBoxModel<ModuleIdWithName>()
+        private val connectButton = JButton("Connect")
+        private val disconnectButton = JButton("Disconnect")
+        private val bindButton = JButton("Bind Selected")
+
+        private val connectionsModel = DefaultComboBoxModel<ModelClientV2>()
+        private val projectsModel = DefaultComboBoxModel<Project>()
+        private val reposModel = DefaultComboBoxModel<RepositoryId>()
+        private val branchesModel = DefaultComboBoxModel<BranchReference>()
+        private val modulesModel = DefaultComboBoxModel<ModuleIdWithName>()
+        private val bindingsModel = DefaultComboBoxModel<IBinding>()
 
         init {
             logger.info { "-------------------------------------------- ModelSyncGui init" }
@@ -141,92 +150,84 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             jwtPanel.add(JLabel("JWT:           "))
             jwtPanel.add(jwt)
 
-            val connectProjectButton = JButton("Connect")
-            connectProjectButton.addActionListener { _: ActionEvent ->
+            connectButton.addActionListener { _: ActionEvent ->
                 val client = modelSyncService.connectModelServer(serverURL.text, jwt.text)
                 triggerRefresh(client)
             }
-            jwtPanel.add(connectProjectButton)
+            jwtPanel.add(connectButton)
             inputBox.add(jwtPanel)
 
             inputBox.add(JSeparator())
 
             val connectionsPanel = JPanel()
-            val existingConnectionsCB = ComboBox<ModelClientV2>()
-            existingConnectionsCB.isEnabled = false
-            existingConnectionsCB.model = existingConnectionsModel
-            existingConnectionsCB.renderer = CustomCellRenderer()
+            connectionsCB.isEnabled = false
+            connectionsCB.model = connectionsModel
+            connectionsCB.renderer = CustomCellRenderer()
             connectionsPanel.add(JLabel("Existing Connection:"))
-            connectionsPanel.add(existingConnectionsCB)
+            connectionsPanel.add(connectionsCB)
 
-            val disconnectProjectButton = JButton("Disconnect")
-            disconnectProjectButton.addActionListener { _: ActionEvent? ->
-                if (existingConnectionsModel.size > 0) {
-                    val originalClient = existingConnectionsModel.selectedItem as ModelClientV2
+            disconnectButton.addActionListener { _: ActionEvent? ->
+                if (connectionsModel.size > 0) {
+                    val originalClient = connectionsModel.selectedItem as ModelClientV2
                     val clientAfterDisconnect = modelSyncService.disconnectServer(originalClient)
                     if (clientAfterDisconnect == null) {
                         triggerRefresh(null)
                     }
                 }
             }
-            connectionsPanel.add(disconnectProjectButton)
+            connectionsPanel.add(disconnectButton)
             inputBox.add(connectionsPanel)
 
             inputBox.add(JSeparator())
 
             val targetPanel = JPanel()
-            val projectCB = ComboBox<Project>()
-            projectCB.model = openProjectModel
-            projectCB.renderer = CustomCellRenderer()
-            projectCB.addItemListener {
+            projectsCB.model = projectsModel
+            projectsCB.renderer = CustomCellRenderer()
+            projectsCB.addItemListener {
                 if (it.stateChange == ItemEvent.SELECTED) {
                     ActiveMpsProjectInjector.setActiveProject(it.item as Project)
                 }
             }
 
             targetPanel.add(JLabel("Target Project:"))
-            targetPanel.add(projectCB)
+            targetPanel.add(projectsCB)
             inputBox.add(targetPanel)
 
             val repoPanel = JPanel()
-            val repoCB = ComboBox<RepositoryId>()
-            repoCB.model = repoModel
-            repoCB.renderer = CustomCellRenderer()
-            repoCB.addActionListener {
+            reposCB.model = reposModel
+            reposCB.renderer = CustomCellRenderer()
+            reposCB.addActionListener {
                 if (it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
                     callOnlyIfNotFetching(::populateBranchCB)
                 }
             }
             repoPanel.add(JLabel("Remote Repo:   "))
-            repoPanel.add(repoCB)
+            repoPanel.add(reposCB)
             inputBox.add(repoPanel)
 
             val branchPanel = JPanel()
-            val branchCB = ComboBox<BranchReference>()
-            branchCB.model = branchModel
-            branchCB.renderer = CustomCellRenderer()
-            branchCB.addActionListener {
+            branchesCB.model = branchesModel
+            branchesCB.renderer = CustomCellRenderer()
+            branchesCB.addActionListener {
                 if (it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
                     callOnlyIfNotFetching(::populateModuleCB)
                 }
             }
             branchPanel.add(JLabel("Remote Branch: "))
-            branchPanel.add(branchCB)
+            branchPanel.add(branchesCB)
             inputBox.add(branchPanel)
 
             val modulePanel = JPanel()
-            val moduleCB = ComboBox<ModuleIdWithName>()
-            moduleCB.model = moduleModel
-            moduleCB.renderer = CustomCellRenderer()
+            modulesCB.model = modulesModel
+            modulesCB.renderer = CustomCellRenderer()
             modulePanel.add(JLabel("Remote Module:  "))
-            modulePanel.add(moduleCB)
+            modulePanel.add(modulesCB)
 
-            val bindButton = JButton("Bind Selected")
             bindButton.addActionListener { _: ActionEvent? ->
-                val selectedConnection = existingConnectionsModel.selectedItem
-                val selectedBranch = branchModel.selectedItem
-                val selectedModule = moduleModel.selectedItem
-                val selectedRepo = repoModel.selectedItem
+                val selectedConnection = connectionsModel.selectedItem
+                val selectedBranch = branchesModel.selectedItem
+                val selectedModule = modulesModel.selectedItem
+                val selectedRepo = reposModel.selectedItem
                 val inputsExist =
                     listOf(selectedConnection, selectedBranch, selectedModule, selectedRepo).all { it != null }
 
@@ -247,7 +248,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
             val bindingsPanel = JPanel()
             val existingBindingCB = ComboBox<IBinding>()
-            existingBindingCB.model = existingBindingModel
+            existingBindingCB.model = bindingsModel
             existingBindingCB.renderer = CustomCellRenderer()
             bindingsPanel.add(JLabel("Bindings:      "))
             bindingsPanel.add(existingBindingCB)
@@ -271,32 +272,32 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private fun populateProjectsCB() {
-            openProjectModel.removeAllElements()
-            openProjectModel.addAll(ProjectManager.getInstance().openProjects.toMutableList())
-            if (openProjectModel.size > 0) {
-                openProjectModel.selectedItem = openProjectModel.getElementAt(0)
+            projectsModel.removeAllElements()
+            projectsModel.addAll(ProjectManager.getInstance().openProjects.toMutableList())
+            if (projectsModel.size > 0) {
+                projectsModel.selectedItem = projectsModel.getElementAt(0)
             }
         }
 
         private fun populateConnectionsCB(client: ModelClientV2?) {
-            existingConnectionsModel.removeAllElements()
+            connectionsModel.removeAllElements()
             if (client != null) {
-                existingConnectionsModel.addAll(listOf(client))
-                existingConnectionsModel.selectedItem = existingConnectionsModel.getElementAt(0)
+                connectionsModel.addAll(listOf(client))
+                connectionsModel.selectedItem = connectionsModel.getElementAt(0)
             }
         }
 
         private suspend fun populateRepoCB() {
-            repoModel.removeAllElements()
+            reposModel.removeAllElements()
 
-            if (existingConnectionsModel.size != 0) {
-                val client = existingConnectionsModel.selectedItem as ModelClientV2
+            if (connectionsModel.size != 0) {
+                val client = connectionsModel.selectedItem as ModelClientV2
                 val repositories = client.listRepositories()
 
-                repoModel.removeAllElements()
-                repoModel.addAll(repositories)
-                if (repoModel.size > 0) {
-                    repoModel.selectedItem = repoModel.getElementAt(0)
+                reposModel.removeAllElements()
+                reposModel.addAll(repositories)
+                if (reposModel.size > 0) {
+                    reposModel.selectedItem = reposModel.getElementAt(0)
                 }
             }
 
@@ -304,16 +305,16 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private suspend fun populateBranchCB() {
-            branchModel.removeAllElements()
+            branchesModel.removeAllElements()
 
-            if (existingConnectionsModel.size != 0 && repoModel.size != 0) {
-                val client = existingConnectionsModel.selectedItem as ModelClientV2
-                val repositoryId = repoModel.selectedItem as RepositoryId
+            if (connectionsModel.size != 0 && reposModel.size != 0) {
+                val client = connectionsModel.selectedItem as ModelClientV2
+                val repositoryId = reposModel.selectedItem as RepositoryId
                 val branches = client.listBranches(repositoryId)
 
-                branchModel.addAll(branches)
-                if (branchModel.size > 0) {
-                    branchModel.selectedItem = branchModel.getElementAt(0)
+                branchesModel.addAll(branches)
+                if (branchesModel.size > 0) {
+                    branchesModel.selectedItem = branchesModel.getElementAt(0)
                 }
             }
 
@@ -321,11 +322,11 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private suspend fun populateModuleCB() {
-            moduleModel.removeAllElements()
+            modulesModel.removeAllElements()
 
-            if (existingConnectionsModel.size != 0 && repoModel.size != 0 && branchModel.size != 0) {
-                val client = existingConnectionsModel.selectedItem as ModelClientV2
-                val branchReference = branchModel.selectedItem as BranchReference
+            if (connectionsModel.size != 0 && reposModel.size != 0 && branchesModel.size != 0) {
+                val client = connectionsModel.selectedItem as ModelClientV2
+                val branchReference = branchesModel.selectedItem as BranchReference
 
                 val moduleNodes = client.query(branchReference) {
                     it.allChildren().ofConcept(BuiltinLanguages.MPSRepositoryConcepts.Module).toList()
@@ -336,31 +337,45 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                     ModuleIdWithName(id, name)
                 }
 
-                moduleModel.addAll(moduleNodes.toList())
-                if (moduleModel.size > 0) {
-                    moduleModel.selectedItem = moduleModel.getElementAt(0)
+                modulesModel.addAll(moduleNodes.toList())
+                if (modulesModel.size > 0) {
+                    modulesModel.selectedItem = modulesModel.getElementAt(0)
                 }
             }
         }
 
         private fun callOnlyIfNotFetching(action: suspend () -> Unit) {
             coroutineScope.launch {
-                try {
-                    mutex.lock()
-                    action()
-                } catch (ex: Exception) {
-                    logger.error(ex) { "Failed to fetch data from server." }
-                } finally {
-                    mutex.unlock()
+                if (mutex.tryAcquire()) {
+                    try {
+                        setUiControlsEnabled(false)
+                        action()
+                    } catch (ex: Exception) {
+                        logger.error(ex) { "Failed to fetch data from server." }
+                    } finally {
+                        setUiControlsEnabled(true)
+                        mutex.release()
+                    }
                 }
             }
         }
 
+        private fun setUiControlsEnabled(isEnabled: Boolean) {
+            projectsCB.isEnabled = isEnabled
+            reposCB.isEnabled = isEnabled
+            branchesCB.isEnabled = isEnabled
+            modulesCB.isEnabled = isEnabled
+
+            connectButton.isEnabled = isEnabled
+            disconnectButton.isEnabled = isEnabled
+            bindButton.isEnabled = isEnabled
+        }
+
         fun populateBindingCB(bindings: List<IBinding>) {
-            existingBindingModel.removeAllElements()
-            existingBindingModel.addAll(bindings)
-            if (existingBindingModel.size > 0) {
-                existingBindingModel.selectedItem = existingBindingModel.getElementAt(0)
+            bindingsModel.removeAllElements()
+            bindingsModel.addAll(bindings)
+            if (bindingsModel.size > 0) {
+                bindingsModel.selectedItem = bindingsModel.getElementAt(0)
             }
         }
     }
