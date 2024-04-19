@@ -30,7 +30,6 @@ class SyncServiceImpl : SyncService {
     private val mpsProjectInjector = ActiveMpsProjectInjector
 
     private val dispatcher = Dispatchers.Default
-    private val activeClients = mutableSetOf<ModelClientV2>()
 
     init {
         logger.info { "============================================ Registering builtin languages" }
@@ -44,21 +43,12 @@ class SyncServiceImpl : SyncService {
         jwt: String?,
         callback: (() -> Unit)?,
     ): ModelClientV2 {
-        // avoid reconnect to existing server
-        val client = activeClients.find { it.baseUrl == serverURL.toString() }
-        client?.let {
-            logger.info { "Using already existing connection to $serverURL" }
-            return it
-        }
-
         logger.info { "Connecting to $serverURL" }
         val modelClientV2 = ModelClientV2.builder().url(serverURL.toString()).authToken { jwt }.build()
         runBlocking(dispatcher) {
             modelClientV2.init()
         }
-
         logger.info { "Connection to $serverURL successful" }
-        activeClients.add(modelClientV2)
 
         callback?.invoke()
 
@@ -71,6 +61,15 @@ class SyncServiceImpl : SyncService {
         return runBlocking(dispatcher) {
             BranchRegistry.setBranch(client, branchReference, languageRepository, targetProject)
         }
+    }
+
+    override fun disconnectModelServer(
+        client: ModelClientV2,
+        callback: (() -> Unit)?,
+    ) {
+        // TODO what shall happen with the bindings if we disconnect from model server?
+        client.close()
+        callback?.invoke()
     }
 
     override fun bindModuleFromServer(
@@ -118,16 +117,6 @@ class SyncServiceImpl : SyncService {
         return binding
     }
 
-    override fun disconnectModelServer(
-        client: ModelClientV2,
-        callback: (() -> Unit)?,
-    ) {
-        // TODO what shall happen with the bindings and the branch if we disconnect from model server?
-        activeClients.remove(client)
-        client.close()
-        callback?.invoke()
-    }
-
     override fun setActiveProject(project: Project) {
         mpsProjectInjector.setActiveProject(project)
     }
@@ -138,8 +127,6 @@ class SyncServiceImpl : SyncService {
         FuturesWaitQueue.close()
         // dispose replicated model
         BranchRegistry.dispose()
-        // dispose clients
-        activeClients.forEach { it.close() }
         // dispose all bindings
         BindingsRegistry.getModuleBindings().forEach { it.deactivate(removeFromServer = false) }
         BindingsRegistry.getModelBindings().forEach { it.deactivate(removeFromServer = false) }

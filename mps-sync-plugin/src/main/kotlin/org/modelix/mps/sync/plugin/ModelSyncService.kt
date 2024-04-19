@@ -56,7 +56,6 @@ class ModelSyncService : Disposable {
     private var server: String? = null
 
     private val syncService = SyncServiceImpl()
-    val activeClients = mutableSetOf<ModelClientV2>()
 
     init {
         logger.info { "============================================ Registering sync actions" }
@@ -70,17 +69,33 @@ class ModelSyncService : Disposable {
     fun connectModelServer(
         url: String,
         jwt: String,
-        callback: (() -> Unit),
-    ) {
+        callback: (() -> Unit)? = null,
+    ): ModelClientV2? {
+        var client: ModelClientV2? = null
         try {
             logger.info { "Connection to server: $url" }
-            val client = syncService.connectModelServer(URL(url), jwt)
-            activeClients.add(client)
+            client = syncService.connectModelServer(URL(url), jwt, callback)
             logger.info { "Connected to server: $url" }
-            callback()
         } catch (ex: Exception) {
             logger.error(ex) { "Unable to connect" }
         }
+        return client
+    }
+
+    fun disconnectServer(
+        modelClient: ModelClientV2,
+        callback: (() -> Unit)? = null,
+    ): ModelClientV2? {
+        var client: ModelClientV2? = modelClient
+        try {
+            logger.info { "disconnecting to server: ${modelClient.baseUrl}" }
+            syncService.disconnectModelServer(modelClient, callback)
+            logger.info { "disconnected server: ${modelClient.baseUrl}" }
+            client = null
+        } catch (ex: Exception) {
+            logger.error(ex) { "Unable to disconnect" }
+        }
+        return client
     }
 
     fun connectToBranch(
@@ -116,21 +131,6 @@ class ModelSyncService : Disposable {
     fun bindModuleFromMps(module: AbstractModule, branch: IBranch) = syncService.bindModuleFromMps(module, branch)
 
     fun bindModelFromMps(model: SModelBase, branch: IBranch) = syncService.bindModelFromMps(model, branch)
-
-    fun disconnectServer(
-        modelClient: ModelClientV2,
-        callback: (() -> Unit),
-    ) {
-        try {
-            logger.info { "disconnecting to server: ${modelClient.baseUrl}" }
-            syncService.disconnectModelServer(modelClient)
-            activeClients.remove(modelClient)
-            callback()
-            logger.info { "disconnected server: ${modelClient.baseUrl}" }
-        } catch (ex: Exception) {
-            logger.error(ex) { "Unable to disconnect" }
-        }
-    }
 
     fun setActiveProject(project: Project) = syncService.setActiveProject(project)
 

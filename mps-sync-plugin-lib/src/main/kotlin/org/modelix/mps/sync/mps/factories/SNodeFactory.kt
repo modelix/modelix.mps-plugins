@@ -26,6 +26,7 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.model.SNodeId
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.metamodel.GeneratedReferenceLink
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
@@ -136,11 +137,13 @@ class SNodeFactory(
             val sourceNodeId = iNode.nodeIdAsLong()
             val source = nodeMap.getNode(sourceNodeId)!!
 
-            val reference = when (it.first) {
-                is MPSReferenceLink -> (it.first as MPSReferenceLink).link
-                is ReferenceLinkFromName -> source.concept.referenceLinks.first { refLink -> refLink.name == it.first.getSimpleName() }
-                else -> null
-            }!!
+            val reference = when (val referenceLink = it.first) {
+                is MPSReferenceLink -> referenceLink.link
+                is ReferenceLinkFromName, is GeneratedReferenceLink<*, *> ->
+                    source.concept.referenceLinks.first { refLink -> refLink.name == referenceLink.getSimpleName() }
+
+                else -> throw IllegalArgumentException("Reference ${it.first} of INode $iNode is neither an MPSReferenceLink, nor a ReferenceLinkFromName, nor a GeneratedReferenceLink.")
+            }
 
             val targetNodeId = it.second.nodeIdAsLong()
             resolvableReferences.add(ResolvableReference(source, reference, targetNodeId))

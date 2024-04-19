@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.kotlin.logging.microutils)
 
     implementation(libs.modelix.model.api)
+    implementation(libs.modelix.model.api.gen.runtime)
     implementation(libs.modelix.model.client)
     implementation(libs.modelix.mps.model.adapters)
     implementation(libs.ktor.client.core)

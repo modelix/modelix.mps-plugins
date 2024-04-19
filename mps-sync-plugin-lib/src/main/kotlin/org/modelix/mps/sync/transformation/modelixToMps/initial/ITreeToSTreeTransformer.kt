@@ -50,13 +50,12 @@ class ITreeToSTreeTransformer(private val branch: IBranch, mpsLanguageRepository
                 val moduleNode =
                     branch.getRootNode().allChildren.firstOrNull { it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) == moduleId }
                 require(moduleNode != null) { "Module node with ID '$moduleId' is not found on the root level." }
+                require(moduleNode.isModule()) { "Transformation entry point (Node $moduleNode) must be a Module." }
                 result.set(moduleNode)
             }
             result.get()
         }.continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.NONE) {
             val entryPoint = it as INode
-            require(entryPoint.isModule()) { "Transformation entry point (Node $entryPoint) must be a Module" }
-
             try {
                 moduleTransformer.transformToModuleCompletely(entryPoint.nodeIdAsLong(), true)
                     .getResult()

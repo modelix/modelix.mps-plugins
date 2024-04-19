@@ -42,7 +42,6 @@ import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.bindTo
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.Collections
@@ -140,16 +139,14 @@ class ModuleSynchronizer(private val branch: IBranch) {
             val targetModule = dependency.targetModule.resolve(repository)
             val isMappedToMps = nodeMap[targetModule] != null
 
-            val future = CompletableFuture<Any?>()
             // add the target module to the server if it does not exist there yet
             if (!isMappedToMps) {
                 require(targetModule is AbstractModule) { "Dependency target module ($targetModule) of Module ($module) must be an AbstractModule." }
                 // connect the addModule task to this one, so if that fails/succeeds we'll also fail/succeed
-                addModule(targetModule).getResult().bindTo(future)
+                addModule(targetModule).getResult()
             } else {
-                future.complete(setOf(EmptyBinding()))
+                setOf(EmptyBinding())
             }
-            future
         }.continueWith(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
