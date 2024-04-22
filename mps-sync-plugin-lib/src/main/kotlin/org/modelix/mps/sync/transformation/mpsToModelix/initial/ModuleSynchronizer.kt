@@ -35,7 +35,7 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
-import org.modelix.mps.sync.modelix.ItemAlreadySynchronizer
+import org.modelix.mps.sync.modelix.ModuleAlreadySynchronized
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
@@ -71,7 +71,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
                 .firstOrNull { moduleId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) } != null
             if (moduleExists) {
                 if (nodeMap.isMappedToModelix(module)) {
-                    return@enqueue ItemAlreadySynchronizer(module)
+                    return@enqueue ModuleAlreadySynchronized(module)
                 } else {
                     throw Exception("Module ${module.moduleName} already exists on the server, therefore it will not be synchronized. Remove it from the project and synchronize it from the server instead.")
                 }
@@ -91,7 +91,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
                 unflattenedBindings
             }
         }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { dependencyBindings ->
-            if (dependencyBindings is ItemAlreadySynchronizer) {
+            if (dependencyBindings is ModuleAlreadySynchronized) {
                 return@continueWith dependencyBindings
             }
 
@@ -119,7 +119,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
             }
             dependencyBindings
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) { dependencyBindings ->
-            if (dependencyBindings is ItemAlreadySynchronizer) {
+            if (dependencyBindings is ModuleAlreadySynchronized) {
                 return@continueWith Collections.emptySet<IBinding>()
             }
 
