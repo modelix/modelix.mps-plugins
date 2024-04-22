@@ -46,3 +46,6 @@ fun SModel.deleteLanguage(sLanguage: SLanguage) {
     require(this is SModelDescriptorStub) { "Model ${this.modelId} must be an SModelDescriptorStub" }
     this.deleteLanguageId(sLanguage)
 }
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+fun SModel.getModelixId() = this.modelId.toString()

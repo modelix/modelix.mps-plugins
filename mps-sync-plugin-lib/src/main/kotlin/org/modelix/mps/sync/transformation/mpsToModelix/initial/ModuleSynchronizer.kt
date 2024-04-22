@@ -37,6 +37,7 @@ import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.modelix.ModuleAlreadySynchronized
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
@@ -66,7 +67,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
             val childLink = ChildLinkFromName("modules")
 
             // duplicate check
-            val moduleId = module.moduleId.toString()
+            val moduleId = module.getModelixId()
             val moduleExists = rootNode.getChildren(childLink)
                 .any { moduleId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) }
             if (moduleExists) {
@@ -156,7 +157,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
             val childLink = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
 
             val moduleReference = dependency.targetModule
-            val targetModuleId = moduleReference.moduleId.toString()
+            val targetModuleId = moduleReference.getModelixId()
 
             // duplicate check and sync
             val dependencyExists = cloudModule.getChildren(childLink)
@@ -218,7 +219,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
         cloudModule.setPropertyValue(
             BuiltinLanguages.MPSRepositoryConcepts.Module.id,
             // if you change this property here, please also change above where we check if the module already exists in its parent node
-            module.moduleId.toString(),
+            module.getModelixId(),
         )
 
         cloudModule.setPropertyValue(

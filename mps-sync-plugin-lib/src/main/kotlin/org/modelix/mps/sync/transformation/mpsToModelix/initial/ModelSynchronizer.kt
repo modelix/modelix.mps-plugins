@@ -32,6 +32,7 @@ import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.modelix.ModelAlreadySynchronized
+import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -72,7 +73,7 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
             val childLink = BuiltinLanguages.MPSRepositoryConcepts.Module.models
 
             // duplicate check
-            val modelId = model.modelId.toString()
+            val modelId = model.getModelixId()
             val modelExists = cloudModule.getChildren(childLink)
                 .any { modelId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) }
             if (modelExists) {
@@ -126,7 +127,7 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
         cloudModel.setPropertyValue(
             BuiltinLanguages.MPSRepositoryConcepts.Model.id,
             // if you change this property here, please also change above where we check if the model already exists in its parent node
-            model.modelId.toString(),
+            model.getModelixId(),
         )
 
         cloudModel.setPropertyValue(
@@ -190,7 +191,7 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
 
             val languageModuleReference = language.sourceModuleReference
             val targetLanguageName = languageModuleReference?.moduleName
-            val targetLanguageId = languageModuleReference?.moduleId.toString()
+            val targetLanguageId = languageModuleReference?.getModelixId()
 
             // duplicate check and sync
             val dependencyExists = cloudNode.getChildren(childLink)
@@ -235,7 +236,7 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
             val devKitModuleId = devKit.moduleId
             val devKitModule = repository.getModule(devKitModuleId)
             val devKitName = devKitModule?.moduleName
-            val devKitId = devKitModule?.moduleId.toString()
+            val devKitId = devKitModule?.getModelixId()
 
             // duplicate check and sync
             val dependencyExists = cloudNode.getChildren(childLink)

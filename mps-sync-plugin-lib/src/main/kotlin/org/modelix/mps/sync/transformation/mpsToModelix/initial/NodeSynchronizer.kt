@@ -33,6 +33,7 @@ import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
+import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -95,9 +96,9 @@ class NodeSynchronizer(
         /*
          * Save MPS Node ID explicitly.
          * If you change this property here, please also change in method 'throwExceptionIfChildExists', where we use
-         * node.nodeId.toString() to check if the node already exists.
+         * node.getModelixId() to check if the node already exists.
          */
-        cloudNode.setPropertyValue(PropertyFromName(NodeData.ID_PROPERTY_KEY), mpsNode.nodeId.toString())
+        cloudNode.setPropertyValue(PropertyFromName(NodeData.ID_PROPERTY_KEY), mpsNode.getModelixId())
 
         // synchronize references
         mpsConcept.referenceLinks.forEach {
@@ -129,7 +130,7 @@ class NodeSynchronizer(
 
     private fun throwExceptionIfChildExists(cloudParentNode: INode, childLink: IChildLink, node: SNode) {
         val children = cloudParentNode.getChildren(childLink)
-        val nodeExists = children.any { node.nodeId.toString() == it.getOriginalReference() }
+        val nodeExists = children.any { node.getModelixId() == it.getOriginalReference() }
         if (nodeExists) {
             throw ChildNodeExists(
                 node,
