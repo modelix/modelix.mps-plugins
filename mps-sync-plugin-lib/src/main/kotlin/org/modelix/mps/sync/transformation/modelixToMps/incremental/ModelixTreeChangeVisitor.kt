@@ -74,7 +74,14 @@ class ModelixTreeChangeVisitor(
             }
 
             val iNode = getNode(nodeId)
-            val iReferenceLink = iNode.getReferenceLinks().find { it.getSimpleName() == role || it.getUID() == role }
+            val usesRoleIds = iNode.usesRoleIds()
+            val iReferenceLink = iNode.getReferenceLinks().find {
+                if (usesRoleIds) {
+                    role == it.getUID()
+                } else {
+                    role == it.getSimpleName()
+                }
+            }
             val targetINode = iReferenceLink?.let { iNode.getReferenceTarget(it) }
             val targetSNode = targetINode?.let { nodeMap.getNode(it.nodeIdAsLong()) }
 
@@ -96,24 +103,25 @@ class ModelixTreeChangeVisitor(
             }
 
             val iNode = getNode(nodeId)
+            val usesRoleIds = iNode.usesRoleIds()
             val iProperty = PropertyFromName(role)
             val newValue = iNode.getPropertyValue(iProperty)
 
             val sNode = nodeMap.getNode(nodeId)
             sNode?.let {
-                nodeTransformer.nodePropertyChanged(sNode, role, nodeId, newValue)
+                nodeTransformer.nodePropertyChanged(sNode, role, nodeId, newValue, usesRoleIds)
                 return@enqueue null
             }
 
             val sModel = nodeMap.getModel(nodeId)
             sModel?.let {
-                modelTransformer.modelPropertyChanged(sModel, role, newValue, nodeId)
+                modelTransformer.modelPropertyChanged(sModel, role, newValue, nodeId, usesRoleIds)
                 return@enqueue null
             }
 
             val sModule = nodeMap.getModule(nodeId)
             sModule?.let {
-                moduleTransformer.modulePropertyChanged(role, nodeId, sModule, newValue)
+                moduleTransformer.modulePropertyChanged(role, nodeId, sModule, newValue, usesRoleIds)
                 return@enqueue null
             }
 

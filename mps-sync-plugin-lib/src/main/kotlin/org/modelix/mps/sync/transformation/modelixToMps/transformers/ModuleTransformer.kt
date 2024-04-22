@@ -206,14 +206,28 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             dependencyBinding
         }
 
-    fun modulePropertyChanged(role: String, nodeId: Long, sModule: SModule, newValue: String?) {
+    fun modulePropertyChanged(role: String, nodeId: Long, sModule: SModule, newValue: String?, usesRoleIds: Boolean) {
         val moduleId = sModule.moduleId
         if (sModule !is AbstractModule) {
             logger.error { "SModule ($moduleId) is not an AbstractModule, therefore its $role property cannot be changed. Corresponding Modelix Node ID is $nodeId." }
             return
         }
 
-        if (role == BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName()) {
+        val nameProperty = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name
+        val isNameProperty = if (usesRoleIds) {
+            role == nameProperty.getUID()
+        } else {
+            role == nameProperty.getSimpleName()
+        }
+
+        val moduleVersionProperty = BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion
+        val isModuleVersionProperty = if (usesRoleIds) {
+            role == moduleVersionProperty.getUID()
+        } else {
+            role == moduleVersionProperty.getSimpleName()
+        }
+
+        if (isNameProperty) {
             val oldValue = sModule.moduleName
             if (oldValue != newValue) {
                 if (newValue.isNullOrEmpty()) {
@@ -231,7 +245,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                  * Renamer(activeProject).renameModule(sModule, newValue)
                  */
             }
-        } else if (role == BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion.getSimpleName()) {
+        } else if (isModuleVersionProperty) {
             try {
                 val newVersion = newValue?.toInt() ?: return
                 val oldVersion = sModule.moduleVersion
@@ -257,7 +271,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                 logger.error { "New compileInMPS ($newValue) property of SModule ($moduleId) is not a strict boolean, therefore it cannot be set in MPS. Corresponding Modelix Node ID is $nodeId." }
             }
         } else {
-            logger.error { "Role $role is unknown for concept Module. Therefore the property is not set in MPS from Modelix Node $nodeId" }
+            logger.error { "Role $role is unknown for concept Module. Therefore the property is not set in MPS from Modelix Node $nodeId." }
         }
     }
 

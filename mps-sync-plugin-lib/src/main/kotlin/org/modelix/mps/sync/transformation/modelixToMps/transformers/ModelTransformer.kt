@@ -175,10 +175,23 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
         nodeTransformer.resolveReferences()
     }
 
-    fun modelPropertyChanged(sModel: SModel, role: String, newValue: String?, nodeId: Long) {
+    fun modelPropertyChanged(sModel: SModel, role: String, newValue: String?, nodeId: Long, usesRoleIds: Boolean) {
         val modelId = sModel.modelId
+        val nameProperty = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name
+        val isNameProperty = if (usesRoleIds) {
+            role == nameProperty.getUID()
+        } else {
+            role == nameProperty.getSimpleName()
+        }
 
-        if (role == BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getSimpleName()) {
+        val stereotypeProperty = BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype
+        val isStereotypeProperty = if (usesRoleIds) {
+            role == stereotypeProperty.getUID()
+        } else {
+            role == stereotypeProperty.getSimpleName()
+        }
+
+        if (isNameProperty) {
             val oldValue = sModel.name.value
             if (oldValue != newValue) {
                 if (newValue.isNullOrEmpty()) {
@@ -191,7 +204,7 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
 
                 ModelRenameHelper(sModel).renameModel(newValue)
             }
-        } else if (role == BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype.getSimpleName()) {
+        } else if (isStereotypeProperty) {
             val oldValue = sModel.name.stereotype
             if (oldValue != newValue) {
                 if (sModel !is EditableSModelBase) {
@@ -202,7 +215,7 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
                 ModelRenameHelper(sModel).changeStereotype(newValue)
             }
         } else {
-            logger.error { "Role $role is unknown for concept Model. Therefore the property is not set in MPS from Modelix Node $nodeId" }
+            logger.error { "Role $role is unknown for concept Model. Therefore the property is not set in MPS from Modelix Node $nodeId." }
         }
     }
 

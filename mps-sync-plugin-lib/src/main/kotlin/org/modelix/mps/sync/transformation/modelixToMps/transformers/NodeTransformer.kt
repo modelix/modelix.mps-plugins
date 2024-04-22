@@ -166,8 +166,15 @@ class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLan
         nodeMap.remove(nodeId)
     }
 
-    fun nodePropertyChanged(sNode: SNode, role: String, nodeId: Long, newValue: String?) {
-        val sProperty = sNode.concept.properties.find { it.name == role || MPSProperty(it).getUID() == role }
+    fun nodePropertyChanged(sNode: SNode, role: String, nodeId: Long, newValue: String?, usesRoleIds: Boolean) {
+        val sProperty =
+            sNode.concept.properties.find {
+                if (usesRoleIds) {
+                    role == MPSProperty(it).getUID()
+                } else {
+                    role == it.name
+                }
+            }
         if (sProperty == null) {
             logger.error { "Node ($nodeId)'s concept (${sNode.concept.name}) does not have property called $role." }
             return
