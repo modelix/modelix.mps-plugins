@@ -194,8 +194,9 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
             val targetLanguageId = languageModuleReference?.getModelixId()
 
             // duplicate check and sync
-            val dependencyExists = cloudNode.getChildren(childLink)
-                .any { targetLanguageId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) }
+            val dependencyExists = cloudNode.getChildren(childLink).any {
+                targetLanguageId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
+            }
             if (dependencyExists) {
                 logger.warn { "Model ${model.name}'s Language Dependency for $targetLanguageName will not be synchronized, because it already exists on the server." }
             } else {
@@ -240,7 +241,7 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
 
             // duplicate check and sync
             val dependencyExists = cloudNode.getChildren(childLink)
-                .any { devKitId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) } != null
+                .any { devKitId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) }
             if (dependencyExists) {
                 logger.warn { "Model ${model.name}'s DevKit Dependency for $devKitName will not be synchronized, because it already exists on the server." }
             } else {

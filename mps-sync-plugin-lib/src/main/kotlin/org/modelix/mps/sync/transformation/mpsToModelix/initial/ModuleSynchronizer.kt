@@ -160,8 +160,9 @@ class ModuleSynchronizer(private val branch: IBranch) {
             val targetModuleId = moduleReference.getModelixId()
 
             // duplicate check and sync
-            val dependencyExists = cloudModule.getChildren(childLink)
-                .firstOrNull { targetModuleId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid) } != null
+            val dependencyExists = cloudModule.getChildren(childLink).any {
+                targetModuleId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid)
+            }
             if (dependencyExists) {
                 logger.warn { "Module ${module.moduleName}'s Module Dependency for Module ${moduleReference.moduleName} will not be synchronized, because it already exists on the server." }
             } else {
