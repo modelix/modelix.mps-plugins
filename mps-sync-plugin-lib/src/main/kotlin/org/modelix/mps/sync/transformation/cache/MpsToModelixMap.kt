@@ -214,21 +214,11 @@ object MpsToModelixMap {
         return modelixId != null && idMaps.stream().anyMatch { it.contains(modelixId) }
     }
 
-    fun isMappedToModelix(item: Any): Boolean =
-        when (item) {
-            is SNode -> get(item)
-            is SModel -> get(item)
-            is SModelId -> get(item)
-            is SModule -> get(item)
-            is SModuleId -> get(item)
-            is SModuleReference -> {
-                modelWithOutgoingModuleReferenceToModelixId.keys.firstOrNull { it.moduleReference == item }
-                    ?: moduleWithOutgoingModuleReferenceToModelixId.keys.firstOrNull { it.moduleReference == item }
-            }
+    fun isMappedToModelix(model: SModel) = this[model] != null
 
-            is SModelReference -> modelWithOutgoingModelReferenceToModelixId.keys.firstOrNull { it.modelReference == item }
-            else -> null
-        } != null
+    fun isMappedToModelix(module: SModule) = this[module] != null
+
+    fun isMappedToModelix(node: SNode) = this[node] != null
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
