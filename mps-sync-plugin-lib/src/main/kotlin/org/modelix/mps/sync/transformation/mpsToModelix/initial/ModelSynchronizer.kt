@@ -65,8 +65,9 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
 
     fun addModel(model: SModelBase) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
-            val parentModule = model.module!!
-            val moduleModelixId = nodeMap[parentModule]!!
+            val parentModule = model.module ?: throw IllegalStateException("Model $model's module must not be null.")
+            val moduleModelixId = nodeMap[parentModule]
+                ?: throw IllegalStateException("Module $parentModule is not found in the local sync cache.")
             val cloudModule = branch.getNode(moduleModelixId)
             val childLink = BuiltinLanguages.MPSRepositoryConcepts.Module.models
 
