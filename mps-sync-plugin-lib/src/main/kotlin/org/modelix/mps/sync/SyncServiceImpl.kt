@@ -21,6 +21,7 @@ import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
+import java.io.IOException
 import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -37,7 +38,7 @@ class SyncServiceImpl : SyncService {
         ILanguageRepository.default.javaClass
     }
 
-    @Throws(io.ktor.client.network.sockets.ConnectTimeoutException::class)
+    @Throws(IOException::class)
     override fun connectModelServer(
         serverURL: URL,
         jwt: String?,

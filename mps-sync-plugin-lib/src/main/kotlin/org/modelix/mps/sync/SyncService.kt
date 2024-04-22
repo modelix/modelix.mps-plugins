@@ -7,13 +7,14 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
+import java.io.IOException
 import java.net.URL
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 interface SyncService {
 
-    @Throws(io.ktor.client.network.sockets.ConnectTimeoutException::class)
+    @Throws(IOException::class)
     fun connectModelServer(serverURL: URL, jwt: String? = null, callback: (() -> Unit)? = null): ModelClientV2
 
     fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch

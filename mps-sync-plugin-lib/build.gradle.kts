@@ -20,7 +20,6 @@ dependencies {
     implementation(libs.modelix.model.api.gen.runtime)
     implementation(libs.modelix.model.client)
     implementation(libs.modelix.mps.model.adapters)
-    implementation(libs.ktor.client.core)
 
     // extracting jars from zipped products
     mpsZip("com.jetbrains:mps:$mpsVersion")
