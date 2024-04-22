@@ -109,8 +109,6 @@ object SyncQueue : AutoCloseable {
             val result = task.action.invoke(previousTaskResult)
             if (result is CompletableFuture<*> && result.isCompletedExceptionally) {
                 result.handle { _, throwable -> taskResult.completeExceptionally(throwable) }
-            } else if (result == null) {
-                taskResult.completeWithDefault()
             } else {
                 taskResult.complete(result)
             }

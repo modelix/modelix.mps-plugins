@@ -17,7 +17,6 @@
 package org.modelix.mps.sync.mps.factories
 
 import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
-import jetbrains.mps.smodel.adapter.structure.ref.SReferenceLinkAdapter2
 import org.jetbrains.mps.openapi.language.SAbstractConcept
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.language.SInterfaceConcept
@@ -136,10 +135,12 @@ class SNodeFactory(
             val sourceNodeId = iNode.nodeIdAsLong()
             val source = nodeMap.getNode(sourceNodeId)!!
 
-            val sReferenceLink = (it.first as MPSReferenceLink).link
-            val reference = SReferenceLinkAdapter2(sReferenceLink.id, sReferenceLink.name)
-            val targetNodeId = it.second.nodeIdAsLong()
+            val reference = when (val referenceLink = it.first) {
+                is MPSReferenceLink -> referenceLink.link
+                else -> source.concept.referenceLinks.first { refLink -> refLink.name == referenceLink.getSimpleName() }
+            }
 
+            val targetNodeId = it.second.nodeIdAsLong()
             resolvableReferences.add(ResolvableReference(source, reference, targetNodeId))
         }
     }

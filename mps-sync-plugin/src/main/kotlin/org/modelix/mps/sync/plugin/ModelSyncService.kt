@@ -38,10 +38,9 @@ import com.intellij.openapi.components.Service
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.model.api.INode
-import org.modelix.model.api.runSynchronized
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
@@ -56,12 +55,10 @@ class ModelSyncService : Disposable {
     private val logger = KotlinLogging.logger {}
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
     private var server: String? = null
-    val syncService: SyncServiceImpl
+
+    private val syncService = SyncServiceImpl()
 
     init {
-        logger.info { "============================================ ModelSyncService init" }
-        syncService = SyncServiceImpl()
-
         logger.info { "============================================ Registering sync actions" }
         registerSyncActions()
 
@@ -73,30 +70,43 @@ class ModelSyncService : Disposable {
     fun connectModelServer(
         url: String,
         jwt: String,
-        callback: (() -> Unit),
-    ) {
-        coroutineScope.launch {
-            logger.info { "Connection to server: $url" }
-            syncService.connectModelServer(URL(url), jwt, callback)
-            logger.info { "Connected to server: $url" }
+        callback: (() -> Unit)? = null,
+    ): ModelClientV2? {
+        return runBlocking(coroutineScope.coroutineContext) {
+            var client: ModelClientV2? = null
+            try {
+                logger.info { "Connection to server: $url" }
+                client = syncService.connectModelServer(URL(url), jwt, callback)
+                logger.info { "Connected to server: $url" }
+            } catch (ex: Exception) {
+                logger.error(ex) { "Unable to connect" }
+            }
+            return@runBlocking client
         }
     }
 
     fun disconnectServer(
         modelClient: ModelClientV2,
-        callback: (() -> Unit),
-    ) {
-        coroutineScope.launch {
-            logger.info { "disconnecting to server: ${modelClient.baseUrl}" }
-            syncService.disconnectModelServer(modelClient, callback)
-            logger.info { "disconnected server: ${modelClient.baseUrl}" }
+        callback: (() -> Unit)? = null,
+    ): ModelClientV2? {
+        var client: ModelClientV2? = modelClient
+        return runBlocking(coroutineScope.coroutineContext) {
+            try {
+                logger.info { "Disconnecting from server: ${modelClient.baseUrl}" }
+                syncService.disconnectModelServer(modelClient, callback)
+                logger.info { "Disconnected from server: ${modelClient.baseUrl}" }
+                client = null
+            } catch (ex: Exception) {
+                logger.error(ex) { "Unable to disconnect" }
+            }
+            return@runBlocking client
         }
     }
 
     fun bindModule(
         client: ModelClientV2,
         branchName: String,
-        module: INode,
+        moduleId: String,
         repositoryID: String,
     ) {
         coroutineScope.launch {
@@ -104,10 +114,10 @@ class ModelSyncService : Disposable {
                 syncService.bindModule(
                     client,
                     BranchReference(RepositoryId(repositoryID), branchName),
-                    module,
+                    moduleId,
                 ).forEach { it.activate() }
-            } catch (e: Exception) {
-                logger.error(e) { "Error while binding module" }
+            } catch (ex: Exception) {
+                logger.error(ex) { "Error while binding module" }
             }
         }
     }
@@ -122,13 +132,12 @@ class ModelSyncService : Disposable {
         ensureStopped()
     }
 
+    @Synchronized
     private fun ensureStopped() {
         logger.info { "============================================  ensureStopped" }
-        runSynchronized(this) {
-            if (server == null) return
-            logger.info { "stopping modelix server" }
-            server = null
-        }
+        if (server == null) return
+        logger.info { "stopping modelix server" }
+        server = null
     }
 
     private fun registerSyncActions() {

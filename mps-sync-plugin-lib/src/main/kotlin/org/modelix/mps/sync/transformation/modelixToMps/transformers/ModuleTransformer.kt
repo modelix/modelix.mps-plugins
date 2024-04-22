@@ -96,13 +96,13 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) { unflattenedBindings ->
                 @Suppress("UNCHECKED_CAST")
                 (unflattenedBindings as Iterable<Iterable<IBinding>>).flatten()
-            }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) { dependencyAndModelBindings ->
+            }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) { flattenedBindings ->
                 // resolve references only after all dependent (and contained) modules and models have been transformed
                 if (isTransformationStartingModule) {
                     // resolve cross-model references (and node references)
                     modelTransformer.resolveCrossModelReferences(project.repository)
                 }
-                dependencyAndModelBindings
+                flattenedBindings
             }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) { dependencyAndModelBindings ->
                 // register binding
                 val iNode = branch.getNode(nodeId)
