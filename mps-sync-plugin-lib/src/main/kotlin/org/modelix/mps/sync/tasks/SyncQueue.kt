@@ -22,7 +22,6 @@ import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.MpsCommandHelper
 import org.modelix.mps.sync.util.completeWithDefault
-import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -117,7 +116,7 @@ object SyncQueue : AutoCloseable {
                 taskResult.complete(result)
             }
         } else {
-            val lockHeadAndTail = locks.toList().customHeadTail()
+            val lockHeadAndTail = locks.customHeadTail()
             val lockHead = lockHeadAndTail.first
 
             runWithLock(lockHead) {
@@ -158,12 +157,4 @@ object SyncQueue : AutoCloseable {
 }
 
 // List.headTail does not work in some MPS versions (e.g. 2020.3.6), therefore we reimplemented the method
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun <T> List<T>.customHeadTail(): Pair<T, List<T>> {
-    require(this.isNotEmpty()) { "Not enough values" }
-    return if (this.size == 1) {
-        Pair(this.first(), Collections.emptyList())
-    } else {
-        Pair(this.first(), this.subList(1, this.size))
-    }
-}
+private fun <T> Iterable<T>.customHeadTail(): Pair<T, List<T>> = this.first() to this.drop(1)
