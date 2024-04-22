@@ -92,7 +92,11 @@ class NodeSynchronizer(
             val mpsValue = mpsNode.getProperty(it)
             cloudNode.setPropertyValue(modelixProperty, mpsValue)
         }
-        // Save MPS Node ID explicitly. If you change this property here, please also change above where we check if the node already exists in its parent.
+        /*
+         * Save MPS Node ID explicitly.
+         * If you change this property here, please also change in method 'throwExceptionIfChildExists', where we use
+         * node.nodeId.toString() to check if the node already exists.
+         */
         cloudNode.setPropertyValue(PropertyFromName(NodeData.ID_PROPERTY_KEY), mpsNode.nodeId.toString())
 
         // synchronize references
