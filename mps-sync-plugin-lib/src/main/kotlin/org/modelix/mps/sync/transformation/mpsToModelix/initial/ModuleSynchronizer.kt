@@ -85,16 +85,16 @@ class ModuleSynchronizer(private val branch: IBranch) {
 
             // synchronize dependencies
             module.declaredDependencies.waitForCompletionOfEachTask(collectResults = true) { addDependency(module, it) }
-        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) { unflattenedBindings ->
-            if (unflattenedBindings is Iterable<*>) {
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) { previousTaskResult ->
+            if (previousTaskResult is Iterable<*>) {
                 @Suppress("UNCHECKED_CAST")
-                (unflattenedBindings as Iterable<Iterable<IBinding>>).flatten()
+                (previousTaskResult as Iterable<Iterable<IBinding>>).flatten()
             } else {
-                unflattenedBindings
+                previousTaskResult
             }
-        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { dependencyBindings ->
-            if (dependencyBindings is ModuleAlreadySynchronized) {
-                return@continueWith dependencyBindings
+        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { previousTaskResult ->
+            if (previousTaskResult is ModuleAlreadySynchronized) {
+                return@continueWith previousTaskResult
             }
 
             // synchronize models
@@ -107,21 +107,21 @@ class ModuleSynchronizer(private val branch: IBranch) {
                 if (throwable != null) {
                     passedOnDependencyBindingsFuture.completeExceptionally(throwable)
                 } else {
-                    passedOnDependencyBindingsFuture.complete(dependencyBindings)
+                    passedOnDependencyBindingsFuture.complete(previousTaskResult)
                 }
             }
             passedOnDependencyBindingsFuture
         }.continueWith(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
-        ) { dependencyBindings ->
+        ) { previousTaskResult ->
             // resolve references only after all dependent (and contained) modules and models have been transformed
             if (isTransformationStartingModule) {
                 resolveCrossModelReferences()
             }
-            dependencyBindings
-        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) { dependencyBindings ->
-            if (dependencyBindings is ModuleAlreadySynchronized) {
+            previousTaskResult
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) { previousTaskResult ->
+            if (previousTaskResult is ModuleAlreadySynchronized) {
                 return@continueWith Collections.emptySet<IBinding>()
             }
 
@@ -131,7 +131,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
 
             val bindings = mutableSetOf<IBinding>(binding)
             @Suppress("UNCHECKED_CAST")
-            bindings.addAll(dependencyBindings as Iterable<IBinding>)
+            bindings.addAll(previousTaskResult as Iterable<IBinding>)
             bindings
         }
 
