@@ -165,53 +165,54 @@ class ModuleSynchronizer(private val branch: IBranch) {
             }
             if (dependencyExists) {
                 logger.warn { "Module ${module.moduleName}'s Module Dependency for Module ${moduleReference.moduleName} will not be synchronized, because it already exists on the server." }
-            } else {
-                val cloudDependency =
-                    cloudModule.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
-
-                nodeMap.put(module, moduleReference, cloudDependency.nodeIdAsLong())
-
-                // warning: might be fragile, because we synchronize the properties by hand
-                cloudDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport,
-                    dependency.isReexport.toString(),
-                )
-
-                cloudDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid,
-                    targetModuleId,
-                )
-
-                cloudDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name,
-                    moduleReference.moduleName,
-                )
-
-                val moduleId = moduleReference.moduleId
-                val isExplicit = if (module is Solution) {
-                    module.moduleDescriptor.dependencies.any { it.moduleRef.moduleId == moduleId }
-                } else {
-                    module.declaredDependencies.any { it.targetModule.moduleId == moduleId }
-                }
-                cloudDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.explicit,
-                    isExplicit.toString(),
-                )
-
-                val version = (module as? Solution)?.let {
-                    it.moduleDescriptor.dependencyVersions.filter { dependencyVersion -> dependencyVersion.key == moduleReference }
-                        .firstOrNull()?.value
-                } ?: 0
-                cloudDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.version,
-                    version.toString(),
-                )
-
-                cloudDependency.setPropertyValue(
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.scope,
-                    dependency.scope.toString(),
-                )
+                return@continueWith dependencyBindings
             }
+
+            val cloudDependency =
+                cloudModule.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
+
+            nodeMap.put(module, moduleReference, cloudDependency.nodeIdAsLong())
+
+            // warning: might be fragile, because we synchronize the properties by hand
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport,
+                dependency.isReexport.toString(),
+            )
+
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid,
+                targetModuleId,
+            )
+
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name,
+                moduleReference.moduleName,
+            )
+
+            val moduleId = moduleReference.moduleId
+            val isExplicit = if (module is Solution) {
+                module.moduleDescriptor.dependencies.any { it.moduleRef.moduleId == moduleId }
+            } else {
+                module.declaredDependencies.any { it.targetModule.moduleId == moduleId }
+            }
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.explicit,
+                isExplicit.toString(),
+            )
+
+            val version = (module as? Solution)?.let {
+                it.moduleDescriptor.dependencyVersions.filter { dependencyVersion -> dependencyVersion.key == moduleReference }
+                    .firstOrNull()?.value
+            } ?: 0
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.version,
+                version.toString(),
+            )
+
+            cloudDependency.setPropertyValue(
+                BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.scope,
+                dependency.scope.toString(),
+            )
 
             dependencyBindings
         }
