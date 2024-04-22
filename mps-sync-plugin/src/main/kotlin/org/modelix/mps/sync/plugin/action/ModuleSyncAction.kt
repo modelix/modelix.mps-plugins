@@ -46,7 +46,7 @@ class ModuleSyncAction : AnAction {
         try {
             val module = event.getData(CONTEXT_MODULE)!! as AbstractModule
             val branch = BranchRegistry.branch
-            require(branch != null) { "Connect to a server and branch before synchronizing a module" }
+            check(branch != null) { "Connect to a server and branch before synchronizing a module" }
 
             val bindings = service<ModelSyncService>().bindModuleFromMps(module, branch)
             bindings.forEach { it.activate() }

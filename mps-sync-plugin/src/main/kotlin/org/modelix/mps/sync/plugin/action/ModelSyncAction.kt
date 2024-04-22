@@ -46,7 +46,7 @@ class ModelSyncAction : AnAction {
         try {
             val model = event.getData(CONTEXT_MODEL)!! as SModelBase
             val branch = BranchRegistry.branch
-            require(branch != null) { "Connect to a server and branch before synchronizing a model" }
+            check(branch != null) { "Connect to a server and branch before synchronizing a model" }
 
             val binding = service<ModelSyncService>().bindModelFromMps(model, branch)
             binding.activate()
