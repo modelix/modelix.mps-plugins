@@ -36,6 +36,7 @@ import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.modelix.ModuleAlreadySynchronized
+import org.modelix.mps.sync.modelix.ModuleAlreadySynchronizedException
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
@@ -74,7 +75,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
                 if (nodeMap.isMappedToModelix(module)) {
                     return@enqueue ModuleAlreadySynchronized(module)
                 } else {
-                    throw Exception("Module ${module.moduleName} already exists on the server, therefore it will not be synchronized. Remove it from the project and synchronize it from the server instead.")
+                    throw ModuleAlreadySynchronizedException(module)
                 }
             }
 

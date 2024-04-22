@@ -32,6 +32,7 @@ import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.modelix.ModelAlreadySynchronized
+import org.modelix.mps.sync.modelix.ModelAlreadySynchronizedException
 import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
@@ -80,7 +81,7 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
                 if (nodeMap.isMappedToModelix(model)) {
                     return@enqueue ModelAlreadySynchronized(model)
                 } else {
-                    throw Exception("Model ${model.name} in Module ${parentModule.moduleName} already exists on the server, therefore it and its parent module will not be synchronized completely. Remove the parent module from the project and synchronize it from the server instead.")
+                    throw ModelAlreadySynchronizedException(model)
                 }
             }
 

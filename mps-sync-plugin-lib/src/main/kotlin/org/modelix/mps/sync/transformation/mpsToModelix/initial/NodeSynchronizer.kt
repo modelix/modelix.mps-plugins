@@ -33,6 +33,7 @@ import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
+import org.modelix.mps.sync.modelix.NodeAlreadySynchronizedException
 import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
@@ -67,19 +68,12 @@ class NodeSynchronizer(
             val mpsConcept = node.concept
             val cloudParentNode = branch.getNode(parentNodeId)
 
-            try {
-                // duplicate check
-                throwExceptionIfChildExists(cloudParentNode, childLink, node)
-                val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
-                nodeMap.put(node, cloudChildNode.nodeIdAsLong())
+            // duplicate check
+            throwExceptionIfChildExists(cloudParentNode, childLink, node)
+            val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
+            nodeMap.put(node, cloudChildNode.nodeIdAsLong())
 
-                synchronizeNodeToCloud(mpsConcept, node, cloudChildNode)
-            } catch (ex: ChildNodeExists) {
-                // rethrow if node is not mapped yet
-                if (!nodeMap.isMappedToModelix(ex.node)) {
-                    throw ex
-                }
-            }
+            synchronizeNodeToCloud(mpsConcept, node, cloudChildNode)
         }
 
     private fun synchronizeNodeToCloud(
@@ -130,12 +124,10 @@ class NodeSynchronizer(
 
     private fun throwExceptionIfChildExists(cloudParentNode: INode, childLink: IChildLink, node: SNode) {
         val children = cloudParentNode.getChildren(childLink)
-        val nodeExists = children.any { node.getModelixId() == it.getOriginalReference() }
-        if (nodeExists) {
-            throw ChildNodeExists(
-                node,
-                "Node ${node.name} already exists on server, therefore it will not be synched. Remove its parent node or its parent model and synchronize the parent model from the server instead.",
-            )
+        val nodeExistsOnTheServer = children.any { node.getModelixId() == it.getOriginalReference() }
+        val isSynchedToMps = nodeMap.isMappedToModelix(node)
+        if (nodeExistsOnTheServer && !isSynchedToMps) {
+            throw NodeAlreadySynchronizedException(node)
         }
     }
 
