@@ -5,7 +5,7 @@ modelix-model-api-gen = { id = "org.modelix.model-api-gen", version.ref = "model
 npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.2" }
 
 [versions]
-modelixCore = "7.1.3"
+modelixCore = "7.2.0"
 kotlinCoroutines="1.8.0"
 ktor="2.3.10"
 
@@ -22,7 +22,7 @@ modelix-modelql-html = { group = "org.modelix", name = "modelql-html", version.r
 modelix-model-datastructure = { group = "org.modelix", name = "model-datastructure", version.ref = "modelixCore" }
 modelix-mps-model-adapters = { group = "org.modelix.mps", name = "model-adapters", version.ref = "modelixCore" }
 
-kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version = "6.0.4" }
+kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version = "6.0.9" }
 kotlin-logging-microutils = { group = "io.github.microutils", name = "kotlin-logging", version = "3.0.5" }
 kotlin-html = "org.jetbrains.kotlinx:kotlinx-html:0.11.0"
 kotlin-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinCoroutines" }
@@ -30,4 +30,4 @@ kotlin-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coro
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 
 zt-zip = { group = "org.zeroturnaround", name = "zt-zip", version = "1.17" }
-logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.5.4" }
+logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.5.6" }

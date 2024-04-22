@@ -90,7 +90,12 @@ class ReferenceSynchronisationTest : SyncPluginTestBase("projectWithReferences")
                     null,
                 )
             }
-            syncService.flushAllBindings()
+            delayUntil(exceptionMessage = "Failed to sync module to model server") {
+                val dataOnServer = readDumpFromServer(defaultBranchRef)
+                dataOnServer.children.any { module ->
+                    module.children.any { it.role == "models" }
+                }
+            }
 
             // Assert
             val rootNodeData = readDumpFromServer(defaultBranchRef)

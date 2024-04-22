@@ -61,14 +61,16 @@ class ModelSyncService : Disposable, ISyncService {
         var INSTANCE: ModelSyncService? = null
     }
 
-    private val legacyAppPluginParts = listOf(
-        org.modelix.model.mpsadapters.plugin.ApplicationPlugin_AppPluginPart(),
-        org.modelix.model.mpsplugin.plugin.ApplicationPlugin_AppPluginPart(),
-    )
+    private val mpsAdaptersLegacyPluginPart = org.modelix.model.mpsadapters.plugin.ApplicationPlugin_AppPluginPart()
+
+    // Initialize the plugin part responsible for syncing only once a project is added.
+    private var syncPluginLegacyPluginPart: org.modelix.model.mpsplugin.plugin.ApplicationPlugin_AppPluginPart? = null
+
     private var serverConnections: List<ServerConnection> = emptyList()
     var httpClient: HttpClient? = null
 
     init {
+        LOG.info("Initializing the model sync service.")
         check(INSTANCE == null) { "Single instance expected" }
         INSTANCE = this
         Mpsplugin_ApplicationPlugin().let {
@@ -76,16 +78,22 @@ class ModelSyncService : Disposable, ISyncService {
             it.adjustRegularGroups()
         }
 
-        legacyAppPluginParts.forEach { it.init() }
+        mpsAdaptersLegacyPluginPart.init()
     }
 
     override fun dispose() {
         INSTANCE = null
         // serverConnections disposal is handled by Disposer
-        legacyAppPluginParts.forEach { it.dispose() }
+        mpsAdaptersLegacyPluginPart.dispose()
+        syncPluginLegacyPluginPart?.dispose()
     }
 
     fun registerProject(project: com.intellij.openapi.project.Project) {
+        if (syncPluginLegacyPluginPart == null) {
+            syncPluginLegacyPluginPart = org.modelix.model.mpsplugin.plugin.ApplicationPlugin_AppPluginPart().also {
+                it.init()
+            }
+        }
         project.getService(ModelSyncProjectService::class.java)
     }
 
