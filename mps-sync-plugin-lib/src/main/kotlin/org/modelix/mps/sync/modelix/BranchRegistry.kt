@@ -37,7 +37,10 @@ object BranchRegistry : Disposable {
 
     private lateinit var model: ReplicatedModel
     private lateinit var branchListener: ModelixBranchListener
-    private lateinit var projectWithChangeListener: Pair<MPSProject, RepositoryChangeListener>
+
+    // the MPS Project and its registered change listener
+    private lateinit var project: MPSProject
+    private lateinit var repoChangeListener: RepositoryChangeListener
 
     suspend fun setBranch(
         client: ModelClientV2,
@@ -59,7 +62,8 @@ object BranchRegistry : Disposable {
 
         val repositoryChangeListener = RepositoryChangeListener(branch!!)
         targetProject.repository.addRepositoryListener(repositoryChangeListener)
-        projectWithChangeListener = Pair(targetProject, repositoryChangeListener)
+        project = targetProject
+        repoChangeListener = repositoryChangeListener
 
         return branch!!
     }
@@ -71,12 +75,10 @@ object BranchRegistry : Disposable {
 
         // remove listeners
         branch!!.removeListener(branchListener)
-        projectWithChangeListener.let {
-            val project = it.first
-            val listener = it.second
-            project.repository.removeRepositoryListener(listener)
-        }
+        project.repository.removeRepositoryListener(repoChangeListener)
 
         model.dispose()
+
+        branch = null
     }
 }
