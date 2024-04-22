@@ -29,7 +29,7 @@ import com.intellij.ui.content.ContentFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.Mutex
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
@@ -88,7 +88,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
         private val logger = KotlinLogging.logger {}
         private val coroutineScope = CoroutineScope(Dispatchers.Default)
-        private val mutex = Semaphore(1)
+        private val mutex = Mutex()
 
         val contentPanel = JPanel()
         val bindingsRefresher: BindingsComboBoxRefresher
@@ -346,7 +346,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
         private fun callOnlyIfNotFetching(action: suspend () -> Unit) {
             coroutineScope.launch {
-                if (mutex.tryAcquire()) {
+                if (mutex.tryLock()) {
                     try {
                         setUiControlsEnabled(false)
                         action()
@@ -354,7 +354,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                         logger.error(ex) { "Failed to fetch data from server." }
                     } finally {
                         setUiControlsEnabled(true)
-                        mutex.release()
+                        mutex.unlock()
                     }
                 }
             }
