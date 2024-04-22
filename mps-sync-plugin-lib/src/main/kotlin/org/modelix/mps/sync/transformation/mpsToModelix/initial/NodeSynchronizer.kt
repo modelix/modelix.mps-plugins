@@ -129,7 +129,7 @@ class NodeSynchronizer(
 
     private fun throwExceptionIfChildExists(cloudParentNode: INode, childLink: IChildLink, node: SNode) {
         val children = cloudParentNode.getChildren(childLink)
-        val nodeExists = children.firstOrNull { node.nodeId.toString() == it.getOriginalReference() } != null
+        val nodeExists = children.any { node.nodeId.toString() == it.getOriginalReference() }
         if (nodeExists) {
             throw ChildNodeExists(
                 node,

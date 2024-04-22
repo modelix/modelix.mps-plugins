@@ -74,7 +74,7 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
             // duplicate check
             val modelId = model.modelId.toString()
             val modelExists = cloudModule.getChildren(childLink)
-                .firstOrNull { modelId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) } != null
+                .any { modelId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) }
             if (modelExists) {
                 if (nodeMap.isMappedToModelix(model)) {
                     return@enqueue ModelAlreadySynchronized(model)
@@ -166,9 +166,9 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
         val cloudTargetModelId = cloudTargetModel.getPropertyValue(idProperty)
 
         // duplicate check and sync
-        val modelImportExists = cloudParentNode.getChildren(childLink).firstOrNull {
+        val modelImportExists = cloudParentNode.getChildren(childLink).any {
             cloudTargetModelId == it.getReferenceTarget(targetModelReference)?.getPropertyValue(idProperty)
-        } != null
+        }
         if (modelImportExists) {
             logger.warn { "Model Import for Model ${targetModel.name} from Model ${source.name} will not be synchronized, because it already exists on the server." }
         } else {
@@ -194,7 +194,7 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
 
             // duplicate check and sync
             val dependencyExists = cloudNode.getChildren(childLink)
-                .firstOrNull { targetLanguageId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) } != null
+                .any { targetLanguageId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) }
             if (dependencyExists) {
                 logger.warn { "Model ${model.name}'s Language Dependency for $targetLanguageName will not be synchronized, because it already exists on the server." }
             } else {
@@ -239,7 +239,7 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
 
             // duplicate check and sync
             val dependencyExists = cloudNode.getChildren(childLink)
-                .firstOrNull { devKitId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) } != null
+                .any { devKitId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) } != null
             if (dependencyExists) {
                 logger.warn { "Model ${model.name}'s DevKit Dependency for $devKitName will not be synchronized, because it already exists on the server." }
             } else {

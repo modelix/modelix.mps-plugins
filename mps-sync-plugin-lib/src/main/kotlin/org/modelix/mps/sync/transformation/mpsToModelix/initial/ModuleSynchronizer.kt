@@ -68,7 +68,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
             // duplicate check
             val moduleId = module.moduleId.toString()
             val moduleExists = rootNode.getChildren(childLink)
-                .firstOrNull { moduleId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) } != null
+                .any { moduleId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) }
             if (moduleExists) {
                 if (nodeMap.isMappedToModelix(module)) {
                     return@enqueue ModuleAlreadySynchronized(module)
