@@ -41,6 +41,8 @@ import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.ofConcept
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.mps.notifications.AlertNotifier
+import org.modelix.mps.sync.mps.notifications.BalloonNotifier
 import org.modelix.mps.sync.plugin.ModelSyncService
 import org.modelix.mps.sync.plugin.icons.CloudIcons
 import java.awt.Component
@@ -118,6 +120,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val modulesModel = DefaultComboBoxModel<ModuleIdWithName>()
         private val bindingsModel = DefaultComboBoxModel<IBinding>()
 
+        private lateinit var activeProject: Project
+
         init {
             logger.info { "-------------------------------------------- ModelSyncGui init" }
             toolWindow.setIcon(CloudIcons.ROOT_ICON)
@@ -151,6 +155,13 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             jwtPanel.add(jwt)
 
             connectButton.addActionListener { _: ActionEvent ->
+                if (connectionsModel.size != 0) {
+                    val message =
+                        "<html>Only one client connection is allowed. <a href=\"disconnect\">Disconnect</a> the existing client.</html>"
+                    BalloonNotifier(activeProject).error(message) { disconnectClient() }
+                    return@addActionListener
+                }
+
                 val client = modelSyncService.connectModelServer(serverURL.text, jwt.text)
                 triggerRefresh(client)
             }
@@ -166,15 +177,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             connectionsPanel.add(JLabel("Existing Connection:"))
             connectionsPanel.add(connectionsCB)
 
-            disconnectButton.addActionListener { _: ActionEvent? ->
-                if (connectionsModel.size > 0) {
-                    val originalClient = connectionsModel.selectedItem as ModelClientV2
-                    val clientAfterDisconnect = modelSyncService.disconnectServer(originalClient)
-                    if (clientAfterDisconnect == null) {
-                        triggerRefresh(null)
-                    }
-                }
-            }
+            disconnectButton.addActionListener { _: ActionEvent? -> disconnectClient() }
             connectionsPanel.add(disconnectButton)
             inputBox.add(connectionsPanel)
 
@@ -185,7 +188,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             projectsCB.renderer = CustomCellRenderer()
             projectsCB.addItemListener {
                 if (it.stateChange == ItemEvent.SELECTED) {
-                    modelSyncService.setActiveProject(it.item as Project)
+                    activeProject = it.item as Project
+                    modelSyncService.setActiveProject(activeProject)
                 }
             }
 
@@ -277,6 +281,21 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             inputBox.add(bindingsPanel)
 
             return inputBox
+        }
+
+        private fun disconnectClient() {
+            if (connectionsModel.size > 0) {
+                val message = "By disconnecting, the synchronized modules and models will be removed locally."
+                AlertNotifier(activeProject).warning(message) { response ->
+                    if (true.toString() == response) {
+                        val originalClient = connectionsModel.selectedItem as ModelClientV2
+                        val clientAfterDisconnect = modelSyncService.disconnectServer(originalClient)
+                        if (clientAfterDisconnect == null) {
+                            triggerRefresh(null)
+                        }
+                    }
+                }
+            }
         }
 
         private fun triggerRefresh(client: ModelClientV2?) {

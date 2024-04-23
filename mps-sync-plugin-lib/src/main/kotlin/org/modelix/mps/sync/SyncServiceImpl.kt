@@ -68,8 +68,11 @@ class SyncServiceImpl : SyncService {
         client: ModelClientV2,
         callback: (() -> Unit)?,
     ) {
-        // TODO what shall happen with the bindings if we disconnect from model server?
+        logger.info { "Disconnecting from ${client.baseUrl}" }
         client.close()
+        logger.info { "Deactivating bindings" }
+        BindingsRegistry.deactivateBindings()
+        logger.info { "Bindings deactivated" }
         callback?.invoke()
     }
 
@@ -129,8 +132,7 @@ class SyncServiceImpl : SyncService {
         // dispose replicated model
         BranchRegistry.dispose()
         // dispose all bindings
-        BindingsRegistry.getModuleBindings().forEach { it.deactivate(removeFromServer = false) }
-        BindingsRegistry.getModelBindings().forEach { it.deactivate(removeFromServer = false) }
+        BindingsRegistry.deactivateBindings()
     }
 
     private fun registerLanguages(project: MPSProject): MPSLanguageRepository {

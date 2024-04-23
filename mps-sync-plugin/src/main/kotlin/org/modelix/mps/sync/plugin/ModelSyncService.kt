@@ -88,9 +88,9 @@ class ModelSyncService : Disposable {
     ): ModelClientV2? {
         var client: ModelClientV2? = modelClient
         try {
-            logger.info { "disconnecting to server: ${modelClient.baseUrl}" }
+            logger.info { "Disconnecting from  server: ${modelClient.baseUrl}" }
             syncService.disconnectModelServer(modelClient, callback)
-            logger.info { "disconnected server: ${modelClient.baseUrl}" }
+            logger.info { "Disconnected from server: ${modelClient.baseUrl}" }
             client = null
         } catch (ex: Exception) {
             logger.error(ex) { "Unable to disconnect" }
