@@ -15,13 +15,11 @@ val mpsToIdeaMap = mapOf(
     "2022.3.1" to "223.8836.41", // https://github.com/JetBrains/MPS/blob/2022.3.1/build/version.properties
     "2023.2" to "232.10072.27", // https://github.com/JetBrains/MPS/blob/2023.2.0/build/version.properties
 )
-// use the given MPS version, or 2022.2 (last version with JAVA 11) as default
+
 val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2020.3.6"
 if (!mpsToIdeaMap.containsKey(mpsVersion)) {
     throw GradleException("Build for the given MPS version '$mpsVersion' is not supported.")
 }
-val mpsHome = rootProject.layout.buildDirectory.dir("mps-$mpsVersion")
-// identify the corresponding intelliJ platform version used by the MPS version
 val ideaVersion = mpsToIdeaMap.getValue(mpsVersion)
 println("Building for MPS version $mpsVersion and IntelliJ version $ideaVersion")
 
@@ -46,8 +44,8 @@ dependencies {
     )
 }
 
-// Configure Gradle IntelliJ Plugin
-// Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
+// Configure Gradle IntelliJ Plugin (https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html)
+val mpsHome = rootProject.layout.buildDirectory.dir("mps-$mpsVersion")
 intellij {
     localPath = mpsHome.map { it.asFile.absolutePath }
     instrumentCode = false
