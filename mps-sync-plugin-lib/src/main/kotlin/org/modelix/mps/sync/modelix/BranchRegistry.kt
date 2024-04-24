@@ -48,7 +48,7 @@ object BranchRegistry : Disposable {
         branchReference: BranchReference,
         languageRepository: MPSLanguageRepository,
         targetProject: MPSProject,
-        replicatedBranchCoroutineScope: CoroutineScope,
+        replicatedModelCoroutineScope: CoroutineScope,
     ): IBranch {
         if (this.branchReference == branchReference) {
             return branch!!
@@ -56,7 +56,7 @@ object BranchRegistry : Disposable {
 
         dispose()
 
-        model = client.getReplicatedModel(branchReference, replicatedBranchCoroutineScope)
+        model = client.getReplicatedModel(branchReference, replicatedModelCoroutineScope)
         branch = model.start()
 
         branchListener = ModelixBranchListener(model, languageRepository, branch!!)

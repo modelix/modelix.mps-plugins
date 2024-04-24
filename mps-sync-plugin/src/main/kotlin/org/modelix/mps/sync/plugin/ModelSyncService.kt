@@ -38,9 +38,6 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
@@ -58,8 +55,6 @@ class ModelSyncService : Disposable {
     private val logger = KotlinLogging.logger { }
 
     private val syncService = SyncServiceImpl()
-
-    private val dispatcher = Dispatchers.Default // rather CPU intensive tasks
 
     init {
         logger.info { "============================================ Registering sync actions" }
@@ -106,17 +101,14 @@ class ModelSyncService : Disposable {
     }
 
     fun bindModuleFromServer(client: ModelClientV2, branchName: String, moduleId: String, repositoryID: String) {
-        // launch in a coroutine to avoid blocking the main thread
-        CoroutineScope(dispatcher).launch {
-            try {
-                syncService.bindModuleFromServer(
-                    client,
-                    BranchReference(RepositoryId(repositoryID), branchName),
-                    moduleId,
-                ).forEach { it.activate() }
-            } catch (ex: Exception) {
-                logger.error(ex) { "Error while binding Module $moduleId from Repository $repositoryID and Branch $branchName" }
-            }
+        try {
+            syncService.bindModuleFromServer(
+                client,
+                BranchReference(RepositoryId(repositoryID), branchName),
+                moduleId,
+            ).forEach { it.activate() }
+        } catch (ex: Exception) {
+            logger.error(ex) { "Error while binding Module $moduleId from Repository $repositoryID and Branch $branchName" }
         }
     }
 

@@ -90,7 +90,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
         private val logger = KotlinLogging.logger {}
         private val mutex = Mutex()
-        private val dispatcher = Dispatchers.IO // rather IO-intensive tasks
+        private val dispatcher = Dispatchers.Default
 
         val contentPanel = JPanel()
         val bindingsRefresher: BindingsComboBoxRefresher
@@ -112,6 +112,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val connectButton = JButton("Connect")
         private val disconnectButton = JButton("Disconnect")
         private val bindButton = JButton("Bind Selected")
+        private val connectBranchButton = JButton("Connect to Branch without downloading Modules")
 
         private val connectionsModel = DefaultComboBoxModel<ModelClientV2>()
         private val projectsModel = DefaultComboBoxModel<Project>()
@@ -202,7 +203,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             reposCB.renderer = CustomCellRenderer()
             reposCB.addActionListener {
                 if (it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
-                    callOnlyIfNotFetching(::populateBranchCB)
+                    callDisablingUiControls(::populateBranchCB)
                 }
             }
             repoPanel.add(JLabel("Remote Repo:   "))
@@ -214,21 +215,24 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             branchesCB.renderer = CustomCellRenderer()
             branchesCB.addActionListener {
                 if (it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
-                    callOnlyIfNotFetching(::populateModuleCB)
+                    callDisablingUiControls(::populateModuleCB)
                 }
             }
             branchPanel.add(JLabel("Remote Branch: "))
             branchPanel.add(branchesCB)
             inputBox.add(branchPanel)
-            val connectBranchButton = JButton("Connect to Branch without downloading Modules")
             connectBranchButton.addActionListener {
                 val selectedConnection = connectionsModel.selectedItem
                 val selectedBranch = branchesModel.selectedItem
 
                 if (selectedConnection != null && selectedBranch != null) {
-                    modelSyncService.connectToBranch(
-                        selectedConnection as ModelClientV2,
-                        selectedBranch as BranchReference,
+                    callDisablingUiControls(
+                        suspend {
+                            modelSyncService.connectToBranch(
+                                selectedConnection as ModelClientV2,
+                                selectedBranch as BranchReference,
+                            )
+                        },
                     )
                 }
             }
@@ -250,11 +254,15 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
                 if (inputsExist) {
                     logger.info { "Binding Module ${moduleName.text} to project: ${ActiveMpsProjectInjector.activeMpsProject?.name}" }
-                    modelSyncService.bindModuleFromServer(
-                        selectedConnection as ModelClientV2,
-                        (selectedBranch as BranchReference).branchName,
-                        (selectedModule as ModuleIdWithName).id,
-                        (selectedRepo as RepositoryId).id,
+                    callDisablingUiControls(
+                        suspend {
+                            modelSyncService.bindModuleFromServer(
+                                selectedConnection as ModelClientV2,
+                                (selectedBranch as BranchReference).branchName,
+                                (selectedModule as ModuleIdWithName).id,
+                                (selectedRepo as RepositoryId).id,
+                            )
+                        },
                     )
                 }
             }
@@ -299,8 +307,12 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private fun triggerRefresh(client: ModelClientV2?) {
-            populateConnectionsCB(client)
-            callOnlyIfNotFetching(::populateRepoCB)
+            callDisablingUiControls(
+                suspend {
+                    populateConnectionsCB(client)
+                    populateRepoCB()
+                },
+            )
         }
 
         private fun populateProjectsCB() {
@@ -376,14 +388,14 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             }
         }
 
-        private fun callOnlyIfNotFetching(action: suspend () -> Unit) {
+        private fun callDisablingUiControls(action: suspend () -> Unit) {
             CoroutineScope(dispatcher).launch {
                 if (mutex.tryLock()) {
                     try {
                         setUiControlsEnabled(false)
                         action()
                     } catch (ex: Exception) {
-                        logger.error(ex) { "Failed to fetch data from server." }
+                        logger.error(ex) { "Failed to execute action from the UI" }
                     } finally {
                         setUiControlsEnabled(true)
                         mutex.unlock()
@@ -401,6 +413,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             connectButton.isEnabled = isEnabled
             disconnectButton.isEnabled = isEnabled
             bindButton.isEnabled = isEnabled
+            connectBranchButton.isEnabled = isEnabled
         }
 
         fun populateBindingCB(bindings: List<IBinding>) {

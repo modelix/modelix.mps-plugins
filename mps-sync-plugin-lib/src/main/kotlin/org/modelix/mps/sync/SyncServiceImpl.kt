@@ -31,7 +31,7 @@ class SyncServiceImpl : ISyncService {
     private val logger = KotlinLogging.logger {}
     private val mpsProjectInjector = ActiveMpsProjectInjector
 
-    private val dispatcher = Dispatchers.IO // rather IO intensive tasks
+    private val dispatcher = Dispatchers.IO // rather IO-intensive tasks
 
     init {
         logger.info { "============================================ Registering builtin languages" }
