@@ -55,11 +55,9 @@ class SolutionProducer {
         val solutionFile = outputFolder.findChild(name).findChild("solution" + MPSExtentions.DOT_SOLUTION)
         val solutionDir = outputFolder.findChild(name)
 
-        ApplicationManager.getApplication().invokeAndWait {
-            VirtualFileManager.getInstance().syncRefresh()
-            val modelsDirVirtual = solutionDir.findChild("models")
-            ensureDirDeletionAndRecreation(modelsDirVirtual)
-        }
+        VirtualFileManager.getInstance().syncRefresh()
+        val modelsDirVirtual = solutionDir.findChild("models")
+        ensureDirDeletionAndRecreation(modelsDirVirtual)
 
         val descriptor = SolutionDescriptor()
         descriptor.namespace = name
