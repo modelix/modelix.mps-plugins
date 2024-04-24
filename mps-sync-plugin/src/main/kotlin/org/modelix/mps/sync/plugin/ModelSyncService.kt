@@ -38,6 +38,9 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
@@ -52,10 +55,11 @@ import java.net.URL
 @Service(Service.Level.APP)
 class ModelSyncService : Disposable {
 
-    private val logger = KotlinLogging.logger {}
-    private var server: String? = null
+    private val logger = KotlinLogging.logger { }
 
     private val syncService = SyncServiceImpl()
+
+    private val dispatcher = Dispatchers.Default // rather CPU intensive tasks
 
     init {
         logger.info { "============================================ Registering sync actions" }
@@ -66,15 +70,11 @@ class ModelSyncService : Disposable {
         logger.info { "============================================ Sync Service initialized $syncService" }
     }
 
-    fun connectModelServer(
-        url: String,
-        jwt: String,
-        callback: (() -> Unit)? = null,
-    ): ModelClientV2? {
+    fun connectModelServer(url: String, jwt: String): ModelClientV2? {
         var client: ModelClientV2? = null
         try {
             logger.info { "Connection to server: $url" }
-            client = syncService.connectModelServer(URL(url), jwt, callback)
+            client = syncService.connectModelServer(URL(url), jwt)
             logger.info { "Connected to server: $url" }
         } catch (ex: Exception) {
             logger.error(ex) { "Unable to connect" }
@@ -82,14 +82,11 @@ class ModelSyncService : Disposable {
         return client
     }
 
-    fun disconnectServer(
-        modelClient: ModelClientV2,
-        callback: (() -> Unit)? = null,
-    ): ModelClientV2? {
+    fun disconnectServer(modelClient: ModelClientV2): ModelClientV2? {
         var client: ModelClientV2? = modelClient
         try {
             logger.info { "Disconnecting from  server: ${modelClient.baseUrl}" }
-            syncService.disconnectModelServer(modelClient, callback)
+            syncService.disconnectModelServer(modelClient)
             logger.info { "Disconnected from server: ${modelClient.baseUrl}" }
             client = null
         } catch (ex: Exception) {
@@ -98,10 +95,7 @@ class ModelSyncService : Disposable {
         return client
     }
 
-    fun connectToBranch(
-        client: ModelClientV2,
-        branchReference: BranchReference,
-    ) {
+    fun connectToBranch(client: ModelClientV2, branchReference: BranchReference) {
         try {
             logger.info { "Connecting to branch $branchReference" }
             syncService.connectToBranch(client, branchReference)
@@ -111,20 +105,18 @@ class ModelSyncService : Disposable {
         }
     }
 
-    fun bindModuleFromServer(
-        client: ModelClientV2,
-        branchName: String,
-        moduleId: String,
-        repositoryID: String,
-    ) {
-        try {
-            syncService.bindModuleFromServer(
-                client,
-                BranchReference(RepositoryId(repositoryID), branchName),
-                moduleId,
-            ).forEach { it.activate() }
-        } catch (ex: Exception) {
-            logger.error(ex) { "Error while binding module" }
+    fun bindModuleFromServer(client: ModelClientV2, branchName: String, moduleId: String, repositoryID: String) {
+        // launch in a coroutine to avoid blocking the main thread
+        CoroutineScope(dispatcher).launch {
+            try {
+                syncService.bindModuleFromServer(
+                    client,
+                    BranchReference(RepositoryId(repositoryID), branchName),
+                    moduleId,
+                ).forEach { it.activate() }
+            } catch (ex: Exception) {
+                logger.error(ex) { "Error while binding Module $moduleId from Repository $repositoryID and Branch $branchName" }
+            }
         }
     }
 
@@ -141,15 +133,6 @@ class ModelSyncService : Disposable {
     override fun dispose() {
         logger.info { "============================================  dispose" }
         syncService.dispose()
-        ensureStopped()
-    }
-
-    @Synchronized
-    private fun ensureStopped() {
-        logger.info { "============================================  ensureStopped" }
-        if (server == null) return
-        logger.info { "stopping modelix server" }
-        server = null
     }
 
     private fun registerSyncActions() {

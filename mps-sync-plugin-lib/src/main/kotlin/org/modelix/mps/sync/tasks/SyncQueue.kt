@@ -20,7 +20,6 @@ import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
-import org.modelix.mps.sync.mps.MpsCommandHelper
 import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -147,7 +146,7 @@ object SyncQueue : AutoCloseable {
 
     private fun runWithLock(lock: SyncLock, runnable: () -> Unit) {
         when (lock) {
-            SyncLock.MPS_WRITE -> MpsCommandHelper.runInUndoTransparentCommand(runnable)
+            SyncLock.MPS_WRITE -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.executeCommandInEDT(runnable)
             SyncLock.MPS_READ -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction(runnable)
             SyncLock.MODELIX_READ -> BranchRegistry.branch!!.runRead(runnable)
             SyncLock.MODELIX_WRITE -> BranchRegistry.branch!!.runWrite(runnable)

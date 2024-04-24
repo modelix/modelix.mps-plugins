@@ -4,6 +4,7 @@ import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
@@ -25,12 +26,12 @@ import java.io.IOException
 import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class SyncServiceImpl : SyncService {
+class SyncServiceImpl : ISyncService {
 
     private val logger = KotlinLogging.logger {}
     private val mpsProjectInjector = ActiveMpsProjectInjector
 
-    private val dispatcher = Dispatchers.Default
+    private val dispatcher = Dispatchers.IO // rather IO intensive tasks
 
     init {
         logger.info { "============================================ Registering builtin languages" }
@@ -39,11 +40,7 @@ class SyncServiceImpl : SyncService {
     }
 
     @Throws(IOException::class)
-    override fun connectModelServer(
-        serverURL: URL,
-        jwt: String?,
-        callback: (() -> Unit)?,
-    ): ModelClientV2 {
+    override fun connectModelServer(serverURL: URL, jwt: String?): ModelClientV2 {
         logger.info { "Connecting to $serverURL" }
         val modelClientV2 = ModelClientV2.builder().url(serverURL.toString()).authToken { jwt }.build()
         runBlocking(dispatcher) {
@@ -51,36 +48,42 @@ class SyncServiceImpl : SyncService {
         }
         logger.info { "Connection to $serverURL successful" }
 
-        callback?.invoke()
-
         return modelClientV2
     }
 
-    override fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch {
-        val targetProject = mpsProjectInjector.activeMpsProject!!
-        val languageRepository = registerLanguages(targetProject)
-        return runBlocking(dispatcher) {
-            BranchRegistry.setBranch(client, branchReference, languageRepository, targetProject)
-        }
-    }
-
-    override fun disconnectModelServer(
-        client: ModelClientV2,
-        callback: (() -> Unit)?,
-    ) {
+    override fun disconnectModelServer(client: ModelClientV2) {
         logger.info { "Disconnecting from ${client.baseUrl}" }
         client.close()
         logger.info { "Deactivating bindings" }
         BindingsRegistry.deactivateBindings()
         logger.info { "Bindings deactivated" }
-        callback?.invoke()
     }
 
+    /**
+     * WARNING: this is a long-running blocking call.
+     */
+    override fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch {
+        val targetProject = mpsProjectInjector.activeMpsProject!!
+        val languageRepository = registerLanguages(targetProject)
+        return runBlocking(dispatcher) {
+            BranchRegistry.setBranch(
+                client,
+                branchReference,
+                languageRepository,
+                targetProject,
+                CoroutineScope(dispatcher),
+            )
+        }
+    }
+
+    /**
+     * WARNING: this is a long-running blocking call.
+     * Do not call this method from the main / EDT Thread, otherwise it will not be able to write to MPS!!!
+     */
     override fun bindModuleFromServer(
         client: ModelClientV2,
         branchReference: BranchReference,
         moduleId: String,
-        callback: (() -> Unit)?,
     ): Iterable<IBinding> {
         val targetProject = mpsProjectInjector.activeMpsProject!!
         val languageRepository = registerLanguages(targetProject)
@@ -88,15 +91,15 @@ class SyncServiceImpl : SyncService {
         // fetch replicated model and branch content
         val branch = connectToBranch(client, branchReference)
 
-        // transform the model
+        // transform the modules and models
         val bindings = ITreeToSTreeTransformer(branch, languageRepository).transform(moduleId)
-
-        // trigger callback after activation
-        callback?.invoke()
 
         return bindings
     }
 
+    /**
+     * WARNING: this is a long-running blocking call.
+     */
     override fun bindModuleFromMps(module: AbstractModule, branch: IBranch): Iterable<IBinding> {
         logger.info { "Binding Module ${module.moduleName} to the server" }
 
@@ -108,6 +111,9 @@ class SyncServiceImpl : SyncService {
         return bindings
     }
 
+    /**
+     * WARNING: this is a long-running blocking call.
+     */
     override fun bindModelFromMps(model: SModelBase, branch: IBranch): IBinding {
         logger.info { "Binding Model ${model.name} to the server" }
 

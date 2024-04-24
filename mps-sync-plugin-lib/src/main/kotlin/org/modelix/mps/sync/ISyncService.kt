@@ -12,10 +12,12 @@ import java.net.URL
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-interface SyncService {
+interface ISyncService {
 
     @Throws(IOException::class)
-    fun connectModelServer(serverURL: URL, jwt: String? = null, callback: (() -> Unit)? = null): ModelClientV2
+    fun connectModelServer(serverURL: URL, jwt: String? = null): ModelClientV2
+
+    fun disconnectModelServer(client: ModelClientV2)
 
     fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch
 
@@ -23,14 +25,11 @@ interface SyncService {
         client: ModelClientV2,
         branchReference: BranchReference,
         moduleId: String,
-        callback: (() -> Unit)? = null,
     ): Iterable<IBinding>
 
     fun bindModuleFromMps(module: AbstractModule, branch: IBranch): Iterable<IBinding>
 
     fun bindModelFromMps(model: SModelBase, branch: IBranch): IBinding
-
-    fun disconnectModelServer(client: ModelClientV2, callback: (() -> Unit)? = null)
 
     fun setActiveProject(project: Project)
 

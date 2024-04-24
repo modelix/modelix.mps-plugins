@@ -89,8 +89,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private val logger = KotlinLogging.logger {}
-        private val coroutineScope = CoroutineScope(Dispatchers.Default)
         private val mutex = Mutex()
+        private val dispatcher = Dispatchers.IO // rather IO-intensive tasks
 
         val contentPanel = JPanel()
         val bindingsRefresher: BindingsComboBoxRefresher
@@ -377,7 +377,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private fun callOnlyIfNotFetching(action: suspend () -> Unit) {
-            coroutineScope.launch {
+            CoroutineScope(dispatcher).launch {
                 if (mutex.tryLock()) {
                     try {
                         setUiControlsEnabled(false)

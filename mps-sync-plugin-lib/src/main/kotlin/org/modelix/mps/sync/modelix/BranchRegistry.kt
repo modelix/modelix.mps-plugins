@@ -18,6 +18,7 @@ package org.modelix.mps.sync.modelix
 
 import com.intellij.openapi.Disposable
 import jetbrains.mps.project.MPSProject
+import kotlinx.coroutines.CoroutineScope
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.client2.ModelClientV2
@@ -47,6 +48,7 @@ object BranchRegistry : Disposable {
         branchReference: BranchReference,
         languageRepository: MPSLanguageRepository,
         targetProject: MPSProject,
+        replicatedBranchCoroutineScope: CoroutineScope,
     ): IBranch {
         if (this.branchReference == branchReference) {
             return branch!!
@@ -54,7 +56,7 @@ object BranchRegistry : Disposable {
 
         dispose()
 
-        model = client.getReplicatedModel(branchReference)
+        model = client.getReplicatedModel(branchReference, replicatedBranchCoroutineScope)
         branch = model.start()
 
         branchListener = ModelixBranchListener(model, languageRepository, branch!!)
