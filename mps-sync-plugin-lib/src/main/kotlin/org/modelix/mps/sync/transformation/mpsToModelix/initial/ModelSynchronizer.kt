@@ -33,6 +33,7 @@ import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.modelix.ModelAlreadySynchronized
 import org.modelix.mps.sync.modelix.ModelAlreadySynchronizedException
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
@@ -49,6 +50,7 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val nodeSynchronizer = if (postponeReferenceResolution) {
         NodeSynchronizer(branch, synchronizedLinkedHashSet())
@@ -166,7 +168,9 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
             cloudTargetModelId == it.getReferenceTarget(targetModelReference)?.getPropertyValue(idProperty)
         }
         if (modelImportExists) {
-            logger.warn { "Model Import for Model ${targetModel.name} from Model ${source.name} will not be synchronized, because it already exists on the server." }
+            val message =
+                "Model Import for Model '${targetModel.name}' from Model '${source.name}' will not be synchronized, because it already exists on the server."
+            notifierInjector.notifyAndLogWarning(message, logger)
             return
         }
 
@@ -194,7 +198,9 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
                 targetLanguageId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
             }
             if (dependencyExists) {
-                logger.warn { "Model ${model.name}'s Language Dependency for $targetLanguageName will not be synchronized, because it already exists on the server." }
+                val message =
+                    "Model '${model.name}''s Language Dependency for '$targetLanguageName' will not be synchronized, because it already exists on the server."
+                notifierInjector.notifyAndLogWarning(message, logger)
                 return@enqueue null
             }
 
@@ -236,7 +242,9 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
             val dependencyExists = cloudNode.getChildren(childLink)
                 .any { devKitId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) }
             if (dependencyExists) {
-                logger.warn { "Model ${model.name}'s DevKit Dependency for $devKitName will not be synchronized, because it already exists on the server." }
+                val message =
+                    "Model '${model.name}''s DevKit Dependency for '$devKitName' will not be synchronized, because it already exists on the server."
+                notifierInjector.notifyAndLogWarning(message, logger)
                 return@enqueue null
             }
 

@@ -38,6 +38,7 @@ import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.modelix.ModuleAlreadySynchronized
 import org.modelix.mps.sync.modelix.ModuleAlreadySynchronizedException
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
@@ -56,6 +57,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val modelSynchronizer = ModelSynchronizer(branch, postponeReferenceResolution = true)
 
@@ -165,7 +167,9 @@ class ModuleSynchronizer(private val branch: IBranch) {
                 targetModuleId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid)
             }
             if (dependencyExists) {
-                logger.warn { "Module ${module.moduleName}'s Module Dependency for Module ${moduleReference.moduleName} will not be synchronized, because it already exists on the server." }
+                val message =
+                    "Module '${module.moduleName}''s Module Dependency for Module '${moduleReference.moduleName}' will not be synchronized, because it already exists on the server."
+                notifierInjector.notifyAndLogWarning(message, logger)
                 return@continueWith dependencyBindings
             }
 

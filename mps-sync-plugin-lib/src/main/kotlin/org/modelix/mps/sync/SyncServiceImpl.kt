@@ -15,10 +15,11 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.INotifier
-import org.modelix.mps.sync.mps.notifications.NotifierInjector
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.tasks.FuturesWaitQueue
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
@@ -32,7 +33,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
 
     private val logger = KotlinLogging.logger {}
     private val mpsProjectInjector = ActiveMpsProjectInjector
-    private val notifierInjector = NotifierInjector
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val dispatcher = Dispatchers.IO // rather IO-intensive tasks
 
@@ -51,7 +52,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         runBlocking(dispatcher) {
             modelClientV2.init()
         }
-        logger.info { "Connection to $serverURL successful" }
+        logger.info { "Connection to $serverURL is successful." }
 
         return modelClientV2
     }
@@ -59,9 +60,12 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
     override fun disconnectModelServer(client: ModelClientV2) {
         logger.info { "Disconnecting from ${client.baseUrl}" }
         client.close()
-        logger.info { "Deactivating bindings" }
+        logger.info { "Disconnected from ${client.baseUrl}" }
+
+        logger.info { "Deactivating bindings and disposing cloned branch." }
         BindingsRegistry.deactivateBindings()
-        logger.info { "Bindings deactivated" }
+        BranchRegistry.dispose()
+        logger.info { "Bindings are deactivated and branch is disposed." }
     }
 
     /**
@@ -106,12 +110,21 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
      * WARNING: this is a long-running blocking call.
      */
     override fun bindModuleFromMps(module: AbstractModule, branch: IBranch): Iterable<IBinding> {
-        logger.info { "Binding Module ${module.moduleName} to the server" }
+        logger.info { "Binding Module '${module.moduleName}' to the server." }
 
         // warning: blocking call
         @Suppress("UNCHECKED_CAST")
         val bindings = ModuleSynchronizer(branch).addModule(module, true).getResult().get() as Iterable<IBinding>
-        logger.info { "Module and ModelBindings for Module ${module.moduleName} are created" }
+        val hasAnyBinding = bindings.iterator().hasNext()
+
+        if (hasAnyBinding) {
+            val message = "Module- and Model Bindings for Module '${module.moduleName}' are created."
+            notifierInjector.notifyAndLogInfo(message, logger)
+        } else {
+            val message =
+                "No Module- or Model Binding is created for Module '${module.moduleName}'. This might be due to an error."
+            notifierInjector.notifyAndLogWarning(message, logger)
+        }
 
         return bindings
     }
@@ -120,7 +133,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
      * WARNING: this is a long-running blocking call.
      */
     override fun bindModelFromMps(model: SModelBase, branch: IBranch): IBinding {
-        logger.info { "Binding Model ${model.name} to the server" }
+        logger.info { "Binding Model '${model.name}' to the server." }
 
         val synchronizer = ModelSynchronizer(branch)
         // synchronize model. Warning: blocking call
@@ -128,7 +141,14 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         // wait until the model imports are synced. Warning: blocking call
         synchronizer.resolveModelImportsInTask().getResult().get()
 
-        logger.info { "ModelBinding for ${model.name} is created" }
+        if (binding !is EmptyBinding) {
+            val message = "Model Binding for '${model.name}' is created."
+            notifierInjector.notifyAndLogInfo(message, logger)
+        } else {
+            val message = "No Model Binding is created for '${model.name}'. This might be due to an error."
+            notifierInjector.notifyAndLogWarning(message, logger)
+        }
+
         return binding
     }
 

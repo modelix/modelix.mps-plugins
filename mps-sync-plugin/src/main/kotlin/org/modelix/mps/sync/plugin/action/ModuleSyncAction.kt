@@ -25,6 +25,7 @@ import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.modelix.BranchRegistry
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.plugin.ModelSyncService
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -37,21 +38,25 @@ class ModuleSyncAction : AnAction {
     }
 
     private val logger = KotlinLogging.logger {}
+    private val notifierInjector = InjectableNotifierWrapper
 
     constructor() : super()
 
     constructor(text: String) : super(text)
 
     override fun actionPerformed(event: AnActionEvent) {
+        var moduleName = ""
         try {
             val module = event.getData(CONTEXT_MODULE)!! as AbstractModule
+            moduleName = module.moduleName ?: ""
             val branch = BranchRegistry.branch
-            check(branch != null) { "Connect to a server and branch before synchronizing a module" }
+            check(branch != null) { "Connect to a server and branch before synchronizing a module." }
 
             val bindings = service<ModelSyncService>().bindModuleFromMps(module, branch)
             bindings.forEach { it.activate() }
-        } catch (ex: Exception) {
-            logger.error(ex) { "Module sync error occurred" }
+        } catch (t: Throwable) {
+            val message = "Module '$moduleName' synchronization error occurred. Cause: ${t.message}"
+            notifierInjector.notifyAndLogError(message, t, logger)
         }
     }
 }

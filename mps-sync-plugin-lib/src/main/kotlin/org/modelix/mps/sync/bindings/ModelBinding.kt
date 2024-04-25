@@ -22,6 +22,7 @@ import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -38,6 +39,7 @@ class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val modelChangeListener = ModelChangeListener(branch, this)
     private val nodeChangeListener = NodeChangeListener(branch)
@@ -65,7 +67,8 @@ class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
 
         bindingsRegistry.bindingActivated(this)
 
-        logger.info { "${name()} is activated." }
+        val message = "${name()} is activated."
+        notifierInjector.notifyAndLogInfo(message, logger)
 
         callback?.run()
     }
@@ -131,21 +134,20 @@ class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
 
             isDisposed = true
 
-            logger.info {
-                "${name()} is deactivated and model is removed locally${
-                    if (removeFromServer) {
-                        " and from server"
-                    } else {
-                        ""
-                    }
-                }."
-            }
+            val message = "${name()} is deactivated and model is removed locally${
+                if (removeFromServer) {
+                    " and from server"
+                } else {
+                    ""
+                }
+            }."
+            notifierInjector.notifyAndLogInfo(message, logger)
 
             callback?.run()
         }.getResult()
     }
 
-    override fun name() = "Binding of Model \"${model.name}\""
+    override fun name() = "Binding of Model '${model.name}'"
 
     override fun toString() = name()
 }

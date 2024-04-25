@@ -35,17 +35,17 @@ open class ItemAlreadySynchronizedException(
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelAlreadySynchronizedException(val model: SModel) : ItemAlreadySynchronizedException(
     model,
-    "Model ${model.name} in Module ${model.module?.moduleName} already exists on the server, therefore it and its parent module will not be synchronized completely. Remove the parent module from the project and synchronize it from the server instead.",
+    "Model '${model.name}' in Module '${model.module?.moduleName}' already exists on the server, therefore it and its parent module will not be synchronized completely. Remove the parent module from the project and synchronize it from the server instead.",
 )
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleAlreadySynchronizedException(val module: SModule) : ItemAlreadySynchronizedException(
     module,
-    "Module ${module.moduleName} already exists on the server, therefore it will not be synchronized. Remove it from the project and synchronize it from the server instead.",
+    "Module '${module.moduleName}' already exists on the server, therefore it will not be synchronized. Remove it from the project and synchronize it from the server instead.",
 )
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class NodeAlreadySynchronizedException(val node: SNode) : ItemAlreadySynchronizedException(
     node,
-    "Node ${node.name} already exists on server, therefore it will not be synched. Remove its parent node or its parent model and synchronize the parent model from the server instead.",
+    "Node '${node.name}' already exists on server, therefore it will not be synched. Remove its parent node or its parent model and synchronize the parent model from the server instead.",
 )

@@ -49,6 +49,7 @@ class SolutionProducer {
         val vfsManager = coreComponents.platform.findComponent(
             VFSManager::class.java,
         )
+
         val fileSystem = vfsManager!!.getFileSystem(VFSManager.FILE_FS)
         val outputFolder: IFile = fileSystem.getFile(exportPath)
 

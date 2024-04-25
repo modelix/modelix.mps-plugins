@@ -67,8 +67,6 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
     private lateinit var bindingsRefresher: BindingsComboBoxRefresher
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        logger.info { "-------------------------------------------- createToolWindowContent" }
-
         toolWindowContent = ModelSyncGui(toolWindow)
         content = ContentFactory.SERVICE.getInstance().createContent(toolWindowContent.contentPanel, "", false)
         toolWindow.contentManager.addContent(content)
@@ -76,7 +74,6 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
     }
 
     override fun dispose() {
-        logger.info { "-------------------------------------------- disposing ModelSyncGuiFactory" }
         bindingsRefresher.interrupt()
         content.dispose()
     }
@@ -124,7 +121,6 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private lateinit var activeProject: Project
 
         init {
-            logger.info { "-------------------------------------------- ModelSyncGui init" }
             toolWindow.setIcon(CloudIcons.ROOT_ICON)
             bindingsRefresher = BindingsComboBoxRefresher(this)
             contentPanel.layout = FlowLayout()
@@ -259,7 +255,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                             modelSyncService.bindModuleFromServer(
                                 selectedConnection as ModelClientV2,
                                 (selectedBranch as BranchReference).branchName,
-                                (selectedModule as ModuleIdWithName).id,
+                                selectedModule as ModuleIdWithName,
                                 (selectedRepo as RepositoryId).id,
                             )
                         },

@@ -47,7 +47,9 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.ISyncService
 import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.plugin.action.ModelixActionGroup
+import org.modelix.mps.sync.plugin.gui.ModuleIdWithName
 import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -55,6 +57,7 @@ import java.net.URL
 class ModelSyncService : Disposable {
 
     private val logger = KotlinLogging.logger { }
+    private val notifierInjector = InjectableNotifierWrapper
 
     private lateinit var syncService: ISyncService
 
@@ -70,21 +73,24 @@ class ModelSyncService : Disposable {
             logger.info { "Connection to server: $url" }
             client = syncService.connectModelServer(URL(url), jwt)
             logger.info { "Connected to server: $url" }
-        } catch (ex: Exception) {
-            logger.error(ex) { "Unable to connect" }
+        } catch (t: Throwable) {
+            val message = "Unable to connect to $url. Cause: ${t.message}"
+            notifierInjector.notifyAndLogError(message, t, logger)
         }
         return client
     }
 
     fun disconnectServer(modelClient: ModelClientV2): ModelClientV2? {
         var client: ModelClientV2? = modelClient
+        val baseUrl = modelClient.baseUrl
         try {
-            logger.info { "Disconnecting from  server: ${modelClient.baseUrl}" }
+            logger.info { "Disconnecting from  server: $baseUrl" }
             syncService.disconnectModelServer(modelClient)
-            logger.info { "Disconnected from server: ${modelClient.baseUrl}" }
+            logger.info { "Disconnected from server: $baseUrl" }
             client = null
-        } catch (ex: Exception) {
-            logger.error(ex) { "Unable to disconnect" }
+        } catch (t: Throwable) {
+            val message = "Unable to disconnect from $baseUrl. Cause: ${t.message}"
+            notifierInjector.notifyAndLogError(message, t, logger)
         }
         return client
     }
@@ -94,20 +100,28 @@ class ModelSyncService : Disposable {
             logger.info { "Connecting to branch $branchReference" }
             syncService.connectToBranch(client, branchReference)
             logger.info { "Connection to branch $branchReference is established" }
-        } catch (ex: Exception) {
-            logger.error(ex) { "Unable to connect to branch" }
+        } catch (t: Throwable) {
+            val message = "Unable to connect to branch ${branchReference.branchName}. Cause: ${t.message}"
+            notifierInjector.notifyAndLogError(message, t, logger)
         }
     }
 
-    fun bindModuleFromServer(client: ModelClientV2, branchName: String, moduleId: String, repositoryID: String) {
+    fun bindModuleFromServer(
+        client: ModelClientV2,
+        branchName: String,
+        module: ModuleIdWithName,
+        repositoryID: String,
+    ) {
         try {
             syncService.bindModuleFromServer(
                 client,
                 BranchReference(RepositoryId(repositoryID), branchName),
-                moduleId,
+                module.id,
             ).forEach { it.activate() }
-        } catch (ex: Exception) {
-            logger.error(ex) { "Error while binding Module $moduleId from Repository $repositoryID and Branch $branchName" }
+        } catch (t: Throwable) {
+            val message =
+                "Error while binding Module '${module.name}' from Repository '$repositoryID' and Branch '$branchName'. Cause: ${t.message}"
+            notifierInjector.notifyAndLogError(message, t, logger)
         }
     }
 
@@ -146,7 +160,7 @@ class ModelSyncService : Disposable {
                     add(ModelixActionGroup())
                 }
             } else {
-                logger.error { "Action Group $it was not found, thus the UI actions are not registered there." }
+                logger.error { "Action Group $it was not found, thus the UI actions are not registered." }
             }
         }
     }
