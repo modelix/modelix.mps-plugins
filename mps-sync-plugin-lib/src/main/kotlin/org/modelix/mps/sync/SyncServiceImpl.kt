@@ -64,7 +64,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
 
         logger.info { "Deactivating bindings and disposing cloned branch." }
         BindingsRegistry.deactivateBindings()
-        BranchRegistry.dispose()
+        BranchRegistry.close()
         logger.info { "Bindings are deactivated and branch is disposed." }
     }
 
@@ -156,12 +156,12 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         mpsProjectInjector.setActiveProject(project)
     }
 
-    override fun dispose() {
+    override fun close() {
         // dispose task and wait queues
         SyncQueue.close()
         FuturesWaitQueue.close()
         // dispose replicated model
-        BranchRegistry.dispose()
+        BranchRegistry.close()
         // dispose all bindings
         BindingsRegistry.deactivateBindings()
     }

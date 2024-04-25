@@ -16,7 +16,6 @@
 
 package org.modelix.mps.sync.modelix
 
-import com.intellij.openapi.Disposable
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -29,7 +28,7 @@ import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.RepositoryChangeListener
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-object BranchRegistry : Disposable {
+object BranchRegistry : AutoCloseable {
 
     var branch: IBranch? = null
         private set
@@ -54,7 +53,7 @@ object BranchRegistry : Disposable {
             return branch!!
         }
 
-        dispose()
+        close()
 
         model = client.getReplicatedModel(branchReference, replicatedModelCoroutineScope)
         branch = model.start()
@@ -70,7 +69,7 @@ object BranchRegistry : Disposable {
         return branch!!
     }
 
-    override fun dispose() {
+    override fun close() {
         if (branch == null) {
             return
         }

@@ -12,7 +12,7 @@ import java.net.URL
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-interface ISyncService {
+interface ISyncService : AutoCloseable {
 
     @Throws(IOException::class)
     fun connectModelServer(serverURL: URL, jwt: String? = null): ModelClientV2
@@ -32,8 +32,6 @@ interface ISyncService {
     fun bindModelFromMps(model: SModelBase, branch: IBranch): IBinding
 
     fun setActiveProject(project: Project)
-
-    fun dispose()
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
