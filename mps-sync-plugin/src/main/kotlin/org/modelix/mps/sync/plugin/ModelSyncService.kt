@@ -59,9 +59,9 @@ class ModelSyncService : Disposable {
     private lateinit var syncService: ISyncService
 
     init {
-        logger.info { "============================================ Registering sync actions" }
+        logger.info { "ModelixSyncPlugin: Registering sync actions" }
         registerSyncActions()
-        logger.info { "============================================ Registration finished" }
+        logger.info { "ModelixSyncPlugin: Registration finished" }
     }
 
     fun connectModelServer(url: String, jwt: String): ModelClientV2? {
@@ -117,20 +117,20 @@ class ModelSyncService : Disposable {
 
     fun setActiveProject(project: Project) {
         // TODO FIXME ModelSyncService MUST BE Project scoped instead of APP scoped, otherwise this workaround here is fragile
-        logger.info { "============================================ Initializing Sync Service" }
+        logger.info { "ModelixSyncPlugin: Initializing Sync Service" }
         val notifier = BalloonNotifier(project)
         syncService = SyncServiceImpl(notifier)
-        logger.info { "============================================ Sync Service is initialized" }
+        logger.info { "ModelixSyncPlugin: Sync Service is initialized" }
 
         syncService.setActiveProject(project)
     }
 
     fun ensureStarted() {
-        logger.info { "============================================  ensureStarted" }
+        logger.info { "ModelixSyncPlugin: EnsureStarted" }
     }
 
     override fun dispose() {
-        logger.info { "============================================  dispose" }
+        logger.info { "ModelixSyncPlugin: Dispose" }
         syncService.dispose()
     }
 
