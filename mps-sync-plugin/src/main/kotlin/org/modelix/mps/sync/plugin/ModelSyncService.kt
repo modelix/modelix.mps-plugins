@@ -44,7 +44,9 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.mps.sync.ISyncService
 import org.modelix.mps.sync.SyncServiceImpl
+import org.modelix.mps.sync.mps.notifications.BalloonNotifier
 import org.modelix.mps.sync.plugin.action.ModelixActionGroup
 import java.net.URL
 
@@ -54,15 +56,12 @@ class ModelSyncService : Disposable {
 
     private val logger = KotlinLogging.logger { }
 
-    private val syncService = SyncServiceImpl()
+    private lateinit var syncService: ISyncService
 
     init {
         logger.info { "============================================ Registering sync actions" }
         registerSyncActions()
-
         logger.info { "============================================ Registration finished" }
-
-        logger.info { "============================================ Sync Service initialized $syncService" }
     }
 
     fun connectModelServer(url: String, jwt: String): ModelClientV2? {
@@ -116,7 +115,15 @@ class ModelSyncService : Disposable {
 
     fun bindModelFromMps(model: SModelBase, branch: IBranch) = syncService.bindModelFromMps(model, branch)
 
-    fun setActiveProject(project: Project) = syncService.setActiveProject(project)
+    fun setActiveProject(project: Project) {
+        // TODO FIXME ModelSyncService MUST BE Project scoped instead of APP scoped, otherwise this workaround here is fragile
+        logger.info { "============================================ Initializing Sync Service" }
+        val notifier = BalloonNotifier(project)
+        syncService = SyncServiceImpl(notifier)
+        logger.info { "============================================ Sync Service is initialized" }
+
+        syncService.setActiveProject(project)
+    }
 
     fun ensureStarted() {
         logger.info { "============================================  ensureStarted" }

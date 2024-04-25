@@ -29,6 +29,7 @@ class AlertNotifier(private val project: Project, private val title: String = "M
     }
 }
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 private abstract class ModelixDialog(project: Project, title: String, message: String, color: Color) :
     DialogWrapper(project) {
 
@@ -46,11 +47,14 @@ private abstract class ModelixDialog(project: Project, title: String, message: S
     override fun createCenterPanel(): JComponent? = null
 }
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 private class ModelixErrorDialog(project: Project, title: String, message: String) :
     ModelixDialog(project, title, message, MessageType.ERROR.titleForeground)
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 private class ModelixWarningDialog(project: Project, title: String, message: String) :
     ModelixDialog(project, title, message, MessageType.WARNING.titleForeground)
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 private class ModelixInfoDialog(project: Project, title: String, message: String) :
     ModelixDialog(project, title, message, MessageType.INFO.titleForeground)

@@ -17,6 +17,8 @@ import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.mps.notifications.INotifier
+import org.modelix.mps.sync.mps.notifications.NotifierInjector
 import org.modelix.mps.sync.tasks.FuturesWaitQueue
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
@@ -26,14 +28,17 @@ import java.io.IOException
 import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class SyncServiceImpl : ISyncService {
+class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
 
     private val logger = KotlinLogging.logger {}
     private val mpsProjectInjector = ActiveMpsProjectInjector
+    private val notifierInjector = NotifierInjector
 
     private val dispatcher = Dispatchers.IO // rather IO-intensive tasks
 
     init {
+        notifierInjector.notifier = userNotifier
+
         logger.info { "============================================ Registering builtin languages" }
         // just a dummy call, the initializer of ILanguageRegistry takes care of the rest...
         ILanguageRepository.default.javaClass

@@ -45,6 +45,7 @@ class BalloonNotifier(
     }
 }
 
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 private class UrlListenerToUserResponseAdapter(
     private val userResponseListener: UserResponseListener?,
 ) : NotificationListener {

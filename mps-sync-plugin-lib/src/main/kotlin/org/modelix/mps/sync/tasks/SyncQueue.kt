@@ -20,6 +20,7 @@ import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.mps.notifications.NotifierInjector
 import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -31,6 +32,7 @@ object SyncQueue : AutoCloseable {
 
     private val logger = KotlinLogging.logger {}
     private val threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
+    private val notifierInjector = NotifierInjector
 
     private val activeSyncThreadsWithSyncDirection = ConcurrentHashMap<Thread, SyncDirection>()
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
@@ -79,7 +81,10 @@ object SyncQueue : AutoCloseable {
             scheduleFlush()
         } catch (t: Throwable) {
             if (!threadPool.isShutdown) {
-                logger.error(t) { "Task is cancelled, because an Exception occurred in the ThreadPool of the SyncQueue." }
+                val message =
+                    "Task is cancelled, because an Exception occurred in the ThreadPool of the SyncQueue. Cause: ${t.message}"
+                logger.error(t) { message }
+                notifierInjector.notifier.error(message)
             }
             task.result.completeExceptionally(t)
         }
@@ -90,7 +95,10 @@ object SyncQueue : AutoCloseable {
             try {
                 doFlush()
             } catch (t: Throwable) {
-                logger.error(t) { "Running the SyncQueue Tasks on Thread ${Thread.currentThread()} failed." }
+                val message =
+                    "Running the SyncQueue Tasks on Thread ${Thread.currentThread()} failed. Cause: ${t.message}"
+                logger.error(t) { message }
+                notifierInjector.notifier.error(message)
             }
         }
     }
