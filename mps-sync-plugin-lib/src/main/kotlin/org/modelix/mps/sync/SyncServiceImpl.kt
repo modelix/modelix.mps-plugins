@@ -39,7 +39,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
     init {
         notifierInjector.notifier = userNotifier
 
-        logger.info { "ModelixSyncPlugin: Registering builtin languages" }
+        logger.debug { "ModelixSyncPlugin: Registering built-in languages" }
         // just a dummy call, the initializer of ILanguageRegistry takes care of the rest...
         ILanguageRepository.default.javaClass
     }

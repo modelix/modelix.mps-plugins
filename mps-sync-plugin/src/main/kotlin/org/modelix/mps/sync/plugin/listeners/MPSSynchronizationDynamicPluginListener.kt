@@ -29,28 +29,28 @@ class MPSSynchronizationDynamicPluginListener : DynamicPluginListener {
     private val logger = KotlinLogging.logger {}
 
     override fun beforePluginLoaded(pluginDescriptor: IdeaPluginDescriptor) {
-        logger.info { "ModelixSyncPlugin: Before load" }
+        logger.debug { "ModelixSyncPlugin: Before load" }
         super.beforePluginLoaded(pluginDescriptor)
     }
 
     override fun beforePluginUnload(pluginDescriptor: IdeaPluginDescriptor, isUpdate: Boolean) {
-        logger.info { "ModelixSyncPlugin: Before unload" }
+        logger.debug { "ModelixSyncPlugin: Before unload" }
         super.beforePluginUnload(pluginDescriptor, isUpdate)
     }
 
     override fun checkUnloadPlugin(pluginDescriptor: IdeaPluginDescriptor) {
-        logger.info { "ModelixSyncPlugin: Check unload" }
+        logger.debug { "ModelixSyncPlugin: Check unload" }
         super.checkUnloadPlugin(pluginDescriptor)
     }
 
     override fun pluginLoaded(pluginDescriptor: IdeaPluginDescriptor) {
-        logger.info { "ModelixSyncPlugin: Loaded" }
+        logger.debug { "ModelixSyncPlugin: Loaded" }
         super.pluginLoaded(pluginDescriptor)
         service<ModelSyncService>().ensureStarted()
     }
 
     override fun pluginUnloaded(pluginDescriptor: IdeaPluginDescriptor, isUpdate: Boolean) {
-        logger.info { "ModelixSyncPlugin: Unloaded" }
+        logger.debug { "ModelixSyncPlugin: Unloaded" }
         super.pluginUnloaded(pluginDescriptor, isUpdate)
     }
 }
