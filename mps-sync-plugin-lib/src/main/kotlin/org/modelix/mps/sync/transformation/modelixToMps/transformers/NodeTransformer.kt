@@ -34,12 +34,14 @@ import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.factories.SNodeFactory
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.mps.util.addDevKit
 import org.modelix.mps.sync.mps.util.addLanguageImport
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
+import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.getModel
 import org.modelix.mps.sync.util.isDevKitDependency
@@ -56,6 +58,7 @@ class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLan
     private val logger = KotlinLogging.logger {}
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val nodeFactory = SNodeFactory(mpsLanguageRepository, nodeMap, syncQueue, branch)
 
@@ -82,7 +85,9 @@ class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLan
             logger.info { "Node $nodeId is already transformed." }
         } else {
             if (model == null) {
-                logger.info { "Node $nodeId(${iNode.concept?.getLongName() ?: "concept null"}) was not transformed, because model is null." }
+                val message =
+                    "Node $nodeId(${iNode.concept?.getLongName() ?: "concept null"}) was not transformed, because model is null."
+                notifyAndLogError(message)
             } else {
                 return@enqueue nodeFactoryMethod.invoke(nodeId, model).getResult()
             }
@@ -96,7 +101,10 @@ class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLan
         } else if (iNode.isSingleLanguageDependency()) {
             transformLanguageDependency(nodeId)
         } else {
-            throw IllegalStateException("iNode $nodeId is neither DevKit nor SingleLanguageDependency")
+            val message =
+                "Node ($nodeId) is not transformed, because it is neither DevKit nor SingleLanguageDependency."
+            notifyAndLogError(message)
+            throw IllegalStateException(message)
         }
     }
 
@@ -126,7 +134,9 @@ class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLan
                 parentModel.addLanguageImport(sLanguage, languageVersion)
                 nodeMap.put(parentModel, languageModuleReference, iNode.nodeIdAsLong())
             } else {
-                logger.error { "Node ${iNode.nodeIdAsLong()}'s parent is neither a Module nor a Model, thus the Language Dependency is not added to the model/module." }
+                val message =
+                    "Node (${iNode.nodeIdAsLong()})'s parent is neither a Module nor a Model, thus the Language Dependency is not added to the Module/Model."
+                notifyAndLogError(message)
             }
         }
 
@@ -152,7 +162,9 @@ class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLan
                 parentModel.addDevKit(devKitModuleReference)
                 nodeMap.put(parentModel, devKitModuleReference, iNode.nodeIdAsLong())
             } else {
-                logger.error { "Node ${iNode.nodeIdAsLong()}'s parent is neither a Module nor a Model, thus DevKit is not added to the model/module." }
+                val message =
+                    "Node (${iNode.nodeIdAsLong()})'s parent is neither a Module nor a Model, thus DevKit is not added to the Module/Model."
+                notifyAndLogError(message)
             }
         }
 
@@ -176,7 +188,9 @@ class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLan
                 }
             }
         if (sProperty == null) {
-            logger.error { "Node ($nodeId)'s concept (${sNode.concept.name}) does not have property called $role." }
+            val message =
+                "Property cannot be set, because Node ($nodeId)'s Concept (${sNode.concept.name}) does not have property called $role."
+            notifyAndLogError(message)
             return
         }
 
@@ -206,7 +220,9 @@ class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLan
             return
         }
 
-        logger.error { "Node ($nodeId) was neither moved to a new parent node nor to a new parent model, because Modelix Node $newParentId was not mapped to MPS yet." }
+        val message =
+            "Node ($nodeId) was neither moved to a new parent node nor to a new parent model, because Node $newParentId was not mapped yet."
+        notifyAndLogError(message)
     }
 
     private fun nodeMovedToNewParentNode(sNode: SNode, newParent: SNode, containmentLink: IChildLink, nodeId: Long) {
@@ -218,7 +234,9 @@ class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLan
         val containmentLinkName = containmentLink.getSimpleName()
         val containment = newParent.concept.containmentLinks.find { it.name == containmentLinkName }
         if (containment == null) {
-            logger.error { "Node ($nodeId)'s concept (${sNode.concept.name}) does not have containment link called $containmentLinkName." }
+            val message =
+                "Node cannot be moved to new parent, because Node ($nodeId)'s Concept (${sNode.concept.name}) does not have Containment Link called $containmentLinkName."
+            notifyAndLogError(message)
             return
         }
 
@@ -248,5 +266,10 @@ class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLan
         val uuid = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)!!
         val activeProject = ActiveMpsProjectInjector.activeMpsProject!!
         return activeProject.repository.getModule(ModuleId.regular(UUID.fromString(uuid)))!!
+    }
+
+    private fun notifyAndLogError(message: String) {
+        val exception = ModelixToMpsSynchronizationException(message)
+        notifierInjector.notifyAndLogError(message, exception, logger)
     }
 }

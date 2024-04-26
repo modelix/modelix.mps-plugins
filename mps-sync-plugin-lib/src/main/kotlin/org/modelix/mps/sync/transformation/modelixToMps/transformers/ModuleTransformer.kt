@@ -40,11 +40,13 @@ import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.factories.SolutionProducer
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.FuturesWaitQueue
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
+import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.cache.ModuleWithModuleReference
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.BooleanUtil
@@ -68,8 +70,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
-    private val project
-        get() = ActiveMpsProjectInjector.activeMpsProject!!
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val solutionProducer = SolutionProducer()
 
@@ -100,6 +101,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                 // resolve references only after all dependent (and contained) modules and models have been transformed
                 if (isTransformationStartingModule) {
                     // resolve cross-model references (and node references)
+                    val project = ActiveMpsProjectInjector.activeMpsProject!!
                     modelTransformer.resolveCrossModelReferences(project.repository)
                 }
                 flattenedBindings
@@ -121,7 +123,11 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val iNode = branch.getNode(nodeId)
             val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
-            check(serializedId.isNotEmpty()) { "Module's ($iNode) ID is empty" }
+            check(serializedId.isNotEmpty()) {
+                val message = "Node ($iNode) cannot be transformed to Module, because it's ID is empty."
+                notifyAndLogError(message)
+                message
+            }
 
             val moduleId = PersistenceFacade.getInstance().createModuleId(serializedId)
             val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
@@ -176,10 +182,10 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                      */
                     val targetModuleName =
                         iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
-                    val ex =
-                        NoSuchElementException("Target Module ($targetModuleName) of ModuleDependency ($nodeId) that goes out from Module ${parentModule.moduleName} is not found on the server.")
-                    logger.error(ex) { ex.message }
-                    future.completeExceptionally(ex)
+                    val message =
+                        "ModuleDependency ($nodeId) that goes out from Module ${parentModule.moduleName} cannot be transformed, because its Target Module ($targetModuleName) is not found on the server."
+                    notifyAndLogError(message)
+                    future.completeExceptionally(NoSuchElementException(message))
                 }
             } else {
                 future.complete(setOf(EmptyBinding()))
@@ -209,7 +215,9 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
     fun modulePropertyChanged(role: String, nodeId: Long, sModule: SModule, newValue: String?, usesRoleIds: Boolean) {
         val moduleId = sModule.moduleId
         if (sModule !is AbstractModule) {
-            logger.error { "SModule ($moduleId) is not an AbstractModule, therefore its $role property cannot be changed. Corresponding Modelix Node ID is $nodeId." }
+            val message =
+                "SModule ($moduleId) is not an AbstractModule, therefore its $role property cannot be changed. Corresponding Node ID is $nodeId."
+            notifyAndLogError(message)
             return
         }
 
@@ -231,7 +239,8 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             val oldValue = sModule.moduleName
             if (oldValue != newValue) {
                 if (newValue.isNullOrEmpty()) {
-                    logger.error { "Name cannot be null or empty for Module $moduleId. Corresponding Modelix Node ID is $nodeId." }
+                    val message = "Name cannot be null or empty for Module $moduleId. Corresponding Node ID is $nodeId."
+                    notifyAndLogError(message)
                     return
                 }
 
@@ -253,7 +262,9 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                     sModule.moduleVersion = newVersion
                 }
             } catch (ex: NumberFormatException) {
-                logger.error { "New module version ($newValue) of SModule ($moduleId) is not an integer, therefore it cannot be set in MPS. Corresponding Modelix Node ID is $nodeId." }
+                val message =
+                    "New module version ($newValue) of SModule ($moduleId) is not an integer, therefore it cannot be set in MPS. Corresponding Node ID is $nodeId."
+                notifyAndLogError(message)
             }
         } else if (role == BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS.getSimpleName()) {
             try {
@@ -262,16 +273,22 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                 val oldCompileInMPS = moduleDescriptor.compileInMPS
                 if (oldCompileInMPS != newCompileInMPS) {
                     if (moduleDescriptor !is SolutionDescriptor) {
-                        logger.error { "Module ($moduleId)'s descriptor is not a SolutionDescriptor, therefore compileInMPS will not be (un)set in MPS. Corresponding Modelix Node ID is $nodeId." }
+                        val message =
+                            "Module ($moduleId)'s descriptor is not a SolutionDescriptor, therefore compileInMPS will not be (un)set. Corresponding Node ID is $nodeId."
+                        notifyAndLogError(message)
                         return
                     }
                     moduleDescriptor.compileInMPS = newCompileInMPS
                 }
             } catch (ex: ParseException) {
-                logger.error { "New compileInMPS ($newValue) property of SModule ($moduleId) is not a strict boolean, therefore it cannot be set in MPS. Corresponding Modelix Node ID is $nodeId." }
+                val message =
+                    "New compileInMPS ($newValue) property of SModule ($moduleId) is not a strict boolean, therefore it cannot be set. Corresponding Node ID is $nodeId."
+                notifyAndLogError(message)
             }
         } else {
-            logger.error { "Role $role is unknown for concept Module. Therefore the property is not set in MPS from Modelix Node $nodeId." }
+            val message =
+                "Role $role is unknown for concept Module. Therefore the property is not set in MPS from Node $nodeId."
+            notifyAndLogError(message)
         }
     }
 
@@ -289,7 +306,9 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
     fun outgoingModuleReferenceFromModuleDeleted(moduleWithModuleReference: ModuleWithModuleReference, nodeId: Long) {
         val sourceModule = moduleWithModuleReference.source
         if (sourceModule !is AbstractModule) {
-            logger.error { "Source module ($sourceModule) is not an AbstractModule, therefore outgoing module dependency reference cannot be removed. Corresponding Modelix Node ID is $nodeId." }
+            val message =
+                "Source Module ($sourceModule) is not an AbstractModule, therefore the outgoing Module Dependency reference cannot be removed. Corresponding Node ID is $nodeId."
+            notifyAndLogError(message)
             return
         }
 
@@ -299,7 +318,14 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
         if (dependency != null) {
             sourceModule.removeDependency(dependency)
         } else {
-            logger.error { "Outgoing dependency $targetModuleReference from Module $sourceModule is not found, therefore it cannot be deleted. Corresponding Modelix Node ID is $nodeId." }
+            val message =
+                "Outgoing dependency $targetModuleReference from Module $sourceModule is not found, therefore it cannot be deleted. Corresponding Node ID is $nodeId."
+            notifyAndLogError(message)
         }
+    }
+
+    private fun notifyAndLogError(message: String) {
+        val exception = ModelixToMpsSynchronizationException(message)
+        notifierInjector.notifyAndLogError(message, exception, logger)
     }
 }

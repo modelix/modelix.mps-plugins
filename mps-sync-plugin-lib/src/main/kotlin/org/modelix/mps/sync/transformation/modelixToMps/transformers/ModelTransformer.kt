@@ -41,6 +41,7 @@ import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.mps.util.ModelRenameHelper
 import org.modelix.mps.sync.mps.util.createModel
 import org.modelix.mps.sync.mps.util.deleteDevKit
@@ -48,6 +49,7 @@ import org.modelix.mps.sync.mps.util.deleteLanguage
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
+import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.cache.ModelWithModelReference
 import org.modelix.mps.sync.transformation.cache.ModelWithModuleReference
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
@@ -63,6 +65,7 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
     private val logger = KotlinLogging.logger {}
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val nodeTransformer = NodeTransformer(branch, mpsLanguageRepository)
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
@@ -99,14 +102,27 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val iNode = branch.getNode(nodeId)
             val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
-            check(name != null) { "Model's ($iNode) name is null" }
+            check(name != null) {
+                val message = "Node ($iNode) cannot be transformed to Model, because its name is null."
+                notifyAndLogError(message)
+                message
+            }
 
             val moduleId = iNode.getModule()?.nodeIdAsLong()!!
             val module: SModule? = nodeMap.getModule(moduleId)
-            check(module != null) { "Parent module with ID $moduleId is not found" }
+            check(module != null) {
+                val message =
+                    "Node ($iNode) cannot be transformed to Model, because parent Module with ID $moduleId is not found."
+                notifyAndLogError(message)
+                message
+            }
 
             val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) ?: ""
-            check(serializedId.isNotEmpty()) { "Model's ($iNode) ID is empty" }
+            check(serializedId.isNotEmpty()) {
+                val message = "Node ($iNode) cannot be transformed to Model, because its ID is null."
+                notifyAndLogError(message)
+                message
+            }
             val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
 
             if (!isDescriptorModel(iNode)) {
@@ -155,7 +171,10 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
                  * implement the corresponding feature (e.g., as an action by clicking on a button). Maybe this
                  * direction would be easier for the user and for us too.
                  */
-                throw NoSuchElementException("ModelImport from Model ${it.source.modelId}(${it.source.name}) to Model $id cannot be resolved, because target model is not found.")
+                val message =
+                    "ModelImport from Model ${it.source.modelId}(${it.source.name}) to Model $id cannot be resolved, because target model is not found."
+                notifyAndLogError(message)
+                throw NoSuchElementException(message)
             }
             nodeMap.put(targetModel, it.targetModelModelixId)
 
@@ -195,10 +214,13 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
             val oldValue = sModel.name.value
             if (oldValue != newValue) {
                 if (newValue.isNullOrEmpty()) {
-                    logger.error { "Name cannot be null or empty for Model $modelId. Corresponding Modelix Node ID is $nodeId." }
+                    val message = "Node ($nodeId)'s name cannot be changed, because its null or empty."
+                    notifyAndLogError(message)
                     return
                 } else if (sModel !is EditableSModelBase) {
-                    logger.error { "SModel ($modelId) is not an EditableSModelBase, therefore it cannot be renamed. Corresponding Modelix Node ID is $nodeId." }
+                    val message =
+                        "SModel ($modelId) is not an EditableSModelBase, therefore it cannot be renamed. Corresponding Node ID is $nodeId."
+                    notifyAndLogError(message)
                     return
                 }
 
@@ -208,21 +230,27 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
             val oldValue = sModel.name.stereotype
             if (oldValue != newValue) {
                 if (sModel !is EditableSModelBase) {
-                    logger.error { "SModel ($modelId) is not an EditableSModelBase, therefore it cannot be renamed. Corresponding Modelix Node ID is $nodeId." }
+                    val message =
+                        "SModel ($modelId) is not an EditableSModelBase, therefore it cannot be renamed. Corresponding Node ID is $nodeId."
+                    notifyAndLogError(message)
                     return
                 }
 
                 ModelRenameHelper(sModel).changeStereotype(newValue)
             }
         } else {
-            logger.error { "Role $role is unknown for concept Model. Therefore the property is not set in MPS from Modelix Node $nodeId." }
+            val message =
+                "Role $role is unknown for concept Model. Therefore the property is not set. Corresponding Node ID is $nodeId."
+            notifyAndLogError(message)
         }
     }
 
     fun modelMovedToNewParent(newParentId: Long, nodeId: Long, sModel: SModel) {
         val newParentModule = nodeMap.getModule(newParentId)
         if (newParentModule == null) {
-            logger.error { "Modelix Node ($nodeId) that is a Model, was not moved to a new parent module, because new parent Module (Modelix Node $newParentId) was not mapped to MPS yet." }
+            val message =
+                "Node ($nodeId) that is a Model, was not moved to a new parent module, because new parent Module (Node ID $newParentId) was not mapped yet."
+            notifyAndLogError(message)
             return
         }
 
@@ -233,10 +261,14 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
 
         // remove from old parent
         if (oldParentModule !is SModuleBase) {
-            logger.error { "Old parent Module ${oldParentModule?.moduleId} of Model ${sModel.modelId} is not an SModuleBase. Therefore parent of Modelix Node $nodeId was not changed in MPS." }
+            val message =
+                "Old parent Module ${oldParentModule?.moduleId} of Model ${sModel.modelId} is not an SModuleBase. Therefore parent of Model (Node ID $nodeId) is not changed."
+            notifyAndLogError(message)
             return
         } else if (sModel !is SModelBase) {
-            logger.error { "Model ${sModel.modelId} is not an SModelBase" }
+            val message =
+                "Model ${sModel.modelId} is not an SModelBase. Therefore parent of Model (Node ID $nodeId) is not changed."
+            notifyAndLogError(message)
             return
         }
         oldParentModule.unregisterModel(sModel)
@@ -244,7 +276,9 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
 
         // add to new parent
         if (newParentModule !is SModuleBase) {
-            logger.error { "New parent Module ${newParentModule.moduleId} is not an SModuleBase. Therefore parent of Modelix Node $nodeId was not changed in MPS." }
+            val message =
+                "New parent Module ${newParentModule.moduleId} is not an SModuleBase. Therefore parent of Model (Node ID $nodeId) is not changed."
+            notifyAndLogError(message)
             return
         }
         newParentModule.registerModel(sModel)
@@ -269,8 +303,8 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
                     sourceModel.deleteLanguage(sLanguage)
                 } catch (ex: Exception) {
                     val message =
-                        "Language import ($targetModule) cannot be deleted, because ${ex.message} Corresponding Modelix Node ID is $nodeId."
-                    logger.error(ex) { message }
+                        "Language Import ($targetModule) cannot be deleted, because ${ex.message} Corresponding Node ID is $nodeId."
+                    notifyAndLogError(message, ex)
                 }
             }
 
@@ -279,13 +313,15 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
                     sourceModel.deleteDevKit(targetModuleReference)
                 } catch (ex: Exception) {
                     val message =
-                        "DevKit dependency ($targetModule) cannot be deleted, because ${ex.message} Corresponding Modelix Node ID is $nodeId."
-                    logger.error(ex) { message }
+                        "DevKit dependency ($targetModule) cannot be deleted, because ${ex.message} Corresponding Node ID is $nodeId."
+                    notifyAndLogError(message, ex)
                 }
             }
 
             else -> {
-                logger.error { "Target module referred by $targetModuleReference is neither a Language nor DevKit. Therefore the dependency for it cannot be deleted. Corresponding Modelix Node ID is $nodeId." }
+                val message =
+                    "Target Module referred by $targetModuleReference is neither a Language nor DevKit. Therefore its dependency it cannot be deleted. Corresponding Node ID is $nodeId."
+                notifyAndLogError(message)
             }
         }
     }
@@ -293,6 +329,16 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
     private fun isDescriptorModel(iNode: INode): Boolean {
         val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
         return iNode.isModel() && name?.endsWith("@descriptor") == true
+    }
+
+    private fun notifyAndLogError(message: String) {
+        val exception = ModelixToMpsSynchronizationException(message)
+        notifierInjector.notifyAndLogError(message, exception, logger)
+    }
+
+    private fun notifyAndLogError(message: String, cause: Exception) {
+        val exception = ModelixToMpsSynchronizationException(message, cause)
+        notifierInjector.notifyAndLogError(message, exception, logger)
     }
 }
 
