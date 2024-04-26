@@ -44,6 +44,7 @@ import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
+import org.modelix.mps.sync.transformation.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
@@ -145,7 +146,12 @@ class ModuleSynchronizer(private val branch: IBranch) {
 
             // add the target module to the server if it does not exist there yet
             if (!isMappedToMps) {
-                require(targetModule is AbstractModule) { "Dependency target module ($targetModule) of Module ($module) must be an AbstractModule." }
+                require(targetModule is AbstractModule) {
+                    val message =
+                        "Dependency ($dependency)'s target Module ($targetModule) must be an AbstractModule. Dependency's source Module is ($module)."
+                    notifyAndLogError(message)
+                    message
+                }
                 // connect the addModule task to this one, so if that fails/succeeds we'll also fail/succeed
                 addModule(targetModule).getResult()
             } else {
@@ -222,6 +228,8 @@ class ModuleSynchronizer(private val branch: IBranch) {
             dependencyBindings
         }
 
+    fun resolveCrossModelReferences() = modelSynchronizer.resolveCrossModelReferences()
+
     private fun synchronizeModuleProperties(cloudModule: INode, module: SModule) {
         cloudModule.setPropertyValue(
             BuiltinLanguages.MPSRepositoryConcepts.Module.id,
@@ -247,5 +255,8 @@ class ModuleSynchronizer(private val branch: IBranch) {
         )
     }
 
-    fun resolveCrossModelReferences() = modelSynchronizer.resolveCrossModelReferences()
+    private fun notifyAndLogError(message: String) {
+        val exception = MpsToModelixSynchronizationException(message)
+        notifierInjector.notifyAndLogError(message, exception, logger)
+    }
 }

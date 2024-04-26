@@ -18,6 +18,7 @@ package org.modelix.mps.sync.transformation.mpsToModelix.incremental
 
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.extapi.model.SModelDescriptorStub
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
@@ -31,10 +32,12 @@ import org.modelix.model.api.getNode
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.tasks.SyncTaskAction
+import org.modelix.mps.sync.transformation.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
@@ -50,9 +53,11 @@ import java.util.concurrent.CompletableFuture
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
 
+    private val logger = KotlinLogging.logger {}
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val moduleSynchronizer = ModuleSynchronizer(branch)
     private val modelSynchronizer = ModelSynchronizer(branch)
@@ -232,6 +237,11 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
 
     private fun removeModuleFromSyncInProgressAndRethrow(module: SModule, throwable: Throwable?) {
         moduleChangeSyncInProgress.remove(module)
-        throwable?.let { throw it }
+        throwable?.let {
+            val message = it.message ?: ""
+            val exception = MpsToModelixSynchronizationException(message, it)
+            notifierInjector.notifyAndLogError(message, exception, logger)
+            throw it
+        }
     }
 }

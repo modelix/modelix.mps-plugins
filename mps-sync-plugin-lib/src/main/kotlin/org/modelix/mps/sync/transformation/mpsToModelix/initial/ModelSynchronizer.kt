@@ -38,6 +38,7 @@ import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
+import org.modelix.mps.sync.transformation.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
@@ -69,9 +70,20 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
 
     fun addModel(model: SModelBase) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
-            val parentModule = model.module ?: throw IllegalStateException("Model $model's module must not be null.")
+            val parentModule = model.module
+            if (parentModule == null) {
+                val message = "Model ($model) cannot be synchronized to the server, because its Module is null."
+                notifyAndLogError(message)
+                throw IllegalStateException(message)
+            }
+
             val moduleModelixId = nodeMap[parentModule]
-                ?: throw IllegalStateException("Module $parentModule is not found in the local sync cache.")
+            if (moduleModelixId == null) {
+                val message =
+                    "Model ($model) cannot be synchronized to the server, because its Module ($parentModule) is not found in the local sync cache."
+                notifyAndLogError(message)
+                throw IllegalStateException(message)
+            }
             val cloudModule = branch.getNode(moduleModelixId)
             val childLink = BuiltinLanguages.MPSRepositoryConcepts.Module.models
 
@@ -279,6 +291,11 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
     private fun resolveModelImports() {
         resolvableModelImports.forEach { addModelImportToCloud(it.sourceModel, it.targetModel) }
         resolvableModelImports.clear()
+    }
+
+    private fun notifyAndLogError(message: String) {
+        val exception = MpsToModelixSynchronizationException(message)
+        notifierInjector.notifyAndLogError(message, exception, logger)
     }
 }
 
