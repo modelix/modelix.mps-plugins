@@ -219,7 +219,7 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
         func: SyncTaskAction,
     ): Any? {
         try {
-            val result = func.invoke(input)
+            val result = func(input)
             return if (result is CompletableFuture<*>) {
                 @Suppress("UNCHECKED_CAST")
                 (result as CompletableFuture<Any?>).exceptionally {
@@ -238,9 +238,8 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
     private fun removeModuleFromSyncInProgressAndRethrow(module: SModule, throwable: Throwable?) {
         moduleChangeSyncInProgress.remove(module)
         throwable?.let {
-            val message = it.message ?: ""
-            val exception = MpsToModelixSynchronizationException(message, it)
-            notifierInjector.notifyAndLogError(message, exception, logger)
+            val exception = MpsToModelixSynchronizationException(it.message, it)
+            notifierInjector.notifyAndLogError(exception.message, exception, logger)
             throw it
         }
     }

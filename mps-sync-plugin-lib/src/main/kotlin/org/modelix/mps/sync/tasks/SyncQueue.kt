@@ -21,6 +21,10 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
+import org.modelix.mps.sync.transformation.MpsToModelixSynchronizationException
+import org.modelix.mps.sync.transformation.SynchronizationException
+import org.modelix.mps.sync.transformation.npePleaseCheckLogs
 import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -135,7 +139,12 @@ object SyncQueue : AutoCloseable {
                     val lockTail = lockHeadAndTail.second
                     runWithLocks(LinkedHashSet(lockTail), task)
                 } catch (t: Throwable) {
-                    logger.error(t) { "Exception in task on $currentThread, Thread ID ${currentThread.id}" }
+                    val message = "Exception in task on $currentThread, Thread ID ${currentThread.id}."
+                    logger.error(t) { message }
+
+                    val wrapped = wrapErrorIntoSynchronizationException(t)
+                    val cause = wrapped ?: t
+                    notifierInjector.notifyAndLogError(cause.message ?: npePleaseCheckLogs, cause, logger)
 
                     if (!taskResult.isCompletedExceptionally) {
                         taskResult.completeExceptionally(t)
@@ -157,6 +166,22 @@ object SyncQueue : AutoCloseable {
             SyncLock.MODELIX_READ -> BranchRegistry.branch!!.runRead(runnable)
             SyncLock.MODELIX_WRITE -> BranchRegistry.branch!!.runWrite(runnable)
             SyncLock.NONE -> runnable.invoke()
+        }
+    }
+
+    private fun wrapErrorIntoSynchronizationException(error: Throwable): SynchronizationException? {
+        if (error is SynchronizationException) {
+            return error
+        }
+
+        val headOfStackTrace = error.stackTrace.first()
+        val className = headOfStackTrace.className.toLowerCase()
+        return if (className.contains("mpsToModelix".toLowerCase())) {
+            MpsToModelixSynchronizationException(error.message, error)
+        } else if (className.contains("modelixToMps".toLowerCase())) {
+            ModelixToMpsSynchronizationException(error.message, error)
+        } else {
+            null
         }
     }
 }
