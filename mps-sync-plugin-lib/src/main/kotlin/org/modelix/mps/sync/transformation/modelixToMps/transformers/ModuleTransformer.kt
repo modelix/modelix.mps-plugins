@@ -121,6 +121,8 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
 
     fun transformToModule(nodeId: Long, fetchTargetModule: Boolean = false) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            throw Exception("heeelllo")
+
             val iNode = branch.getNode(nodeId)
             val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
             check(serializedId.isNotEmpty()) {
