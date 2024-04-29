@@ -61,7 +61,6 @@ import javax.swing.JSeparator
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
-    private val logger = KotlinLogging.logger {}
     private lateinit var toolWindowContent: ModelSyncGui
     private lateinit var content: Content
     private lateinit var bindingsRefresher: BindingsComboBoxRefresher

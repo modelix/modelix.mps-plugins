@@ -1,22 +1,20 @@
 package org.modelix.mps.sync.mps.notifications
 
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import mu.KLogger
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.util.Objects
+import java.util.concurrent.locks.ReentrantLock
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object InjectableNotifierWrapper {
-    private val mutex = Mutex()
+    private val mutex = ReentrantLock()
     private var lastMessage = ""
     private var lastError: Throwable? = null
 
     var notifier: INotifier = NoOpNotifier()
 
     fun notifyAndLogError(message: String, error: Throwable, logger: KLogger) {
-        runWithMutex {
+        runWithLock {
             if (lastMessage != message || !errorsHaveSameOrigin(lastError, error)) {
                 lastMessage = message
                 lastError = error
@@ -28,7 +26,7 @@ object InjectableNotifierWrapper {
     }
 
     fun notifyAndLogWarning(message: String, logger: KLogger) {
-        runWithMutex {
+        runWithLock {
             if (lastMessage != message) {
                 lastMessage = message
                 lastError = null
@@ -40,7 +38,7 @@ object InjectableNotifierWrapper {
     }
 
     fun notifyAndLogInfo(message: String, logger: KLogger) {
-        runWithMutex {
+        runWithLock {
             if (lastMessage != message) {
                 lastMessage = message
                 lastError = null
@@ -51,11 +49,12 @@ object InjectableNotifierWrapper {
         }
     }
 
-    private fun runWithMutex(action: () -> Unit) {
-        runBlocking {
-            mutex.withLock {
-                action()
-            }
+    private fun runWithLock(action: () -> Unit) {
+        try {
+            mutex.lock()
+            action()
+        } finally {
+            mutex.unlock()
         }
     }
 
