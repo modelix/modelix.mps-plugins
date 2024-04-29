@@ -68,6 +68,16 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         logger.info { "Bindings are deactivated and branch is disposed." }
     }
 
+    override fun disconnectFromBranch(branch: IBranch) {
+        val branchId = branch.getId()
+        logger.info { "Deactivating bindings and disposing cloned branch $branchId." }
+        BindingsRegistry.deactivateBindings()
+        BranchRegistry.unsetBranch(branch)
+        logger.info { "Bindings are deactivated and branch ($branchId) is disposed." }
+    }
+
+    override fun getActiveBranch(): IBranch? = BranchRegistry.branch
+
     /**
      * WARNING: this is a long-running blocking call.
      */
