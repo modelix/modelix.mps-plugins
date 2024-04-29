@@ -43,6 +43,7 @@ import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTrans
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
+import org.modelix.mps.sync.transformation.pleaseCheckLogs
 import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
@@ -238,7 +239,7 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
     private fun removeModuleFromSyncInProgressAndRethrow(module: SModule, throwable: Throwable?) {
         moduleChangeSyncInProgress.remove(module)
         throwable?.let {
-            val exception = MpsToModelixSynchronizationException(it.message, it)
+            val exception = MpsToModelixSynchronizationException(it.message ?: pleaseCheckLogs, it)
             notifierInjector.notifyAndLogError(exception.message, exception, logger)
             throw it
         }

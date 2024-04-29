@@ -24,6 +24,7 @@ import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.transformation.SynchronizationException
+import org.modelix.mps.sync.transformation.pleaseCheckLogs
 import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -32,8 +33,6 @@ import java.util.concurrent.Executors
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object SyncQueue : AutoCloseable {
-
-    private const val PLEASE_CHECK_LOGS = "The error provided no further information, please check logs for details."
 
     private val logger = KotlinLogging.logger {}
     private val threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
@@ -145,7 +144,7 @@ object SyncQueue : AutoCloseable {
 
                     val wrapped = wrapErrorIntoSynchronizationException(t)
                     val cause = wrapped ?: t
-                    notifierInjector.notifyAndLogError(cause.message ?: PLEASE_CHECK_LOGS, cause, logger)
+                    notifierInjector.notifyAndLogError(cause.message ?: pleaseCheckLogs, cause, logger)
 
                     if (!taskResult.isCompletedExceptionally) {
                         taskResult.completeExceptionally(t)
@@ -178,9 +177,9 @@ object SyncQueue : AutoCloseable {
         val headOfStackTrace = error.stackTrace.first()
         val className = headOfStackTrace.className.toLowerCase()
         return if (className.contains("mpsToModelix".toLowerCase())) {
-            MpsToModelixSynchronizationException(error.message ?: PLEASE_CHECK_LOGS, error)
+            MpsToModelixSynchronizationException(error.message ?: pleaseCheckLogs, error)
         } else if (className.contains("modelixToMps".toLowerCase())) {
-            ModelixToMpsSynchronizationException(error.message ?: PLEASE_CHECK_LOGS, error)
+            ModelixToMpsSynchronizationException(error.message ?: pleaseCheckLogs, error)
         } else {
             null
         }
