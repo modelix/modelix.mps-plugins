@@ -1,7 +1,6 @@
 package org.modelix.mps.sync.mps.notifications
 
 import com.intellij.notification.Notification
-import com.intellij.notification.NotificationDisplayType
 import com.intellij.notification.NotificationGroup
 import com.intellij.notification.NotificationListener
 import com.intellij.notification.NotificationType
@@ -16,15 +15,7 @@ class BalloonNotifier(
     groupName: String = "Modelix Sync Plugin",
 ) : INotifier {
 
-    private val notificationGroup = NotificationGroup.create(
-        displayId = groupName,
-        displayType = NotificationDisplayType.STICKY_BALLOON,
-        isLogByDefault = true,
-        toolWindowId = null,
-        icon = null,
-        pluginId = null,
-        title = null,
-    )
+    private val notificationGroup = NotificationGroup.balloonGroup(groupName)
 
     override fun error(message: String, responseListener: UserResponseListener?) =
         showNotification(message, NotificationType.ERROR, responseListener)
@@ -40,8 +31,10 @@ class BalloonNotifier(
         notificationType: NotificationType,
         responseListener: UserResponseListener?,
     ) {
+        val notification = notificationGroup.createNotification(title, message, notificationType)
         val adapter = UrlListenerToUserResponseAdapter(responseListener)
-        notificationGroup.createNotification(title, message, notificationType, adapter).notify(project)
+        notification.setListener(adapter)
+        notification.notify(project)
     }
 }
 
