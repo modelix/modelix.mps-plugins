@@ -26,6 +26,7 @@ import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.RepositoryChangeListener
+import java.util.Objects
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 object BranchRegistry : AutoCloseable {
@@ -41,6 +42,12 @@ object BranchRegistry : AutoCloseable {
     // the MPS Project and its registered change listener
     private lateinit var project: MPSProject
     private lateinit var repoChangeListener: RepositoryChangeListener
+
+    fun unsetBranch(branch: IBranch) {
+        if (Objects.equals(this.branch, branch)) {
+            close()
+        }
+    }
 
     suspend fun setBranch(
         client: ModelClientV2,

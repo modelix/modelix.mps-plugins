@@ -72,7 +72,7 @@ class ModelSyncService : Disposable {
         try {
             logger.info { "Connection to server: $url" }
             client = syncService.connectModelServer(URL(url), jwt)
-            logger.info { "Connected to server: $url" }
+            notifierInjector.notifyAndLogInfo("Connected to server: $url", logger)
         } catch (t: Throwable) {
             val message = "Unable to connect to $url. Cause: ${t.message}"
             notifierInjector.notifyAndLogError(message, t, logger)
@@ -86,7 +86,7 @@ class ModelSyncService : Disposable {
         try {
             logger.info { "Disconnecting from  server: $baseUrl" }
             syncService.disconnectModelServer(modelClient)
-            logger.info { "Disconnected from server: $baseUrl" }
+            notifierInjector.notifyAndLogInfo("Disconnected from server: $baseUrl", logger)
             client = null
         } catch (t: Throwable) {
             val message = "Unable to disconnect from $baseUrl. Cause: ${t.message}"
@@ -95,16 +95,32 @@ class ModelSyncService : Disposable {
         return client
     }
 
-    fun connectToBranch(client: ModelClientV2, branchReference: BranchReference) {
+    fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch? {
         try {
             logger.info { "Connecting to branch $branchReference" }
-            syncService.connectToBranch(client, branchReference)
-            logger.info { "Connection to branch $branchReference is established" }
+            val branch = syncService.connectToBranch(client, branchReference)
+            notifierInjector.notifyAndLogInfo("Connected to branch: $branchReference", logger)
+            return branch
         } catch (t: Throwable) {
             val message = "Unable to connect to branch ${branchReference.branchName}. Cause: ${t.message}"
             notifierInjector.notifyAndLogError(message, t, logger)
+            return null
         }
     }
+
+    fun disconnectFromBranch(branch: IBranch) {
+        val branchId = branch.getId()
+        try {
+            logger.info { "Disconnecting from branch $branchId" }
+            syncService.disconnectFromBranch(branch)
+            notifierInjector.notifyAndLogInfo("Disconnected from branch: $branchId", logger)
+        } catch (t: Throwable) {
+            val message = "Unable to disconnect from branch $branchId. Cause: ${t.message}"
+            notifierInjector.notifyAndLogError(message, t, logger)
+        }
+    }
+
+    fun getActiveBranch() = syncService.getActiveBranch()
 
     fun bindModuleFromServer(
         client: ModelClientV2,
