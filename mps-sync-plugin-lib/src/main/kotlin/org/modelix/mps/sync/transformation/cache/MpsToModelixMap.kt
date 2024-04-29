@@ -16,7 +16,6 @@
 
 package org.modelix.mps.sync.transformation.cache
 
-import com.intellij.util.containers.stream
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelReference
@@ -31,7 +30,7 @@ import org.modelix.mps.sync.util.synchronizedMap
 /**
  * WARNING:
  * - use with caution, otherwise this cache may cause memory leaks
- * - if you add a new Map as a field in the class, then please also add it to the `remove` and `isMappedToMps` methods below
+ * - if you add a new Map as a field in the class, then please also add it to the `remove`, `isMappedToMps`, and `isMappedToModelix` methods below
  */
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object MpsToModelixMap {
@@ -203,6 +202,9 @@ object MpsToModelixMap {
     }
 
     fun isMappedToMps(modelixId: Long?): Boolean {
+        if (modelixId == null) {
+            return false
+        }
         val idMaps = arrayOf(
             modelixIdToNode,
             modelixIdToModel,
@@ -211,8 +213,20 @@ object MpsToModelixMap {
             modelixIdToModelWithOutgoingModuleReference,
             modelixIdToModelWithOutgoingModelReference,
         )
-        return modelixId != null && idMaps.stream().anyMatch { it.contains(modelixId) }
+
+        for (idMap in idMaps) {
+            if (idMap.contains(modelixId)) {
+                return true
+            }
+        }
+        return false
     }
+
+    fun isMappedToModelix(model: SModel) = this[model] != null
+
+    fun isMappedToModelix(module: SModule) = this[module] != null
+
+    fun isMappedToModelix(node: SNode) = this[node] != null
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")

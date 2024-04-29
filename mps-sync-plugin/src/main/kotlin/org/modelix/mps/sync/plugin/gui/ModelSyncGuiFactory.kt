@@ -41,6 +41,9 @@ import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.ofConcept
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.mps.notifications.AlertNotifier
+import org.modelix.mps.sync.mps.notifications.BalloonNotifier
+import org.modelix.mps.sync.mps.notifications.UserResponse
 import org.modelix.mps.sync.plugin.ModelSyncService
 import org.modelix.mps.sync.plugin.icons.CloudIcons
 import java.awt.Component
@@ -59,14 +62,11 @@ import javax.swing.JSeparator
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
-    private val logger = KotlinLogging.logger {}
     private lateinit var toolWindowContent: ModelSyncGui
     private lateinit var content: Content
     private lateinit var bindingsRefresher: BindingsComboBoxRefresher
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        logger.info { "-------------------------------------------- createToolWindowContent" }
-
         toolWindowContent = ModelSyncGui(toolWindow)
         content = ContentFactory.SERVICE.getInstance().createContent(toolWindowContent.contentPanel, "", false)
         toolWindow.contentManager.addContent(content)
@@ -74,7 +74,6 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
     }
 
     override fun dispose() {
-        logger.info { "-------------------------------------------- disposing ModelSyncGuiFactory" }
         bindingsRefresher.interrupt()
         content.dispose()
     }
@@ -87,8 +86,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private val logger = KotlinLogging.logger {}
-        private val coroutineScope = CoroutineScope(Dispatchers.Default)
         private val mutex = Mutex()
+        private val dispatcher = Dispatchers.Default
 
         val contentPanel = JPanel()
         val bindingsRefresher: BindingsComboBoxRefresher
@@ -110,6 +109,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val connectButton = JButton("Connect")
         private val disconnectButton = JButton("Disconnect")
         private val bindButton = JButton("Bind Selected")
+        private val connectBranchButton = JButton("Connect to Branch without downloading Modules")
 
         private val connectionsModel = DefaultComboBoxModel<ModelClientV2>()
         private val projectsModel = DefaultComboBoxModel<Project>()
@@ -118,8 +118,9 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val modulesModel = DefaultComboBoxModel<ModuleIdWithName>()
         private val bindingsModel = DefaultComboBoxModel<IBinding>()
 
+        private lateinit var activeProject: Project
+
         init {
-            logger.info { "-------------------------------------------- ModelSyncGui init" }
             toolWindow.setIcon(CloudIcons.ROOT_ICON)
             bindingsRefresher = BindingsComboBoxRefresher(this)
             contentPanel.layout = FlowLayout()
@@ -151,6 +152,13 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             jwtPanel.add(jwt)
 
             connectButton.addActionListener { _: ActionEvent ->
+                if (connectionsModel.size != 0) {
+                    val message =
+                        "<html>Only one client connection is allowed. <a href=\"disconnect\">Disconnect</a> the existing client.</html>"
+                    BalloonNotifier(activeProject).error(message) { disconnectClient() }
+                    return@addActionListener
+                }
+
                 val client = modelSyncService.connectModelServer(serverURL.text, jwt.text)
                 triggerRefresh(client)
             }
@@ -166,15 +174,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             connectionsPanel.add(JLabel("Existing Connection:"))
             connectionsPanel.add(connectionsCB)
 
-            disconnectButton.addActionListener { _: ActionEvent? ->
-                if (connectionsModel.size > 0) {
-                    val originalClient = connectionsModel.selectedItem as ModelClientV2
-                    val clientAfterDisconnect = modelSyncService.disconnectServer(originalClient)
-                    if (clientAfterDisconnect == null) {
-                        triggerRefresh(null)
-                    }
-                }
-            }
+            disconnectButton.addActionListener { _: ActionEvent? -> disconnectClient() }
             connectionsPanel.add(disconnectButton)
             inputBox.add(connectionsPanel)
 
@@ -185,7 +185,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             projectsCB.renderer = CustomCellRenderer()
             projectsCB.addItemListener {
                 if (it.stateChange == ItemEvent.SELECTED) {
-                    ActiveMpsProjectInjector.setActiveProject(it.item as Project)
+                    activeProject = it.item as Project
+                    modelSyncService.setActiveProject(activeProject)
                 }
             }
 
@@ -198,7 +199,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             reposCB.renderer = CustomCellRenderer()
             reposCB.addActionListener {
                 if (it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
-                    callOnlyIfNotFetching(::populateBranchCB)
+                    callDisablingUiControls(::populateBranchCB)
                 }
             }
             repoPanel.add(JLabel("Remote Repo:   "))
@@ -210,12 +211,28 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             branchesCB.renderer = CustomCellRenderer()
             branchesCB.addActionListener {
                 if (it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
-                    callOnlyIfNotFetching(::populateModuleCB)
+                    callDisablingUiControls(::populateModuleCB)
                 }
             }
             branchPanel.add(JLabel("Remote Branch: "))
             branchPanel.add(branchesCB)
             inputBox.add(branchPanel)
+            connectBranchButton.addActionListener {
+                val selectedConnection = connectionsModel.selectedItem
+                val selectedBranch = branchesModel.selectedItem
+
+                if (selectedConnection != null && selectedBranch != null) {
+                    callDisablingUiControls(
+                        suspend {
+                            modelSyncService.connectToBranch(
+                                selectedConnection as ModelClientV2,
+                                selectedBranch as BranchReference,
+                            )
+                        },
+                    )
+                }
+            }
+            branchPanel.add(connectBranchButton)
 
             val modulePanel = JPanel()
             modulesCB.model = modulesModel
@@ -233,11 +250,15 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
                 if (inputsExist) {
                     logger.info { "Binding Module ${moduleName.text} to project: ${ActiveMpsProjectInjector.activeMpsProject?.name}" }
-                    modelSyncService.bindModule(
-                        selectedConnection as ModelClientV2,
-                        (selectedBranch as BranchReference).branchName,
-                        (selectedModule as ModuleIdWithName).id,
-                        (selectedRepo as RepositoryId).id,
+                    callDisablingUiControls(
+                        suspend {
+                            modelSyncService.bindModuleFromServer(
+                                selectedConnection as ModelClientV2,
+                                (selectedBranch as BranchReference).branchName,
+                                selectedModule as ModuleIdWithName,
+                                (selectedRepo as RepositoryId).id,
+                            )
+                        },
                     )
                 }
             }
@@ -266,9 +287,28 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             return inputBox
         }
 
+        private fun disconnectClient() {
+            if (connectionsModel.size > 0) {
+                val message = "By disconnecting, the synchronized modules and models will be removed locally."
+                AlertNotifier(activeProject).warning(message) { response ->
+                    if (UserResponse.USER_ACCEPTED == response) {
+                        val originalClient = connectionsModel.selectedItem as ModelClientV2
+                        val clientAfterDisconnect = modelSyncService.disconnectServer(originalClient)
+                        if (clientAfterDisconnect == null) {
+                            triggerRefresh(null)
+                        }
+                    }
+                }
+            }
+        }
+
         private fun triggerRefresh(client: ModelClientV2?) {
-            populateConnectionsCB(client)
-            callOnlyIfNotFetching(::populateRepoCB)
+            callDisablingUiControls(
+                suspend {
+                    populateConnectionsCB(client)
+                    populateRepoCB()
+                },
+            )
         }
 
         private fun populateProjectsCB() {
@@ -335,7 +375,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                         ?: it.toString()
                     val id = it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
                     ModuleIdWithName(id, name)
-                }
+                }.sortedBy { it.name }
 
                 modulesModel.addAll(moduleNodes.toList())
                 if (modulesModel.size > 0) {
@@ -344,14 +384,14 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             }
         }
 
-        private fun callOnlyIfNotFetching(action: suspend () -> Unit) {
-            coroutineScope.launch {
+        private fun callDisablingUiControls(action: suspend () -> Unit) {
+            CoroutineScope(dispatcher).launch {
                 if (mutex.tryLock()) {
                     try {
                         setUiControlsEnabled(false)
                         action()
                     } catch (ex: Exception) {
-                        logger.error(ex) { "Failed to fetch data from server." }
+                        logger.error(ex) { "Failed to execute action from the UI" }
                     } finally {
                         setUiControlsEnabled(true)
                         mutex.unlock()
@@ -369,6 +409,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             connectButton.isEnabled = isEnabled
             disconnectButton.isEnabled = isEnabled
             bindButton.isEnabled = isEnabled
+            connectBranchButton.isEnabled = isEnabled
         }
 
         fun populateBindingCB(bindings: List<IBinding>) {

@@ -22,6 +22,7 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
@@ -30,7 +31,10 @@ import org.modelix.model.api.getNode
 import org.modelix.model.data.NodeData
 import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
+import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
+import org.modelix.mps.sync.modelix.NodeAlreadySynchronizedException
+import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -63,9 +67,10 @@ class NodeSynchronizer(
 
             val mpsConcept = node.concept
             val cloudParentNode = branch.getNode(parentNodeId)
-            val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
 
-            // save the modelix ID and the SNode in the map
+            // duplicate check
+            throwExceptionIfChildExists(cloudParentNode, childLink, node)
+            val cloudChildNode = cloudParentNode.addNewChild(childLink, -1, MPSConcept(mpsConcept))
             nodeMap.put(node, cloudChildNode.nodeIdAsLong())
 
             synchronizeNodeToCloud(mpsConcept, node, cloudChildNode)
@@ -78,13 +83,16 @@ class NodeSynchronizer(
     ) {
         // synchronize properties
         mpsConcept.properties.forEach {
+            val modelixProperty = MPSProperty(it)
             val mpsValue = mpsNode.getProperty(it)
-            val modelixProperty = PropertyFromName(it.name)
             cloudNode.setPropertyValue(modelixProperty, mpsValue)
         }
-        // save MPS Node ID explicitly
-        val mpsNodeIdProperty = PropertyFromName(NodeData.ID_PROPERTY_KEY)
-        cloudNode.setPropertyValue(mpsNodeIdProperty, mpsNode.nodeId.toString())
+        /*
+         * Save MPS Node ID explicitly.
+         * If you change this property here, please also change in method 'throwExceptionIfChildExists', where we use
+         * node.getModelixId() to check if the node already exists.
+         */
+        cloudNode.setPropertyValue(PropertyFromName(NodeData.ID_PROPERTY_KEY), mpsNode.getModelixId())
 
         // synchronize references
         mpsConcept.referenceLinks.forEach {
@@ -101,14 +109,25 @@ class NodeSynchronizer(
         mpsConcept.containmentLinks.forEach { containmentLink ->
             mpsNode.getChildren(containmentLink).forEach { mpsChild ->
                 val childLink = MPSChildLink(containmentLink)
+
+                // duplicate check
+                throwExceptionIfChildExists(cloudNode, childLink, mpsChild)
+
                 val mpsChildConcept = mpsChild.concept
                 val cloudChildNode = cloudNode.addNewChild(childLink, -1, MPSConcept(mpsChildConcept))
-
-                // save the modelix ID and the SNode in the map
                 nodeMap.put(mpsChild, cloudChildNode.nodeIdAsLong())
 
                 synchronizeNodeToCloud(mpsChildConcept, mpsChild, cloudChildNode)
             }
+        }
+    }
+
+    private fun throwExceptionIfChildExists(cloudParentNode: INode, childLink: IChildLink, node: SNode) {
+        val children = cloudParentNode.getChildren(childLink)
+        val nodeExistsOnTheServer = children.any { node.getModelixId() == it.getOriginalReference() }
+        val isSynchedToMps = nodeMap.isMappedToModelix(node)
+        if (nodeExistsOnTheServer && !isSynchedToMps) {
+            throw NodeAlreadySynchronizedException(node)
         }
     }
 
@@ -161,10 +180,7 @@ class NodeSynchronizer(
     }
 }
 
-@UnstableModelixFeature(
-    reason = "The new modelix MPS plugin is under construction",
-    intendedFinalization = "2024.1",
-)
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 data class CloudResolvableReference(
     val sourceNode: INode,
     val referenceLink: IReferenceLink,

@@ -18,6 +18,7 @@ package org.modelix.mps.sync.tasks
 
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
@@ -30,8 +31,8 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
 
     private val logger = KotlinLogging.logger {}
     private val threadPool = Executors.newSingleThreadExecutor()
-
     private val pauseObject = Object()
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val continuations = LinkedBlockingQueue<FutureWithPredecessors>()
 
@@ -153,7 +154,8 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
             }
         } catch (t: Throwable) {
             if (!threadPool.isShutdown) {
-                logger.error(t) { "BusyWaitQueue is shutting down, because of an Exception." }
+                val message = "${javaClass.simpleName} is shutting down, because of an Exception. Cause: ${t.message}"
+                notifierInjector.notifyAndLogError(message, t, logger)
             }
             continuations.forEach { it.future.future.completeExceptionally(t) }
         }

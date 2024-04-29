@@ -19,13 +19,14 @@ package org.modelix.mps.sync.plugin.action
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
+import com.intellij.openapi.components.service
 import jetbrains.mps.extapi.model.SModelBase
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.bindings.BindingsRegistry
-import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
-import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
+import org.modelix.mps.sync.modelix.BranchRegistry
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.plugin.ModelSyncService
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSyncAction : AnAction {
@@ -37,25 +38,25 @@ class ModelSyncAction : AnAction {
     }
 
     private val logger = KotlinLogging.logger {}
+    private val notifierInjector = InjectableNotifierWrapper
 
     constructor() : super()
 
     constructor(text: String) : super(text)
 
     override fun actionPerformed(event: AnActionEvent) {
+        var modelName = ""
         try {
             val model = event.getData(CONTEXT_MODEL)!! as SModelBase
+            modelName = model.name.simpleName
+            val branch = BranchRegistry.branch
+            check(branch != null) { "Connect to a server and branch before synchronizing a model." }
 
-            val binding = BindingsRegistry.getModelBinding(model)
-            require(binding == null) { "Model is already synchronized to server." }
-
-            val replicatedModel = ReplicatedModelRegistry.model
-            require(replicatedModel != null) { "Synchronization to server has not been established yet" }
-
-            val branch = replicatedModel.getBranch()
-            ModelSynchronizer(branch).addModelAndActivate(model)
-        } catch (ex: Exception) {
-            logger.error(ex) { "Model sync error occurred" }
+            val binding = service<ModelSyncService>().bindModelFromMps(model, branch)
+            binding.activate()
+        } catch (t: Throwable) {
+            val message = "Model '$modelName' synchronization error occurred. Cause: ${t.message}"
+            notifierInjector.notifyAndLogError(message, t, logger)
         }
     }
 }

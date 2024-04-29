@@ -28,6 +28,9 @@ class SyncTask(
     val result: CompletableFuture<Any?> = CompletableFuture(),
 ) {
     val sortedLocks = LinkedHashSet<SyncLock>(requiredLocks.sortedWith(SnycLockComparator()))
+
+    // for debug purposes, to know where the task was created
+    private val stackTrace: List<StackTraceElement> = Thread.currentThread().stackTrace.toList()
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")

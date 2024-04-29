@@ -76,6 +76,11 @@ object BindingsRegistry {
     fun bindingActivated(binding: IBinding) =
         changedBindings.put(BindingState(binding, BindingLifecycleState.ACTIVATE))
 
+    fun deactivateBindings() {
+        getModuleBindings().forEach { it.deactivate(removeFromServer = false) }
+        getModelBindings().forEach { it.deactivate(removeFromServer = false) }
+    }
+
     private fun bindingAdded(binding: IBinding) =
         changedBindings.put(BindingState(binding, BindingLifecycleState.ADD))
 

@@ -23,6 +23,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -39,6 +40,7 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val changeListener = ModuleChangeListener(branch)
 
@@ -67,7 +69,8 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
 
         bindingsRegistry.bindingActivated(this)
 
-        logger.info { "${name()} is activated." }
+        val message = "${name()} is activated."
+        notifierInjector.notifyAndLogInfo(message, logger)
 
         callback?.run()
     }
@@ -132,21 +135,20 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
 
             isDisposed = true
 
-            logger.info {
-                "${name()} is deactivated and module is removed locally${
-                    if (removeFromServer) {
-                        " and from server"
-                    } else {
-                        ""
-                    }
-                }."
-            }
+            val message = "${name()} is deactivated and module is removed locally${
+                if (removeFromServer) {
+                    " and from server"
+                } else {
+                    ""
+                }
+            }."
+            notifierInjector.notifyAndLogInfo(message, logger)
 
             callback?.run()
         }.getResult()
     }
 
-    override fun name() = "Binding of Module \"${module.moduleName}\""
+    override fun name() = "Binding of Module '${module.moduleName}'"
 
     override fun toString() = name()
 }

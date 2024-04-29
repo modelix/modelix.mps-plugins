@@ -18,6 +18,7 @@ package org.modelix.mps.sync.transformation.mpsToModelix.incremental
 
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.extapi.model.SModelDescriptorStub
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
@@ -31,15 +32,18 @@ import org.modelix.model.api.getNode
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.tasks.SyncTaskAction
+import org.modelix.mps.sync.transformation.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
+import org.modelix.mps.sync.transformation.pleaseCheckLogs
 import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
@@ -50,9 +54,11 @@ import java.util.concurrent.CompletableFuture
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
 
+    private val logger = KotlinLogging.logger {}
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val moduleSynchronizer = ModuleSynchronizer(branch)
     private val modelSynchronizer = ModelSynchronizer(branch)
@@ -109,7 +115,7 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
                     null
                 }
             }
-        }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { it ->
+        }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             errorHandlerWrapper(it, module) {
                 // add new dependencies
                 val iModuleNodeId = nodeMap[module]!!
@@ -212,17 +218,25 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
         input: Any?,
         module: SModule,
         func: SyncTaskAction,
-    ): Any? {
+    ): CompletableFuture<Any?> {
         try {
-            val result = func.invoke(input)
-            return if (result is CompletableFuture<*>) {
-                @Suppress("UNCHECKED_CAST")
-                (result as CompletableFuture<Any?>).exceptionally {
-                    removeModuleFromSyncInProgressAndRethrow(module, it)
+            val continuation = CompletableFuture<Any?>()
+
+            val result = func(input)
+            if (result is CompletableFuture<*>) {
+                result.whenComplete { taskResult, throwable ->
+                    if (throwable != null) {
+                        moduleChangeSyncInProgress.remove(module)
+                        continuation.completeExceptionally(throwable)
+                    } else {
+                        continuation.complete(taskResult)
+                    }
                 }
             } else {
-                result
+                continuation.complete(result)
             }
+
+            return continuation
         } catch (t: Throwable) {
             removeModuleFromSyncInProgressAndRethrow(module, t)
             // should never reach beyond this point, because the method above rethrows the throwable anyway
@@ -232,6 +246,10 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
 
     private fun removeModuleFromSyncInProgressAndRethrow(module: SModule, throwable: Throwable?) {
         moduleChangeSyncInProgress.remove(module)
-        throwable?.let { throw it }
+        throwable?.let {
+            val exception = MpsToModelixSynchronizationException(it.message ?: pleaseCheckLogs, it)
+            notifierInjector.notifyAndLogError(exception.message, exception, logger)
+            throw it
+        }
     }
 }

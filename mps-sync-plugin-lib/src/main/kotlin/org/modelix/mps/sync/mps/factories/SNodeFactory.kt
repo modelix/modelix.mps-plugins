@@ -29,9 +29,9 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
-import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
@@ -96,7 +96,7 @@ class SNodeFactory(
             } else {
                 val parentNodeId = parent?.nodeIdAsLong()
                 val parentNode = nodeMap.getNode(parentNodeId)
-                check(parentNode != null) { "Parent of Node($nodeId) is not found. Node will not be added to the model." }
+                checkNotNull(parentNode) { "Parent of Node($nodeId) is not found. Node will not be added to the model." }
 
                 val role = iNode.getContainmentLink()
                 val containmentLink = parentNode.concept.containmentLinks.first { it.name == role?.getSimpleName() }
@@ -124,7 +124,7 @@ class SNodeFactory(
 
     private fun setProperties(source: INode, target: SNode) {
         target.concept.properties.forEach { sProperty ->
-            val property = PropertyFromName(sProperty.name)
+            val property = MPSProperty(sProperty)
             val value = source.getPropertyValue(property)
             target.setProperty(sProperty, value)
         }

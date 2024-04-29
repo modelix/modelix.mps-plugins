@@ -26,9 +26,11 @@ import org.modelix.model.api.getNode
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
+import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
@@ -52,8 +54,7 @@ class ModelixTreeChangeVisitor(
     private val logger = KotlinLogging.logger {}
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
-    private val project
-        get() = ActiveMpsProjectInjector.activeMpsProject!!
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val nodeTransformer = NodeTransformer(branch, languageRepository)
     private val modelTransformer = ModelTransformer(branch, languageRepository)
@@ -63,18 +64,29 @@ class ModelixTreeChangeVisitor(
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val sNode = nodeMap.getNode(nodeId)
             if (sNode == null) {
-                logger.info { "Node ($nodeId) is not mapped to MPS yet." }
+                val message =
+                    "Node ($nodeId) is not mapped yet, therefore its Reference Link called $role cannot be changed."
+                notifyAndLogError(message)
                 return@enqueue null
             }
 
             val sReferenceLink = sNode.concept.referenceLinks.find { it.name == role }
             if (sReferenceLink == null) {
-                logger.error { "Node ($nodeId)'s concept (${sNode.concept.name}) does not have reference link called $role." }
+                val message =
+                    "Node ($nodeId)'s Concept (${sNode.concept.name}) does not have Reference Link called $role."
+                notifyAndLogError(message)
                 return@enqueue null
             }
 
             val iNode = getNode(nodeId)
-            val iReferenceLink = iNode.getReferenceLinks().find { it.getSimpleName() == role }
+            val usesRoleIds = iNode.usesRoleIds()
+            val iReferenceLink = iNode.getReferenceLinks().find {
+                if (usesRoleIds) {
+                    role == it.getUID()
+                } else {
+                    role == it.getSimpleName()
+                }
+            }
             val targetINode = iReferenceLink?.let { iNode.getReferenceTarget(it) }
             val targetSNode = targetINode?.let { nodeMap.getNode(it.nodeIdAsLong()) }
 
@@ -91,33 +103,37 @@ class ModelixTreeChangeVisitor(
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (!isMapped) {
-                logger.info { "Element represented by Modelix Node ($nodeId) is not mapped to MPS yet, therefore its $role property cannot be changed." }
+                val message =
+                    "Element represented by Node ($nodeId) is not mapped yet, therefore its $role property cannot be changed."
+                notifyAndLogError(message)
                 return@enqueue null
             }
 
             val iNode = getNode(nodeId)
+            val usesRoleIds = iNode.usesRoleIds()
             val iProperty = PropertyFromName(role)
             val newValue = iNode.getPropertyValue(iProperty)
 
             val sNode = nodeMap.getNode(nodeId)
             sNode?.let {
-                nodeTransformer.nodePropertyChanged(sNode, role, nodeId, newValue)
+                nodeTransformer.nodePropertyChanged(sNode, role, nodeId, newValue, usesRoleIds)
                 return@enqueue null
             }
 
             val sModel = nodeMap.getModel(nodeId)
             sModel?.let {
-                modelTransformer.modelPropertyChanged(sModel, role, newValue, nodeId)
+                modelTransformer.modelPropertyChanged(sModel, role, newValue, nodeId, usesRoleIds)
                 return@enqueue null
             }
 
             val sModule = nodeMap.getModule(nodeId)
             sModule?.let {
-                moduleTransformer.modulePropertyChanged(role, nodeId, sModule, newValue)
+                moduleTransformer.modulePropertyChanged(role, nodeId, sModule, newValue, usesRoleIds)
                 return@enqueue null
             }
 
-            logger.error { "We missed a property setting case (property=$role) for Modelix Node ($nodeId)." }
+            val message = "Property setting case for Node ($nodeId) and property ($role) was missed."
+            notifyAndLogError(message)
 
             null
         }
@@ -127,7 +143,7 @@ class ModelixTreeChangeVisitor(
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (!isMapped) {
-                logger.info { "Element represented by Modelix Node ($nodeId) is already removed from MPS." }
+                logger.info { "Element represented by Node ($nodeId) is already removed." }
                 return@enqueue null
             }
 
@@ -167,7 +183,8 @@ class ModelixTreeChangeVisitor(
                 return@enqueue null
             }
 
-            logger.error { "We missed a removal case for Modelix Node ($nodeId)." }
+            val message = "A removal case for Node ($nodeId) was missed."
+            notifyAndLogError(message)
 
             null
         }
@@ -177,7 +194,7 @@ class ModelixTreeChangeVisitor(
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (isMapped) {
-                logger.info { "Node ($nodeId) is already mapped to MPS." }
+                logger.info { "Node ($nodeId) is already mapped, therefore it cannot be added again." }
                 return@enqueue null
             }
 
@@ -187,7 +204,12 @@ class ModelixTreeChangeVisitor(
             } else if (iNode.isModuleDependency()) {
                 val moduleNodeId = iNode.getModule()?.nodeIdAsLong()
                 val parentModule = nodeMap.getModule(moduleNodeId)!!
-                require(parentModule is AbstractModule) { "Parent Module ($moduleNodeId) of INode (${iNode.nodeIdAsLong()}) is not an AbstractModule." }
+                require(parentModule is AbstractModule) {
+                    val message =
+                        "Parent Module ($moduleNodeId) of Node (${iNode.nodeIdAsLong()}) is not an AbstractModule. Therefore Node cannot be added."
+                    notifyAndLogError(message)
+                    message
+                }
                 moduleTransformer.transformModuleDependency(nodeId, parentModule)
             } else if (iNode.isModel()) {
                 modelTransformer.transformToModel(nodeId)
@@ -211,6 +233,7 @@ class ModelixTreeChangeVisitor(
      */
     override fun childrenChanged(nodeId: Long, role: String?) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val project = ActiveMpsProjectInjector.activeMpsProject!!
             modelTransformer.resolveModelImports(project.repository)
             nodeTransformer.resolveReferences()
             null
@@ -221,26 +244,31 @@ class ModelixTreeChangeVisitor(
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val nodeIsMapped = nodeMap.isMappedToMps(nodeId)
             if (!nodeIsMapped) {
-                logger.info { "Element represented by Modelix Node ($nodeId) is not mapped to MPS yet, therefore it cannot be moved to a new parent." }
+                val message = "Node ($nodeId) is not mapped yet, therefore it cannot be moved to a new parent."
+                notifyAndLogError(message)
                 return@enqueue null
             }
 
             val iNode = getNode(nodeId)
             val newParent = iNode.parent
             if (newParent == null) {
-                logger.error { "Node ($nodeId)'s new parent is null." }
+                val message = "Node ($nodeId)'s new parent is null."
+                notifyAndLogError(message)
                 return@enqueue null
             }
             val newParentId = newParent.nodeIdAsLong()
             val parentIsMapped = nodeMap.isMappedToMps(newParentId)
             if (!parentIsMapped) {
-                logger.error { "Modelix Node ($nodeId)'s new parent ($newParentId) is not mapped to MPS yet. Therefore Node cannot be moved to a new parent." }
+                val message =
+                    "Node ($nodeId)'s new parent ($newParentId) is not mapped yet. Therefore Node cannot be moved to a new parent."
+                notifyAndLogError(message)
                 return@enqueue null
             }
 
             val containmentLink = iNode.getContainmentLink()
             if (containmentLink == null) {
-                logger.error { "Node ($nodeId)'s containment link is null." }
+                val message = "Node ($nodeId)'s containment link is null."
+                notifyAndLogError(message)
                 return@enqueue null
             }
 
@@ -256,11 +284,17 @@ class ModelixTreeChangeVisitor(
                 return@enqueue null
             }
 
-            logger.error { "We missed a move to new parent case for Modelix Node ($nodeId)." }
+            val message = "A containment changed case for Node ($nodeId) was missed."
+            notifyAndLogError(message)
 
             null
         }
     }
 
     private fun getNode(nodeId: Long) = replicatedModel.getBranch().getNode(nodeId)
+
+    private fun notifyAndLogError(message: String) {
+        val exception = ModelixToMpsSynchronizationException(message)
+        notifierInjector.notifyAndLogError(message, exception, logger)
+    }
 }

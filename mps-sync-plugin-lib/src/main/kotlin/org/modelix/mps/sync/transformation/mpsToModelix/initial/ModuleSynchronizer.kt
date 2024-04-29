@@ -21,6 +21,7 @@ import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.Solution
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SDependency
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -34,52 +35,71 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
+import org.modelix.mps.sync.modelix.ModuleAlreadySynchronized
+import org.modelix.mps.sync.modelix.ModuleAlreadySynchronizedException
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
+import org.modelix.mps.sync.transformation.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
+import java.util.Collections
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModuleSynchronizer(private val branch: IBranch) {
 
+    private val logger = KotlinLogging.logger {}
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val modelSynchronizer = ModelSynchronizer(branch, postponeReferenceResolution = true)
 
-    fun addModuleAndActivate(module: AbstractModule) {
-        addModule(module, true).continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
-            @Suppress("UNCHECKED_CAST")
-            (it as? Iterable<IBinding>)?.forEach(IBinding::activate)
-        }
-    }
-
-    private fun addModule(
+    fun addModule(
         module: AbstractModule,
         isTransformationStartingModule: Boolean = false,
     ): ContinuableSyncTask =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val rootNode = branch.getRootNode()
             val childLink = ChildLinkFromName("modules")
-            val concept = BuiltinLanguages.MPSRepositoryConcepts.Module
-            val cloudModule = rootNode.addNewChild(childLink, -1, concept)
 
+            // duplicate check
+            val moduleId = module.getModelixId()
+            val moduleExists = rootNode.getChildren(childLink)
+                .any { moduleId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) }
+            if (moduleExists) {
+                if (nodeMap.isMappedToModelix(module)) {
+                    return@enqueue ModuleAlreadySynchronized(module)
+                } else {
+                    throw ModuleAlreadySynchronizedException(module)
+                }
+            }
+
+            val cloudModule = rootNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.Module)
             nodeMap.put(module, cloudModule.nodeIdAsLong())
-
             synchronizeModuleProperties(cloudModule, module)
 
             // synchronize dependencies
             module.declaredDependencies.waitForCompletionOfEachTask(collectResults = true) { addDependency(module, it) }
-        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) { unflattenedBindings ->
-            @Suppress("UNCHECKED_CAST")
-            (unflattenedBindings as Iterable<Iterable<IBinding>>).flatten()
-        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { dependencyBindings ->
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) { previousTaskResult ->
+            if (previousTaskResult is Iterable<*>) {
+                @Suppress("UNCHECKED_CAST")
+                (previousTaskResult as Iterable<Iterable<IBinding>>).flatten()
+            } else {
+                previousTaskResult
+            }
+        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { previousTaskResult ->
+            if (previousTaskResult is ModuleAlreadySynchronized) {
+                return@continueWith previousTaskResult
+            }
+
             // synchronize models
             val modelSynchedFuture =
                 module.models.waitForCompletionOfEachTask { modelSynchronizer.addModel(it as SModelBase) }
@@ -90,27 +110,31 @@ class ModuleSynchronizer(private val branch: IBranch) {
                 if (throwable != null) {
                     passedOnDependencyBindingsFuture.completeExceptionally(throwable)
                 } else {
-                    passedOnDependencyBindingsFuture.complete(dependencyBindings)
+                    passedOnDependencyBindingsFuture.complete(previousTaskResult)
                 }
             }
             passedOnDependencyBindingsFuture
         }.continueWith(
             linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ),
             SyncDirection.MPS_TO_MODELIX,
-        ) { dependencyBindings ->
+        ) { previousTaskResult ->
             // resolve references only after all dependent (and contained) modules and models have been transformed
             if (isTransformationStartingModule) {
                 resolveCrossModelReferences()
             }
-            dependencyBindings
-        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) { dependencyBindings ->
+            previousTaskResult
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) { previousTaskResult ->
+            if (previousTaskResult is ModuleAlreadySynchronized) {
+                return@continueWith Collections.emptySet<IBinding>()
+            }
+
             // register binding
             val binding = ModuleBinding(module, branch)
             bindingsRegistry.addModuleBinding(binding)
 
             val bindings = mutableSetOf<IBinding>(binding)
             @Suppress("UNCHECKED_CAST")
-            bindings.addAll(dependencyBindings as Iterable<IBinding>)
+            bindings.addAll(previousTaskResult as Iterable<IBinding>)
             bindings
         }
 
@@ -120,8 +144,14 @@ class ModuleSynchronizer(private val branch: IBranch) {
             val targetModule = dependency.targetModule.resolve(repository)
             val isMappedToMps = nodeMap[targetModule] != null
 
+            // add the target module to the server if it does not exist there yet
             if (!isMappedToMps) {
-                require(targetModule is AbstractModule) { "Dependency target module ($targetModule) of Module ($module) must be an AbstractModule." }
+                require(targetModule is AbstractModule) {
+                    val message =
+                        "Dependency ($dependency)'s target Module ($targetModule) must be an AbstractModule. Dependency's source Module is ($module)."
+                    notifyAndLogError(message)
+                    message
+                }
                 // connect the addModule task to this one, so if that fails/succeeds we'll also fail/succeed
                 addModule(targetModule).getResult()
             } else {
@@ -132,13 +162,26 @@ class ModuleSynchronizer(private val branch: IBranch) {
             SyncDirection.MPS_TO_MODELIX,
         ) { dependencyBindings ->
             val moduleModelixId = nodeMap[module]!!
-            val dependencies = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
-
             val cloudModule = branch.getNode(moduleModelixId)
-            val cloudDependency =
-                cloudModule.addNewChild(dependencies, -1, BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
+            val childLink = BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies
 
             val moduleReference = dependency.targetModule
+            val targetModuleId = moduleReference.getModelixId()
+
+            // duplicate check and sync
+            val dependencyExists = cloudModule.getChildren(childLink).any {
+                targetModuleId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid)
+            }
+            if (dependencyExists) {
+                val message =
+                    "Module '${module.moduleName}''s Module Dependency for Module '${moduleReference.moduleName}' will not be synchronized, because it already exists on the server."
+                notifierInjector.notifyAndLogWarning(message, logger)
+                return@continueWith dependencyBindings
+            }
+
+            val cloudDependency =
+                cloudModule.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
+
             nodeMap.put(module, moduleReference, cloudDependency.nodeIdAsLong())
 
             // warning: might be fragile, because we synchronize the properties by hand
@@ -149,7 +192,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
 
             cloudDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid,
-                moduleReference.moduleId.toString(),
+                targetModuleId,
             )
 
             cloudDependency.setPropertyValue(
@@ -185,11 +228,15 @@ class ModuleSynchronizer(private val branch: IBranch) {
             dependencyBindings
         }
 
+    fun resolveCrossModelReferences() = modelSynchronizer.resolveCrossModelReferences()
+
     private fun synchronizeModuleProperties(cloudModule: INode, module: SModule) {
         cloudModule.setPropertyValue(
             BuiltinLanguages.MPSRepositoryConcepts.Module.id,
-            module.moduleId.toString(),
+            // if you change this property here, please also change above where we check if the module already exists in its parent node
+            module.getModelixId(),
         )
+
         cloudModule.setPropertyValue(
             BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion,
             ((module as? AbstractModule)?.moduleVersion).toString(),
@@ -208,5 +255,8 @@ class ModuleSynchronizer(private val branch: IBranch) {
         )
     }
 
-    fun resolveCrossModelReferences() = modelSynchronizer.resolveCrossModelReferences()
+    private fun notifyAndLogError(message: String) {
+        val exception = MpsToModelixSynchronizationException(message)
+        notifierInjector.notifyAndLogError(message, exception, logger)
+    }
 }

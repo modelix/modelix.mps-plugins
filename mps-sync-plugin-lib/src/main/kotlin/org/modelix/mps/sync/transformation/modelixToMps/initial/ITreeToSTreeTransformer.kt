@@ -30,7 +30,6 @@ import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.util.isModule
 import org.modelix.mps.sync.util.nodeIdAsLong
-import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
 
@@ -47,22 +46,17 @@ class ITreeToSTreeTransformer(private val branch: IBranch, mpsLanguageRepository
         val result = syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.NONE) {
             val result = AtomicReference<INode>()
             branch.runRead {
-                val moduleNode =
-                    branch.getRootNode().allChildren.firstOrNull { it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) == moduleId }
-                require(moduleNode != null) { "Module node with ID '$moduleId' is not found on the root level." }
+                val moduleNode = branch.getRootNode().allChildren.firstOrNull {
+                    it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) == moduleId
+                }
+                requireNotNull(moduleNode) { "Module node with ID '$moduleId' is not found on the root level." }
                 require(moduleNode.isModule()) { "Transformation entry point (Node $moduleNode) must be a Module." }
                 result.set(moduleNode)
             }
             result.get()
         }.continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.NONE) {
-            val entryPoint = it as INode
-            try {
-                moduleTransformer.transformToModuleCompletely(entryPoint.nodeIdAsLong(), true)
-                    .getResult()
-            } catch (ex: Exception) {
-                logger.error(ex) { "Transformation of Node tree starting from Node $entryPoint failed." }
-                CompletableFuture.completedFuture(Collections.emptyList<IBinding>())
-            }
+            val entryNodeId = (it as INode).nodeIdAsLong()
+            moduleTransformer.transformToModuleCompletely(entryNodeId, true).getResult()
         }
 
         @Suppress("UNCHECKED_CAST")

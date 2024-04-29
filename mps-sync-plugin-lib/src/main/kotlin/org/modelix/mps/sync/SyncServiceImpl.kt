@@ -1,145 +1,169 @@
 package org.modelix.mps.sync
 
 import com.intellij.openapi.project.Project
+import jetbrains.mps.extapi.model.SModelBase
+import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.model.api.IBranchListener
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.client2.ModelClientV2
-import org.modelix.model.client2.ReplicatedModel
-import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.bindings.BindingsRegistry
-import org.modelix.mps.sync.modelix.ModelixBranchListener
-import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
+import org.modelix.mps.sync.bindings.EmptyBinding
+import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
-import org.modelix.mps.sync.mps.RepositoryChangeListener
+import org.modelix.mps.sync.mps.notifications.INotifier
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.tasks.FuturesWaitQueue
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
+import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
+import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
+import java.io.IOException
 import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class SyncServiceImpl : SyncService {
+class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
 
     private val logger = KotlinLogging.logger {}
     private val mpsProjectInjector = ActiveMpsProjectInjector
+    private val notifierInjector = InjectableNotifierWrapper
 
-    private val coroutineScope = CoroutineScope(Dispatchers.Default)
-    private val replicatedModelByBranchReference = mutableMapOf<BranchReference, ReplicatedModel>()
-    private val changeListenerByReplicatedModel = mutableMapOf<ReplicatedModel, IBranchListener>()
-
-    private var projectWithChangeListener: Pair<MPSProject, RepositoryChangeListener>? = null
+    private val dispatcher = Dispatchers.IO // rather IO-intensive tasks
 
     init {
-        logger.info { "============================================ Registering builtin languages" }
+        notifierInjector.notifier = userNotifier
+
+        logger.debug { "ModelixSyncPlugin: Registering built-in languages" }
         // just a dummy call, the initializer of ILanguageRegistry takes care of the rest...
         ILanguageRepository.default.javaClass
     }
 
-    override suspend fun connectModelServer(
-        serverURL: URL,
-        jwt: String,
-        callback: (() -> Unit)?,
-    ): ModelClientV2 {
+    @Throws(IOException::class)
+    override fun connectModelServer(serverURL: URL, jwt: String?): ModelClientV2 {
         logger.info { "Connecting to $serverURL" }
-        // TODO: use JWT here
-        val modelClientV2 = ModelClientV2.builder().url(serverURL.toString()).build()
-        modelClientV2.init()
-        logger.info { "Connection to $serverURL successful" }
-
-        callback?.invoke()
+        val modelClientV2 = ModelClientV2.builder().url(serverURL.toString()).authToken { jwt }.build()
+        runBlocking(dispatcher) {
+            modelClientV2.init()
+        }
+        logger.info { "Connection to $serverURL is successful." }
 
         return modelClientV2
     }
 
-    override fun disconnectModelServer(
-        client: ModelClientV2,
-        callback: (() -> Unit)?,
-    ) {
-        // TODO what shall happen with the bindings if we disconnect from model server?
+    override fun disconnectModelServer(client: ModelClientV2) {
+        logger.info { "Disconnecting from ${client.baseUrl}" }
         client.close()
-        callback?.invoke()
+        logger.info { "Disconnected from ${client.baseUrl}" }
+
+        logger.info { "Deactivating bindings and disposing cloned branch." }
+        BindingsRegistry.deactivateBindings()
+        BranchRegistry.close()
+        logger.info { "Bindings are deactivated and branch is disposed." }
     }
 
-    override suspend fun bindModule(
+    /**
+     * WARNING: this is a long-running blocking call.
+     */
+    override fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch {
+        val targetProject = mpsProjectInjector.activeMpsProject!!
+        val languageRepository = registerLanguages(targetProject)
+        return runBlocking(dispatcher) {
+            BranchRegistry.setBranch(
+                client,
+                branchReference,
+                languageRepository,
+                targetProject,
+                CoroutineScope(dispatcher),
+            )
+        }
+    }
+
+    /**
+     * WARNING: this is a long-running blocking call.
+     * Do not call this method from the main / EDT Thread, otherwise it will not be able to write to MPS!!!
+     */
+    override fun bindModuleFromServer(
         client: ModelClientV2,
         branchReference: BranchReference,
         moduleId: String,
-        callback: (() -> Unit)?,
     ): Iterable<IBinding> {
-        // fetch replicated model and branch content
-        // TODO how to handle multiple replicated models at the same time?
-        val replicatedModel =
-            replicatedModelByBranchReference.getOrDefault(branchReference, client.getReplicatedModel(branchReference))
-        val replicateModelIsAlreadySynched = replicatedModelByBranchReference.containsKey(branchReference)
-
-        /*
-         * TODO fixme:
-         * (1) How to propagate replicated model to other places of code?
-         * (2) How to know to which replicated model we want to upload? (E.g. when connecting to multiple model servers?)
-         * (3) How to replace the outdated replicated models that are already used from the registry?
-         *
-         * Possible answers:
-         * (1) via the registry
-         * (2) Base the selection on the parent project and the active model server connections we have. E.g. let the user select to which model server they want to upload the changes and so they get the corresponding replicated model.
-         * (3) We don't. We have to make sure that the places always have the latest replicated models from the registry. E.g. if we disconnect from the model server then we remove the replicated model (and thus break the registered event handlers), otherwise the event handlers as for the replicated model from the registry (based on some identifying metainfo for example, so to know which replicated model they need).
-         */
-        ReplicatedModelRegistry.model = replicatedModel
-        replicatedModelByBranchReference[branchReference] = replicatedModel
-
-        // TODO when and how to dispose the replicated model and everything that depends on it?
-        val branch = if (replicateModelIsAlreadySynched) {
-            replicatedModel.getBranch()
-        } else {
-            replicatedModel.start()
-        }
-
-        // transform the model
         val targetProject = mpsProjectInjector.activeMpsProject!!
         val languageRepository = registerLanguages(targetProject)
+
+        // fetch replicated model and branch content
+        val branch = connectToBranch(client, branchReference)
+
+        // transform the modules and models
         val bindings = ITreeToSTreeTransformer(branch, languageRepository).transform(moduleId)
 
-        // register replicated model change listener
-        if (!replicateModelIsAlreadySynched) {
-            val listener = ModelixBranchListener(replicatedModel, languageRepository, branch)
-            branch.addListener(listener)
-            changeListenerByReplicatedModel[replicatedModel] = listener
-        }
+        return bindings
+    }
 
-        // register MPS project change listener
-        if (projectWithChangeListener == null) {
-            val repositoryChangeListener = RepositoryChangeListener(branch)
-            targetProject.repository.addRepositoryListener(repositoryChangeListener)
-            projectWithChangeListener = Pair(targetProject, repositoryChangeListener)
-        }
+    /**
+     * WARNING: this is a long-running blocking call.
+     */
+    override fun bindModuleFromMps(module: AbstractModule, branch: IBranch): Iterable<IBinding> {
+        logger.info { "Binding Module '${module.moduleName}' to the server." }
 
-        // trigger callback after activation
-        callback?.invoke()
+        // warning: blocking call
+        @Suppress("UNCHECKED_CAST")
+        val bindings = ModuleSynchronizer(branch).addModule(module, true).getResult().get() as Iterable<IBinding>
+        val hasAnyBinding = bindings.iterator().hasNext()
+
+        if (hasAnyBinding) {
+            val message = "Module- and Model Bindings for Module '${module.moduleName}' are created."
+            notifierInjector.notifyAndLogInfo(message, logger)
+        } else {
+            val message =
+                "No Module- or Model Binding is created for Module '${module.moduleName}'. This might be due to an error."
+            notifierInjector.notifyAndLogWarning(message, logger)
+        }
 
         return bindings
+    }
+
+    /**
+     * WARNING: this is a long-running blocking call.
+     */
+    override fun bindModelFromMps(model: SModelBase, branch: IBranch): IBinding {
+        logger.info { "Binding Model '${model.name}' to the server." }
+
+        val synchronizer = ModelSynchronizer(branch)
+        // synchronize model. Warning: blocking call
+        val binding = synchronizer.addModel(model).getResult().get() as IBinding
+        // wait until the model imports are synced. Warning: blocking call
+        synchronizer.resolveModelImportsInTask().getResult().get()
+
+        if (binding !is EmptyBinding) {
+            val message = "Model Binding for '${model.name}' is created."
+            notifierInjector.notifyAndLogInfo(message, logger)
+        } else {
+            val message = "No Model Binding is created for '${model.name}'. This might be due to an error."
+            notifierInjector.notifyAndLogWarning(message, logger)
+        }
+
+        return binding
     }
 
     override fun setActiveProject(project: Project) {
         mpsProjectInjector.setActiveProject(project)
     }
 
-    override fun dispose() {
-        // cancel all running coroutines
-        coroutineScope.cancel()
+    override fun close() {
+        // dispose task and wait queues
         SyncQueue.close()
         FuturesWaitQueue.close()
-        // unregister change listeners
-        resetProjectWithChangeListener()
-        changeListenerByReplicatedModel.forEach { it.key.getBranch().removeListener(it.value) }
+        // dispose replicated model
+        BranchRegistry.close()
         // dispose all bindings
-        BindingsRegistry.getModuleBindings().forEach { it.deactivate(removeFromServer = false) }
-        BindingsRegistry.getModelBindings().forEach { it.deactivate(removeFromServer = false) }
+        BindingsRegistry.deactivateBindings()
     }
 
     private fun registerLanguages(project: MPSProject): MPSLanguageRepository {
@@ -147,14 +171,5 @@ class SyncServiceImpl : SyncService {
         val mpsLanguageRepo = MPSLanguageRepository(repository)
         ILanguageRepository.register(mpsLanguageRepo)
         return mpsLanguageRepo
-    }
-
-    private fun resetProjectWithChangeListener() {
-        projectWithChangeListener?.let {
-            val project = it.first
-            val listener = it.second
-            project.repository.removeRepositoryListener(listener)
-            projectWithChangeListener = null
-        }
     }
 }

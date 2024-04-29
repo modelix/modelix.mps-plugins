@@ -17,6 +17,7 @@
 package org.modelix.mps.sync.transformation.mpsToModelix.initial
 
 import jetbrains.mps.extapi.model.SModelBase
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
@@ -30,9 +31,14 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
+import org.modelix.mps.sync.modelix.ModelAlreadySynchronized
+import org.modelix.mps.sync.modelix.ModelAlreadySynchronizedException
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
+import org.modelix.mps.sync.transformation.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
@@ -41,9 +47,11 @@ import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution: Boolean = false) {
 
+    private val logger = KotlinLogging.logger {}
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val nodeSynchronizer = if (postponeReferenceResolution) {
         NodeSynchronizer(branch, synchronizedLinkedHashSet())
@@ -62,30 +70,65 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
 
     fun addModel(model: SModelBase) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
-            val moduleModelixId = nodeMap[model.module]!!
-            val models = BuiltinLanguages.MPSRepositoryConcepts.Module.models
+            val parentModule = model.module
+            if (parentModule == null) {
+                val message = "Model ($model) cannot be synchronized to the server, because its Module is null."
+                notifyAndLogError(message)
+                throw IllegalStateException(message)
+            }
 
+            val moduleModelixId = nodeMap[parentModule]
+            if (moduleModelixId == null) {
+                val message =
+                    "Model ($model) cannot be synchronized to the server, because its Module ($parentModule) is not found in the local sync cache."
+                notifyAndLogError(message)
+                throw IllegalStateException(message)
+            }
             val cloudModule = branch.getNode(moduleModelixId)
-            val cloudModel = cloudModule.addNewChild(models, -1, BuiltinLanguages.MPSRepositoryConcepts.Model)
+            val childLink = BuiltinLanguages.MPSRepositoryConcepts.Module.models
 
+            // duplicate check
+            val modelId = model.getModelixId()
+            val modelExists = cloudModule.getChildren(childLink)
+                .any { modelId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) }
+            if (modelExists) {
+                if (nodeMap.isMappedToModelix(model)) {
+                    return@enqueue ModelAlreadySynchronized(model)
+                } else {
+                    throw ModelAlreadySynchronizedException(model)
+                }
+            }
+
+            val cloudModel = cloudModule.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.Model)
             nodeMap.put(model, cloudModel.nodeIdAsLong())
-
             synchronizeModelProperties(cloudModel, model)
 
             // synchronize root nodes
             model.rootNodes.waitForCompletionOfEachTask { nodeSynchronizer.addNode(it) }
-        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { statusToken ->
+            if (statusToken is ModelAlreadySynchronized) {
+                return@continueWith statusToken
+            }
+
             // synchronize model imports
             model.modelImports.waitForCompletionOfEachTask { addModelImport(model, it) }
-        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { statusToken ->
+            if (statusToken is ModelAlreadySynchronized) {
+                return@continueWith statusToken
+            }
+
             // synchronize language dependencies
             model.importedLanguageIds().waitForCompletionOfEachTask { addLanguageDependency(model, it) }
-        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+        }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { statusToken ->
+            if (statusToken is ModelAlreadySynchronized) {
+                return@continueWith statusToken
+            }
+
             // synchronize devKits
             model.importedDevkits().waitForCompletionOfEachTask { addDevKitDependency(model, it) }
-        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) {
+        }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) { statusToken ->
             val isDescriptorModel = model.name.value.endsWith("@descriptor")
-            if (isDescriptorModel) {
+            if (isDescriptorModel || statusToken is ModelAlreadySynchronized) {
                 EmptyBinding()
             } else {
                 // register binding
@@ -96,16 +139,16 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
         }
 
     private fun synchronizeModelProperties(cloudModel: INode, model: SModel) {
-        cloudModel.setPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id, model.modelId.toString())
         cloudModel.setPropertyValue(
-            BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name,
-            model.name.value,
+            BuiltinLanguages.MPSRepositoryConcepts.Model.id,
+            // if you change this property here, please also change above where we check if the model already exists in its parent node
+            model.getModelixId(),
         )
+
+        cloudModel.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, model.name.value)
+
         if (model.name.hasStereotype()) {
-            cloudModel.setPropertyValue(
-                BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype,
-                model.name.stereotype,
-            )
+            cloudModel.setPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype, model.name.stereotype)
         }
     }
 
@@ -123,50 +166,70 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
 
     private fun addModelImportToCloud(source: SModel, targetModel: SModel) {
         val modelixId = nodeMap[source]!!
-
-        val modelImportsLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
-        val modelReferenceConcept = BuiltinLanguages.MPSRepositoryConcepts.ModelReference
-
         val cloudParentNode = branch.getNode(modelixId)
-        val cloudModelReference = cloudParentNode.addNewChild(modelImportsLink, -1, modelReferenceConcept)
+        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
+
+        val targetModelReference = BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model
+        val targetModelModelixId = nodeMap[targetModel]!!
+        val cloudTargetModel = branch.getNode(targetModelModelixId)
+        val idProperty = BuiltinLanguages.MPSRepositoryConcepts.Model.id
+        val cloudTargetModelId = cloudTargetModel.getPropertyValue(idProperty)
+
+        // duplicate check and sync
+        val modelImportExists = cloudParentNode.getChildren(childLink).any {
+            cloudTargetModelId == it.getReferenceTarget(targetModelReference)?.getPropertyValue(idProperty)
+        }
+        if (modelImportExists) {
+            val message =
+                "Model Import for Model '${targetModel.name}' from Model '${source.name}' will not be synchronized, because it already exists on the server."
+            notifierInjector.notifyAndLogWarning(message, logger)
+            return
+        }
+
+        val cloudModelReference =
+            cloudParentNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.ModelReference)
 
         nodeMap.put(source, targetModel.reference, cloudModelReference.nodeIdAsLong())
 
         // warning: might be fragile, because we synchronize the fields by hand
-        val targetModelModelixId = nodeMap[targetModel]!!
-        val cloudTargetModel = branch.getNode(targetModelModelixId)
-        cloudModelReference.setReferenceTarget(
-            BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model,
-            cloudTargetModel,
-        )
+        cloudModelReference.setReferenceTarget(targetModelReference, cloudTargetModel)
     }
 
     fun addLanguageDependency(model: SModel, language: SLanguage) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val modelixId = nodeMap[model]!!
-
-            val languageModuleReference = language.sourceModuleReference
+            val cloudNode = branch.getNode(modelixId)
             val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
 
-            val cloudNode = branch.getNode(modelixId)
+            val languageModuleReference = language.sourceModuleReference
+            val targetLanguageName = languageModuleReference?.moduleName
+            val targetLanguageId = languageModuleReference?.getModelixId()
+
+            // duplicate check and sync
+            val dependencyExists = cloudNode.getChildren(childLink).any {
+                targetLanguageId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
+            }
+            if (dependencyExists) {
+                val message =
+                    "Model '${model.name}''s Language Dependency for '$targetLanguageName' will not be synchronized, because it already exists on the server."
+                notifierInjector.notifyAndLogWarning(message, logger)
+                return@enqueue null
+            }
+
             val cloudLanguageDependency =
-                cloudNode.addNewChild(
-                    childLink,
-                    -1,
-                    BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency,
-                )
+                cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency)
 
             nodeMap.put(model, languageModuleReference, cloudLanguageDependency.nodeIdAsLong())
 
             // warning: might be fragile, because we synchronize the properties by hand
             cloudLanguageDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
-                languageModuleReference?.moduleName,
+                targetLanguageName,
             )
 
             cloudLanguageDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
-                languageModuleReference?.moduleId.toString(),
+                targetLanguageId,
             )
 
             cloudLanguageDependency.setPropertyValue(
@@ -178,27 +241,39 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
     fun addDevKitDependency(model: SModel, devKit: SModuleReference) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val modelixId = nodeMap[model]!!
+            val cloudNode = branch.getNode(modelixId)
+            val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
 
             val repository = model.repository
             val devKitModuleId = devKit.moduleId
             val devKitModule = repository.getModule(devKitModuleId)
+            val devKitName = devKitModule?.moduleName
+            val devKitId = devKitModule?.getModelixId()
 
-            val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages
+            // duplicate check and sync
+            val dependencyExists = cloudNode.getChildren(childLink)
+                .any { devKitId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid) }
+            if (dependencyExists) {
+                val message =
+                    "Model '${model.name}''s DevKit Dependency for '$devKitName' will not be synchronized, because it already exists on the server."
+                notifierInjector.notifyAndLogWarning(message, logger)
+                return@enqueue null
+            }
 
-            val cloudNode = branch.getNode(modelixId)
             val cloudDevKitDependency =
                 cloudNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
+
             nodeMap.put(model, devKit, cloudDevKitDependency.nodeIdAsLong())
 
             // warning: might be fragile, because we synchronize the properties by hand
             cloudDevKitDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
-                devKitModule?.moduleName,
+                devKitName,
             )
 
             cloudDevKitDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid,
-                devKitModule?.moduleId.toString(),
+                devKitId,
             )
         }
 
@@ -216,6 +291,11 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
     private fun resolveModelImports() {
         resolvableModelImports.forEach { addModelImportToCloud(it.sourceModel, it.targetModel) }
         resolvableModelImports.clear()
+    }
+
+    private fun notifyAndLogError(message: String) {
+        val exception = MpsToModelixSynchronizationException(message)
+        notifierInjector.notifyAndLogError(message, exception, logger)
     }
 }
 

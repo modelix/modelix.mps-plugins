@@ -7,6 +7,7 @@ npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.2" }
 [versions]
 modelixCore = "7.2.1"
 kotlinCoroutines="1.8.0"
+ktor="2.3.10"
 
 [libraries]
 modelix-model-api = { group = "org.modelix", name = "model-api", version.ref = "modelixCore" }
@@ -25,6 +26,8 @@ kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version =
 kotlin-logging-microutils = { group = "io.github.microutils", name = "kotlin-logging", version = "3.0.5" }
 kotlin-html = "org.jetbrains.kotlinx:kotlinx-html:0.11.0"
 kotlin-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinCoroutines" }
+
+ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 
 zt-zip = { group = "org.zeroturnaround", name = "zt-zip", version = "1.17" }
 logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.5.6" }

@@ -49,17 +49,16 @@ class SolutionProducer {
         val vfsManager = coreComponents.platform.findComponent(
             VFSManager::class.java,
         )
+
         val fileSystem = vfsManager!!.getFileSystem(VFSManager.FILE_FS)
         val outputFolder: IFile = fileSystem.getFile(exportPath)
 
         val solutionFile = outputFolder.findChild(name).findChild("solution" + MPSExtentions.DOT_SOLUTION)
         val solutionDir = outputFolder.findChild(name)
 
-        ApplicationManager.getApplication().invokeAndWait {
-            VirtualFileManager.getInstance().syncRefresh()
-            val modelsDirVirtual = solutionDir.findChild("models")
-            ensureDirDeletionAndRecreation(modelsDirVirtual)
-        }
+        VirtualFileManager.getInstance().syncRefresh()
+        val modelsDirVirtual = solutionDir.findChild("models")
+        ensureDirDeletionAndRecreation(modelsDirVirtual)
 
         val descriptor = SolutionDescriptor()
         descriptor.namespace = name
@@ -80,7 +79,7 @@ class SolutionProducer {
             // this might be a silly workaround...
             solution.attach(project.repository)
         }
-        check(solution.repository != null) { "The solution should be in a repo, so also the model will be in a repo and syncReference will not crash" }
+        checkNotNull(solution.repository) { "The solution should be in a repo, so also the model will be in a repo and syncReference will not crash" }
 
         return solution
     }

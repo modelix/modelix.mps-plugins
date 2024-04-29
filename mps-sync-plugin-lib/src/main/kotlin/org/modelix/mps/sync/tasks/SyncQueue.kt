@@ -16,12 +16,15 @@
 
 package org.modelix.mps.sync.tasks
 
-import com.intellij.util.containers.headTail
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.modelix.ReplicatedModelRegistry
+import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
-import org.modelix.mps.sync.mps.MpsCommandHelper
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
+import org.modelix.mps.sync.transformation.MpsToModelixSynchronizationException
+import org.modelix.mps.sync.transformation.SynchronizationException
+import org.modelix.mps.sync.transformation.pleaseCheckLogs
 import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -33,6 +36,7 @@ object SyncQueue : AutoCloseable {
 
     private val logger = KotlinLogging.logger {}
     private val threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
+    private val notifierInjector = InjectableNotifierWrapper
 
     private val activeSyncThreadsWithSyncDirection = ConcurrentHashMap<Thread, SyncDirection>()
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
@@ -79,17 +83,25 @@ object SyncQueue : AutoCloseable {
         tasks.add(task)
         try {
             scheduleFlush()
-        } catch (ex: Exception) {
+        } catch (t: Throwable) {
             if (!threadPool.isShutdown) {
-                logger.error(ex) { "Task is cancelled, because an Exception occurred in the ThreadPool of the SyncQueue." }
+                val message =
+                    "Task is cancelled, because an Exception occurred in the ThreadPool of the SyncQueue. Cause: ${t.message}"
+                notifierInjector.notifyAndLogError(message, t, logger)
             }
-            task.result.completeExceptionally(ex)
+            task.result.completeExceptionally(t)
         }
     }
 
     private fun scheduleFlush() {
         threadPool.submit {
-            doFlush()
+            try {
+                doFlush()
+            } catch (t: Throwable) {
+                val message =
+                    "Running the SyncQueue Tasks on Thread ${Thread.currentThread()} failed. Cause: ${t.message}"
+                notifierInjector.notifyAndLogError(message, t, logger)
+            }
         }
     }
 
@@ -113,7 +125,7 @@ object SyncQueue : AutoCloseable {
                 taskResult.complete(result)
             }
         } else {
-            val lockHeadAndTail = locks.toList().headTail()
+            val lockHeadAndTail = locks.customHeadTail()
             val lockHead = lockHeadAndTail.first
 
             runWithLock(lockHead) {
@@ -127,10 +139,15 @@ object SyncQueue : AutoCloseable {
                     val lockTail = lockHeadAndTail.second
                     runWithLocks(LinkedHashSet(lockTail), task)
                 } catch (t: Throwable) {
-                    logger.error(t) { "Exception in task on $currentThread, Thread ID ${currentThread.id}" }
+                    val message = "Exception in task on $currentThread, Thread ID ${currentThread.id}."
+                    logger.error(t) { message }
+
+                    val wrapped = wrapErrorIntoSynchronizationException(t)
+                    val cause = wrapped ?: t
+                    notifierInjector.notifyAndLogError(cause.message ?: pleaseCheckLogs, cause, logger)
 
                     if (!taskResult.isCompletedExceptionally) {
-                        taskResult.completeExceptionally(t)
+                        taskResult.completeExceptionally(cause)
                     }
                 } finally {
                     if (wasAddedHere) {
@@ -144,11 +161,30 @@ object SyncQueue : AutoCloseable {
 
     private fun runWithLock(lock: SyncLock, runnable: () -> Unit) {
         when (lock) {
-            SyncLock.MPS_WRITE -> MpsCommandHelper.runInUndoTransparentCommand(runnable)
+            SyncLock.MPS_WRITE -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.executeCommandInEDT(runnable)
             SyncLock.MPS_READ -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction(runnable)
-            SyncLock.MODELIX_READ -> ReplicatedModelRegistry.model!!.getBranch().runRead(runnable)
-            SyncLock.MODELIX_WRITE -> ReplicatedModelRegistry.model!!.getBranch().runWrite(runnable)
+            SyncLock.MODELIX_READ -> BranchRegistry.branch!!.runRead(runnable)
+            SyncLock.MODELIX_WRITE -> BranchRegistry.branch!!.runWrite(runnable)
             SyncLock.NONE -> runnable.invoke()
         }
     }
+
+    private fun wrapErrorIntoSynchronizationException(error: Throwable): SynchronizationException? {
+        if (error is SynchronizationException) {
+            return error
+        }
+
+        val headOfStackTrace = error.stackTrace.first()
+        val className = headOfStackTrace.className.toLowerCase()
+        return if (className.contains("mpsToModelix".toLowerCase())) {
+            MpsToModelixSynchronizationException(error.message ?: pleaseCheckLogs, error)
+        } else if (className.contains("modelixToMps".toLowerCase())) {
+            ModelixToMpsSynchronizationException(error.message ?: pleaseCheckLogs, error)
+        } else {
+            null
+        }
+    }
 }
+
+// List.headTail does not work in some MPS versions (e.g. 2020.3.6), therefore we reimplemented the method
+private fun <T> Iterable<T>.customHeadTail(): Pair<T, List<T>> = this.first() to this.drop(1)

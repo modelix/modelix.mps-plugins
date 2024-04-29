@@ -33,7 +33,7 @@ class MPSSynchronizationAppLifecycleListener : AppLifecycleListener {
 //    }
 
     override fun appStarted() {
-        logger.info { "============================================ app started" }
+        logger.debug { "ModelixSyncPlugin: App started" }
         service<ModelSyncService>().ensureStarted()
     }
 }
