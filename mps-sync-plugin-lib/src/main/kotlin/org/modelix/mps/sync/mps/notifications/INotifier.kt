@@ -15,5 +15,11 @@ interface INotifier {
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 fun interface UserResponseListener {
 
-    fun userResponded(result: String)
+    fun userResponded(response: UserResponse)
+}
+
+enum class UserResponse {
+    USER_ACCEPTED,
+    USER_REJECTED,
+    UNSPECIFIED, // expand this enum for other possible values
 }

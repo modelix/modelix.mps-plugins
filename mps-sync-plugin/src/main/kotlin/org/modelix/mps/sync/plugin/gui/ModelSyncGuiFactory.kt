@@ -43,6 +43,7 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.AlertNotifier
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
+import org.modelix.mps.sync.mps.notifications.UserResponse
 import org.modelix.mps.sync.plugin.ModelSyncService
 import org.modelix.mps.sync.plugin.icons.CloudIcons
 import java.awt.Component
@@ -290,7 +291,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             if (connectionsModel.size > 0) {
                 val message = "By disconnecting, the synchronized modules and models will be removed locally."
                 AlertNotifier(activeProject).warning(message) { response ->
-                    if (true.toString() == response) {
+                    if (UserResponse.USER_ACCEPTED == response) {
                         val originalClient = connectionsModel.selectedItem as ModelClientV2
                         val clientAfterDisconnect = modelSyncService.disconnectServer(originalClient)
                         if (clientAfterDisconnect == null) {

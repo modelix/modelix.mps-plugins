@@ -23,8 +23,13 @@ class AlertNotifier(private val project: Project, private val title: String = "M
     }
 
     private fun showAlert(alert: ModelixDialog, responseListener: UserResponseListener?) {
-        val result = alert.showAndGet()
-        responseListener?.userResponded(result.toString())
+        val isAccepted = alert.showAndGet()
+        val response = if (isAccepted) {
+            UserResponse.USER_ACCEPTED
+        } else {
+            UserResponse.USER_REJECTED
+        }
+        responseListener?.userResponded(response)
         alert.disposeIfNeeded()
     }
 }

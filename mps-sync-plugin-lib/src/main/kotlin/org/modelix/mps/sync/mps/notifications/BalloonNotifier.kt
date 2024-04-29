@@ -51,6 +51,6 @@ private class UrlListenerToUserResponseAdapter(
 ) : NotificationListener {
 
     override fun hyperlinkUpdate(notification: Notification, event: HyperlinkEvent) {
-        userResponseListener?.userResponded(event.description)
+        userResponseListener?.userResponded(UserResponse.UNSPECIFIED)
     }
 }
