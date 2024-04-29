@@ -15,13 +15,13 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
  * does not have to be synced again.
  */
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-open class ItemAlreadySynchronizer(val item: Any)
+abstract class ItemAlreadySynchronized(val item: Any)
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModelAlreadySynchronized(val model: SModel) : ItemAlreadySynchronizer(model)
+class ModelAlreadySynchronized(val model: SModel) : ItemAlreadySynchronized(model)
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class ModuleAlreadySynchronized(val module: SModule) : ItemAlreadySynchronizer(module)
+class ModuleAlreadySynchronized(val module: SModule) : ItemAlreadySynchronized(module)
 
 /**
  * An exception to show that the referred item is already synchronized to Modelix.
