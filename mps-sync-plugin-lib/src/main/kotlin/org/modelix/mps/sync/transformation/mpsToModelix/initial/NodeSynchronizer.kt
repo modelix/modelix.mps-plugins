@@ -186,5 +186,3 @@ data class CloudResolvableReference(
     val referenceLink: IReferenceLink,
     val mpsTargetNode: SNode?,
 )
-
-class ChildNodeExists(val node: SNode, message: String) : Exception(message)
