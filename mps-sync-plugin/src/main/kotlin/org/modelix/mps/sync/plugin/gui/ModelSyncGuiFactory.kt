@@ -41,6 +41,7 @@ import org.modelix.modelql.core.toList
 import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.ofConcept
 import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.AlertNotifier
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
@@ -49,7 +50,6 @@ import org.modelix.mps.sync.plugin.ModelSyncService
 import org.modelix.mps.sync.plugin.icons.CloudIcons
 import java.awt.Component
 import java.awt.FlowLayout
-import java.awt.event.ActionEvent
 import java.awt.event.ItemEvent
 import javax.swing.Box
 import javax.swing.DefaultComboBoxModel
@@ -158,7 +158,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             jwtPanel.add(JLabel("JWT:           "))
             jwtPanel.add(jwt)
 
-            connectButton.addActionListener { _: ActionEvent ->
+            connectButton.addActionListener {
                 if (connectionsModel.size != 0) {
                     val message =
                         "<html>Only one client connection is allowed. <a href=\"disconnect\">Disconnect</a> the existing client.</html>"
@@ -284,7 +284,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             modulePanel.add(JLabel("Remote Module:  "))
             modulePanel.add(modulesCB)
 
-            bindButton.addActionListener { _: ActionEvent? ->
+            bindButton.addActionListener {
                 val selectedConnection = connectionsModel.selectedItem
                 val selectedBranch = branchesModel.selectedItem
                 val selectedModule = modulesModel.selectedItem
@@ -293,14 +293,28 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                     listOf(selectedConnection, selectedBranch, selectedModule, selectedRepo).all { it != null }
 
                 if (inputsExist) {
-                    // TODO establish binding only if there is no ModuleBinding with the same name yet
+                    val selectedModuleWithName = selectedModule as ModuleIdWithName
+                    var bindingExists = false
+                    if (bindingsModel.size != 0) {
+                        for (i in 0 until bindingsModel.size) {
+                            val binding = bindingsModel.getElementAt(i)
+                            if (binding is ModuleBinding && selectedModuleWithName.name == binding.module.moduleName) {
+                                bindingExists = true
+                                break
+                            }
+                        }
+                    }
+                    if (bindingExists) {
+                        return@addActionListener
+                    }
+
                     logger.info { "Binding Module ${moduleName.text} to project: ${ActiveMpsProjectInjector.activeMpsProject?.name}" }
                     callDisablingUiControls(
                         suspend {
                             modelSyncService.bindModuleFromServer(
                                 selectedConnection as ModelClientV2,
                                 (selectedBranch as BranchReference).branchName,
-                                selectedModule as ModuleIdWithName,
+                                selectedModuleWithName,
                                 (selectedRepo as RepositoryId).id,
                             )
                             activeBranch = modelSyncService.getActiveBranch()
