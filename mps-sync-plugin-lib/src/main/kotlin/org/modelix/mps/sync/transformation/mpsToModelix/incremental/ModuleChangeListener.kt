@@ -218,17 +218,25 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
         input: Any?,
         module: SModule,
         func: SyncTaskAction,
-    ): Any? {
+    ): CompletableFuture<Any?> {
         try {
+            val continuation = CompletableFuture<Any?>()
+
             val result = func(input)
-            return if (result is CompletableFuture<*>) {
-                @Suppress("UNCHECKED_CAST")
-                (result as CompletableFuture<Any?>).exceptionally {
-                    removeModuleFromSyncInProgressAndRethrow(module, it)
+            if (result is CompletableFuture<*>) {
+                result.whenComplete { taskResult, throwable ->
+                    if (throwable != null) {
+                        moduleChangeSyncInProgress.remove(module)
+                        continuation.completeExceptionally(throwable)
+                    } else {
+                        continuation.complete(taskResult)
+                    }
                 }
             } else {
-                result
+                continuation.complete(result)
             }
+
+            return continuation
         } catch (t: Throwable) {
             removeModuleFromSyncInProgressAndRethrow(module, t)
             // should never reach beyond this point, because the method above rethrows the throwable anyway

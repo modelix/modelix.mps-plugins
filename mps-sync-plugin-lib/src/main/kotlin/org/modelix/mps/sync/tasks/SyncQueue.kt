@@ -147,7 +147,7 @@ object SyncQueue : AutoCloseable {
                     notifierInjector.notifyAndLogError(cause.message ?: pleaseCheckLogs, cause, logger)
 
                     if (!taskResult.isCompletedExceptionally) {
-                        taskResult.completeExceptionally(t)
+                        taskResult.completeExceptionally(cause)
                     }
                 } finally {
                     if (wasAddedHere) {
