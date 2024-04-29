@@ -27,10 +27,7 @@ class ModuleAlreadySynchronized(val module: SModule) : ItemAlreadySynchronized(m
  * An exception to show that the referred item is already synchronized to Modelix.
  */
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-open class ItemAlreadySynchronizedException(
-    val item: Any,
-    message: String = "Item $item already exists on the server. Remove it from the project and synchronize it from the server instead.",
-) : Exception(message)
+abstract class ItemAlreadySynchronizedException(val item: Any, message: String) : Exception(message)
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ModelAlreadySynchronizedException(val model: SModel) : ItemAlreadySynchronizedException(
