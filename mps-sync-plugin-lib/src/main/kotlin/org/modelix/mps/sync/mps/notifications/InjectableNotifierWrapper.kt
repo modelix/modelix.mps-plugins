@@ -15,11 +15,12 @@ object InjectableNotifierWrapper {
 
     fun notifyAndLogError(message: String, error: Throwable, logger: KLogger) {
         runWithLock {
+            logger.error(error) { message }
+
             if (lastMessage != message || !errorsHaveSameOrigin(lastError, error)) {
                 lastMessage = message
                 lastError = error
 
-                logger.error(error) { message }
                 notifier.error(message)
             }
         }
@@ -27,11 +28,12 @@ object InjectableNotifierWrapper {
 
     fun notifyAndLogWarning(message: String, logger: KLogger) {
         runWithLock {
+            logger.warn { message }
+
             if (lastMessage != message) {
                 lastMessage = message
                 lastError = null
 
-                logger.warn { message }
                 notifier.warning(message)
             }
         }
@@ -39,11 +41,12 @@ object InjectableNotifierWrapper {
 
     fun notifyAndLogInfo(message: String, logger: KLogger) {
         runWithLock {
+            logger.info { message }
+
             if (lastMessage != message) {
                 lastMessage = message
                 lastError = null
 
-                logger.info { message }
                 notifier.info(message)
             }
         }
