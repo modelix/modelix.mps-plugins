@@ -16,7 +16,6 @@
 
 package org.modelix.mps.sync.transformation.cache
 
-import com.intellij.util.containers.stream
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelReference
@@ -203,6 +202,9 @@ object MpsToModelixMap {
     }
 
     fun isMappedToMps(modelixId: Long?): Boolean {
+        if (modelixId == null) {
+            return false
+        }
         val idMaps = arrayOf(
             modelixIdToNode,
             modelixIdToModel,
@@ -211,7 +213,13 @@ object MpsToModelixMap {
             modelixIdToModelWithOutgoingModuleReference,
             modelixIdToModelWithOutgoingModelReference,
         )
-        return modelixId != null && idMaps.stream().anyMatch { it.contains(modelixId) }
+
+        for (idMap in idMaps) {
+            if (idMap.contains(modelixId)) {
+                return true
+            }
+        }
+        return false
     }
 
     fun isMappedToModelix(model: SModel) = this[model] != null
