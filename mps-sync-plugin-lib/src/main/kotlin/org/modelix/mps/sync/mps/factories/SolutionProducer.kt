@@ -79,7 +79,7 @@ class SolutionProducer {
             // this might be a silly workaround...
             solution.attach(project.repository)
         }
-        check(solution.repository != null) { "The solution should be in a repo, so also the model will be in a repo and syncReference will not crash" }
+        checkNotNull(solution.repository) { "The solution should be in a repo, so also the model will be in a repo and syncReference will not crash" }
 
         return solution
     }

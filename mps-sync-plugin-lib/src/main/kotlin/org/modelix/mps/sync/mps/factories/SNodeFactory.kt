@@ -96,7 +96,7 @@ class SNodeFactory(
             } else {
                 val parentNodeId = parent?.nodeIdAsLong()
                 val parentNode = nodeMap.getNode(parentNodeId)
-                check(parentNode != null) { "Parent of Node($nodeId) is not found. Node will not be added to the model." }
+                checkNotNull(parentNode) { "Parent of Node($nodeId) is not found. Node will not be added to the model." }
 
                 val role = iNode.getContainmentLink()
                 val containmentLink = parentNode.concept.containmentLinks.first { it.name == role?.getSimpleName() }

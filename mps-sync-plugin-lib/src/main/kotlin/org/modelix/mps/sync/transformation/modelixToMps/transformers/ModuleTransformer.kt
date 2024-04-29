@@ -131,7 +131,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
 
             val moduleId = PersistenceFacade.getInstance().createModuleId(serializedId)
             val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
-            check(name != null) { "Module's ($iNode) name is null" }
+            checkNotNull(name) { "Module's ($iNode) name is null" }
 
             val sModule = solutionProducer.createOrGetModule(name, moduleId as ModuleId)
             nodeMap.put(sModule, iNode.nodeIdAsLong())

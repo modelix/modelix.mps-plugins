@@ -102,7 +102,7 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val iNode = branch.getNode(nodeId)
             val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
-            check(name != null) {
+            checkNotNull(name) {
                 val message = "Node ($iNode) cannot be transformed to Model, because its name is null."
                 notifyAndLogError(message)
                 message
@@ -110,7 +110,7 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
 
             val moduleId = iNode.getModule()?.nodeIdAsLong()!!
             val module: SModule? = nodeMap.getModule(moduleId)
-            check(module != null) {
+            checkNotNull(module) {
                 val message =
                     "Node ($iNode) cannot be transformed to Model, because parent Module with ID $moduleId is not found."
                 notifyAndLogError(message)
