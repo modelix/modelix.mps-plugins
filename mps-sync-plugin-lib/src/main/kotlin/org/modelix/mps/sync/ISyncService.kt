@@ -21,6 +21,10 @@ interface ISyncService : AutoCloseable {
 
     fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch
 
+    fun disconnectFromBranch(branch: IBranch)
+
+    fun getActiveBranch(): IBranch?
+
     fun bindModuleFromServer(
         client: ModelClientV2,
         branchReference: BranchReference,
