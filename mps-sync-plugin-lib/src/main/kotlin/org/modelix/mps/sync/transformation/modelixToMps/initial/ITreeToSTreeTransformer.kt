@@ -16,7 +16,6 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.initial
 
-import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
@@ -35,8 +34,6 @@ import java.util.concurrent.atomic.AtomicReference
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 class ITreeToSTreeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLanguageRepository) {
-
-    private val logger = KotlinLogging.logger {}
 
     private val moduleTransformer = ModuleTransformer(branch, mpsLanguageRepository)
 
