@@ -4,7 +4,9 @@ import com.intellij.notification.Notification
 import com.intellij.notification.NotificationGroup
 import com.intellij.notification.NotificationListener
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
+import org.apache.log4j.Level
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import javax.swing.event.HyperlinkEvent
 
@@ -15,7 +17,13 @@ class BalloonNotifier(
     groupName: String = "Modelix Sync Plugin",
 ) : INotifier {
 
-    private val notificationGroup = NotificationGroup.balloonGroup(groupName)
+    private val notificationGroup: NotificationGroup
+
+    init {
+        // manually set the log level to ERROR instead of INFO, to avoid the confusing "Notification group is already registered" log message from NotificationGroup
+        logger<NotificationGroup>().setLevel(Level.ERROR)
+        notificationGroup = NotificationGroup.balloonGroup(groupName)
+    }
 
     override fun error(message: String, responseListener: UserResponseListener?) =
         showNotification(message, NotificationType.ERROR, responseListener)
