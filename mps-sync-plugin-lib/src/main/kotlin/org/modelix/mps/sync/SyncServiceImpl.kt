@@ -81,16 +81,19 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
      * WARNING: this is a long-running blocking call.
      */
     override fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch {
+        logger.info { "Connecting to branch $branchReference" }
         val targetProject = mpsProjectInjector.activeMpsProject!!
         val languageRepository = registerLanguages(targetProject)
         return runBlocking(dispatcher) {
-            BranchRegistry.setBranch(
+            val branch = BranchRegistry.setBranch(
                 client,
                 branchReference,
                 languageRepository,
                 targetProject,
                 CoroutineScope(dispatcher),
             )
+            logger.info { "Connected to branch $branchReference" }
+            branch
         }
     }
 
@@ -103,6 +106,8 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         branchReference: BranchReference,
         moduleId: String,
     ): Iterable<IBinding> {
+        logger.info { "Binding Module '$moduleId' from the server ($branchReference)." }
+
         val targetProject = mpsProjectInjector.activeMpsProject!!
         val languageRepository = registerLanguages(targetProject)
 
@@ -111,6 +116,13 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
 
         // transform the modules and models
         val bindings = ITreeToSTreeTransformer(branch, languageRepository).transform(moduleId)
+
+        val isEmptyPrefix = if (!bindings.iterator().hasNext()) {
+            "0"
+        } else {
+            ""
+        }
+        logger.info { "$isEmptyPrefix Module and Model Bindings for Module '$moduleId' are created." }
 
         return bindings
     }
