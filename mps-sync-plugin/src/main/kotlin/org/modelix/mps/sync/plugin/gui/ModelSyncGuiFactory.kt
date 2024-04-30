@@ -374,7 +374,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             val disconnectAction = {
                 callDisablingUiControls(
                     suspend {
-                        modelSyncService.disconnectFromBranch(activeBranch!!)
+                        val branchName = (branchesModel.selectedItem as? BranchReference)?.branchName ?: "null"
+                        modelSyncService.disconnectFromBranch(activeBranch!!, branchName)
                         activeBranch = null
                     },
                 )
