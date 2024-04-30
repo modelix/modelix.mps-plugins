@@ -108,14 +108,13 @@ class ModelSyncService : Disposable {
         }
     }
 
-    fun disconnectFromBranch(branch: IBranch) {
-        val branchId = branch.getId()
+    fun disconnectFromBranch(branch: IBranch, branchName: String) {
         try {
-            logger.info { "Disconnecting from branch $branchId" }
-            syncService.disconnectFromBranch(branch)
-            notifierInjector.notifyAndLogInfo("Disconnected from branch: $branchId", logger)
+            logger.info { "Disconnecting from branch $branchName" }
+            syncService.disconnectFromBranch(branch, branchName)
+            notifierInjector.notifyAndLogInfo("Disconnected from branch: $branchName", logger)
         } catch (t: Throwable) {
-            val message = "Unable to disconnect from branch $branchId. Cause: ${t.message}"
+            val message = "Unable to disconnect from branch $branchName. Cause: ${t.message}"
             notifierInjector.notifyAndLogError(message, t, logger)
         }
     }
