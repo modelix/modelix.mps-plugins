@@ -70,7 +70,6 @@ class ModelSyncService : Disposable {
     fun connectModelServer(url: String, jwt: String): ModelClientV2? {
         var client: ModelClientV2? = null
         try {
-            logger.info { "Connection to server: $url" }
             client = syncService.connectModelServer(URL(url), jwt)
             notifierInjector.notifyAndLogInfo("Connected to server: $url", logger)
         } catch (t: Throwable) {
@@ -84,7 +83,6 @@ class ModelSyncService : Disposable {
         var client: ModelClientV2? = modelClient
         val baseUrl = modelClient.baseUrl
         try {
-            logger.info { "Disconnecting from  server: $baseUrl" }
             syncService.disconnectModelServer(modelClient)
             notifierInjector.notifyAndLogInfo("Disconnected from server: $baseUrl", logger)
             client = null
@@ -97,7 +95,6 @@ class ModelSyncService : Disposable {
 
     fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch? {
         try {
-            logger.info { "Connecting to branch $branchReference" }
             val branch = syncService.connectToBranch(client, branchReference)
             notifierInjector.notifyAndLogInfo("Connected to branch: $branchReference", logger)
             return branch
@@ -110,7 +107,6 @@ class ModelSyncService : Disposable {
 
     fun disconnectFromBranch(branch: IBranch, branchName: String) {
         try {
-            logger.info { "Disconnecting from branch $branchName" }
             syncService.disconnectFromBranch(branch, branchName)
             notifierInjector.notifyAndLogInfo("Disconnected from branch: $branchName", logger)
         } catch (t: Throwable) {
