@@ -4,7 +4,7 @@ import java.util.zip.ZipInputStream
 
 buildscript {
     dependencies {
-        classpath("org.modelix.mps:build-tools-lib:1.4.1")
+        classpath("org.modelix.mps:build-tools-lib:1.5.0")
     }
 }
 
