@@ -17,7 +17,6 @@
 package org.modelix.mps.sync.modelix
 
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.ITree
 import org.modelix.model.client2.ReplicatedModel
@@ -28,10 +27,9 @@ import org.modelix.mps.sync.transformation.modelixToMps.incremental.ModelixTreeC
 class ModelixBranchListener(
     replicatedModel: ReplicatedModel,
     languageRepository: MPSLanguageRepository,
-    branch: IBranch,
 ) : IBranchListener {
 
-    private val visitor = ModelixTreeChangeVisitor(replicatedModel, branch, languageRepository)
+    private val visitor = ModelixTreeChangeVisitor(replicatedModel, languageRepository)
 
     override fun treeChanged(oldTree: ITree?, newTree: ITree) {
         oldTree?.let { newTree.visitChanges(it, visitor) }
