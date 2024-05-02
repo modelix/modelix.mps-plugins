@@ -65,7 +65,7 @@ object BranchRegistry : AutoCloseable {
         model = client.getReplicatedModel(branchReference, replicatedModelCoroutineScope)
         branch = model.start()
 
-        branchListener = ModelixBranchListener(model, languageRepository, branch!!)
+        branchListener = ModelixBranchListener(model, languageRepository)
         branch!!.addListener(branchListener)
 
         val repositoryChangeListener = RepositoryChangeListener(branch!!)
