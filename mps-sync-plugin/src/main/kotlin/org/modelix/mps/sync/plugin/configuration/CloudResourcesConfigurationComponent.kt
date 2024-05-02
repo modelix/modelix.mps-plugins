@@ -21,12 +21,21 @@ import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
+import jetbrains.mps.project.ModuleId
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import org.jetbrains.mps.openapi.module.SModule
+import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.client2.ModelClientV2
+import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.modelix.BranchRegistry
+import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.plugin.ModelSyncService
+import java.util.concurrent.CompletableFuture
 
-/**
- * This component handles the storage of the cloud configuration.
- * For information about component persistence refer to https://jetbrains.org/intellij/sdk/docs/basics/persisting_state_of_components.html
- */
+// TODO move it into the mps-sync-plugin-lib project, because we want to use it in headless mode (without plugin UI) too
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 @Service(Service.Level.PROJECT)
 @State(
@@ -36,52 +45,79 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 )
 class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResourcesConfigurationComponent.State> {
 
-    private var state = State()
+    private val dispatcher = Dispatchers.IO // rather IO-intensive tasks
 
-    override fun getState(): State = state
-
-    override fun loadState(state: State) {
-        this.state = state
+    override fun getState(): State {
+        return State().getCurrentState()
     }
 
-    class State {
-        val modelServers = mutableSetOf<String>()
-        val transientProjects = mutableSetOf<String>()
-        val transientModules = mutableSetOf<String>()
-        val mappedModules = mutableSetOf<String>()
+    override fun loadState(newState: State) {
+        newState.load()
+    }
 
-        override fun hashCode(): Int {
-            var hc = 1
-            hc += 3 * modelServers.hashCode()
-            hc += 7 * transientProjects.hashCode()
-            hc += 11 * transientModules.hashCode()
-            hc += 13 * mappedModules.hashCode()
-            return hc
-        }
+    /**
+     * States are capable of taking a snapshot of the current bindings to modelix servers with getCurrentState(),
+     * and recreating that state by calling load(). Note that currently the bindings of the state will be added during
+     * load(), but not included bindings will be disconnected.
+     *
+     * States will be automatically saved when a project is closed, and automatically loaded, when that project is
+     * reopened. Technically, it should also be possible to create a state yourself in order to load it, although this
+     * is not what they were made for.
+     *
+     * WARNING about the State's fields:
+     * - Mutable collections will not be persisted!!!
+     * - Maps and Collections will only be persisted 2 layers deep (List<List<String>> works, but
+     * List<List<List<String>>> not)
+     * - Pairs will not be persisted
+     */
+    inner class State {
 
-        @Override
-        override fun equals(other: Any?): Boolean {
-            if (other is State) {
-                if (transientProjects != other.transientProjects) {
-                    return false
-                }
-                if (modelServers != other.modelServers) {
-                    return false
-                }
-                if (transientModules != other.transientModules) {
-                    return false
-                }
-                if (mappedModules != other.mappedModules) {
-                    return false
-                }
-                return true
-            } else {
-                return false
+        var clientUrl: String = ""
+        var repositoryId: String = ""
+        var branchName: String = ""
+        var localVersion: String = ""
+
+        var moduleIds: List<String> = listOf()
+
+        fun getCurrentState(): State {
+            val replicatedModel = BranchRegistry.model
+            // TODO is there a better way than a dirty cast?
+            clientUrl = (replicatedModel.client as ModelClientV2).baseUrl
+            repositoryId = replicatedModel.branchRef.repositoryId.id
+            branchName = replicatedModel.branchRef.branchName
+
+            runBlocking(dispatcher) {
+                localVersion = replicatedModel.getCurrentVersion().getContentHash()
             }
+
+            BindingsRegistry.getModuleBindings().forEach {
+                moduleIds = moduleIds + it.module.moduleId.toString()
+            }
+
+            return this
         }
 
-        override fun toString(): String {
-            return "State(cloudRepositories: $modelServers, transientProjects: $transientProjects, transientModules: $transientModules, mappedModules: $mappedModules)"
+        fun load() {
+            val sRepository = ActiveMpsProjectInjector.activeMpsProject!!.repository
+            val modulesFuture = CompletableFuture<List<SModule>>()
+            ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction {
+                val modules = mutableListOf<SModule>()
+                for (moduleId in moduleIds) {
+                    val id = PersistenceFacade.getInstance().createModuleId(moduleId)
+                    val module = sRepository.getModule(id as ModuleId)
+                    assert(module != null) { "Could not restore module from id. [id = $id]" }
+                    modules.add(module!!)
+                }
+                modulesFuture.complete(modules)
+            }
+            val modules = modulesFuture.get()
+
+            val syncService = service<ModelSyncService>()
+            modules.forEach {
+                // TODO fixme authentication
+                // val jwt = null
+                // syncService.rebindModule(clientUrl, jwt, branchName, it, repositoryId, localVersion)
+            }
         }
     }
 }
