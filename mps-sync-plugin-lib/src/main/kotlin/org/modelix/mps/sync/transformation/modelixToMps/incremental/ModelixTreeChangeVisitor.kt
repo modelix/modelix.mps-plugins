@@ -47,7 +47,6 @@ import org.modelix.mps.sync.util.nodeIdAsLong
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class ModelixTreeChangeVisitor(
     private val replicatedModel: ReplicatedModel,
-    branch: IBranch,
     languageRepository: MPSLanguageRepository,
 ) : ITreeChangeVisitorEx {
 
@@ -55,6 +54,9 @@ class ModelixTreeChangeVisitor(
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val notifierInjector = InjectableNotifierWrapper
+
+    private val branch: IBranch
+        get() = replicatedModel.getBranch()
 
     private val nodeTransformer = NodeTransformer(branch, languageRepository)
     private val modelTransformer = ModelTransformer(branch, languageRepository)
@@ -291,7 +293,7 @@ class ModelixTreeChangeVisitor(
         }
     }
 
-    private fun getNode(nodeId: Long) = replicatedModel.getBranch().getNode(nodeId)
+    private fun getNode(nodeId: Long) = branch.getNode(nodeId)
 
     private fun notifyAndLogError(message: String) {
         val exception = ModelixToMpsSynchronizationException(message)
