@@ -12,7 +12,7 @@ import org.modelix.mps.sync.mps.util.clone
 import org.modelix.mps.sync.mps.util.getModelixId
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-abstract class Serializer<T> {
+internal abstract class Serializer<T> {
 
     protected abstract val typeDelimiter: String
 
@@ -34,7 +34,7 @@ abstract class Serializer<T> {
     }
 
     // serialization
-    protected fun <U> serializeWithRhs(serializedLhs: String, lhs: T, rhs: U?, rhsSerializer: Serializer<U>): String {
+    fun <U> serializeWithRhs(serializedLhs: String, lhs: T, rhs: U?, rhsSerializer: Serializer<U>): String {
         requireNotNull(rhs) { "$typeDelimiter ($lhs)'s right-hand-side value is null." }
         val serializedRhs = rhsSerializer.serialize(rhs)
         return serialize("$serializedLhs$infixSeparator$serializedRhs")
@@ -50,6 +50,15 @@ abstract class Serializer<T> {
         require(split.size == 2) { "Serialized value ($from) cannot be split into two parts via its infix separator ($infixSeparator)." }
         return split
     }
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+internal class DefaultSerializer(override val typeDelimiter: String, override val infixSeparator: String? = null) :
+    Serializer<Any>() {
+
+    override fun serialize(it: Any): String = ""
+
+    override fun deserialize(from: String): Any? = null
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")

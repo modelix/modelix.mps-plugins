@@ -24,6 +24,7 @@ import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.synchronizedMap
 
@@ -227,6 +228,185 @@ object MpsToModelixMap {
     fun isMappedToModelix(module: SModule) = this[module] != null
 
     fun isMappedToModelix(node: SNode) = this[node] != null
+
+    class Serializer {
+
+        companion object {
+            private const val MAP_PREFIX = "[MpsToModelixMap: "
+            private const val NODE_TO_MODELIX_ID_PREFIX = "[nodeToModelixId: "
+            private const val MODEL_TO_MODELIX_ID_PREFIX = "[modelToModelixId: "
+            private const val MODULE_TO_MODELIX_ID_PREFIX = "[moduleToModelixId: "
+            private const val MODULE_WITH_OUTGOING_MODULE_REFERENCE_TO_MODELIX_ID_PREFIX =
+                "[moduleWithOutgoingModuleReferenceToModelixId: "
+            private const val MODEL_WITH_OUTGOING_MODULE_REFERENCE_TO_MODELIX_ID_PREFIX =
+                "[modelWithOutgoingModuleReferenceToModelixId: "
+            private const val MODEL_WITH_OUTGOING_MODEL_REFERENCE_TO_MODELIX_ID_PREFIX =
+                "[modelWithOutgoingModelReferenceToModelixId: "
+
+            private const val MODELIX_ID_SEPARATOR = "modelixId"
+            private const val SEPARATOR_INSIDE_VALUES = ", $MODELIX_ID_SEPARATOR: "
+            private const val PREFIX_INSIDE_VALUES = " ["
+            private const val SUFFIX_INSIDE_VALUES = "],"
+        }
+
+        private val repository
+            get() = ActiveMpsProjectInjector.activeMpsProject?.repository
+
+        private val nodeSerializer
+            get() = SNodeSerializer(repository)
+
+        private val modelSerializer
+            get() = SModelSerializer(repository)
+
+        private val moduleSerializer
+            get() = SModuleSerializer(repository)
+
+        private val moduleWithModuleReferenceSerializer
+            get() = ModuleWithModuleReferenceSerializer(repository)
+
+        private val modelWithModuleReferenceSerializer
+            get() = ModelWithModuleReferenceSerializer(repository)
+
+        private val modelWithModelReferenceSerializer
+            get() = ModelWithModelReferenceSerializer(repository)
+
+        fun serialize(): String {
+            /**
+             * serialized structure:
+             * [MpsToModelixMap: [nodeToModelixId: [[Node], modelixId: 42], [[Node], modelixId: 43]], ..., [modelWithOutgoingModuleReferenceToModelixId: [[ModuleWithModuleReference], modelixId: 44], [[ModuleWithModuleReference], modelixId: 45]]
+             */
+
+            val sb = StringBuilder(MAP_PREFIX)
+            serialize(nodeToModelixId, NODE_TO_MODELIX_ID_PREFIX, sb, nodeSerializer)
+            serialize(modelToModelixId, MODEL_TO_MODELIX_ID_PREFIX, sb, modelSerializer)
+            serialize(moduleToModelixId, MODULE_TO_MODELIX_ID_PREFIX, sb, moduleSerializer)
+            serialize(
+                moduleWithOutgoingModuleReferenceToModelixId,
+                MODULE_WITH_OUTGOING_MODULE_REFERENCE_TO_MODELIX_ID_PREFIX,
+                sb,
+                moduleWithModuleReferenceSerializer,
+            )
+            serialize(
+                modelWithOutgoingModuleReferenceToModelixId,
+                MODEL_WITH_OUTGOING_MODULE_REFERENCE_TO_MODELIX_ID_PREFIX,
+                sb,
+                modelWithModuleReferenceSerializer,
+            )
+            serialize(
+                modelWithOutgoingModelReferenceToModelixId,
+                MODEL_WITH_OUTGOING_MODEL_REFERENCE_TO_MODELIX_ID_PREFIX,
+                sb,
+                modelWithModelReferenceSerializer,
+            )
+            sb.removeSuffix(", ")
+
+            sb.append("]")
+            return sb.toString()
+        }
+
+        fun deserialize(from: String): MpsToModelixMap {
+            val rest = from.removePrefix(MAP_PREFIX).removeSuffix("]")
+            val split = rest.split(", ")
+            require(split.size == 6) { "After splitting string ($from) by separator, it must consist of 6 parts, but it consist of ${split.size} parts." }
+
+            // 1. deserialize all values locally
+            val nodeToModelixIdLocal = mutableMapOf<SNode, Long>()
+            deserialize(split[0], NODE_TO_MODELIX_ID_PREFIX, nodeToModelixIdLocal, nodeSerializer)
+
+            val modelToModelixIdLocal = mutableMapOf<SModel, Long>()
+            deserialize(split[1], MODEL_TO_MODELIX_ID_PREFIX, modelToModelixIdLocal, modelSerializer)
+
+            val moduleToModelixIdLocal = mutableMapOf<SModule, Long>()
+            deserialize(split[2], MODULE_TO_MODELIX_ID_PREFIX, moduleToModelixIdLocal, moduleSerializer)
+
+            val moduleWithOutgoingModuleReferenceToModelixIdLocal = mutableMapOf<ModuleWithModuleReference, Long>()
+            deserialize(
+                split[3],
+                MODULE_WITH_OUTGOING_MODULE_REFERENCE_TO_MODELIX_ID_PREFIX,
+                moduleWithOutgoingModuleReferenceToModelixIdLocal,
+                moduleWithModuleReferenceSerializer,
+            )
+
+            val modelWithOutgoingModuleReferenceToModelixIdLocal = mutableMapOf<ModelWithModuleReference, Long>()
+            deserialize(
+                split[4],
+                MODEL_WITH_OUTGOING_MODULE_REFERENCE_TO_MODELIX_ID_PREFIX,
+                modelWithOutgoingModuleReferenceToModelixIdLocal,
+                modelWithModuleReferenceSerializer,
+            )
+
+            val modelWithOutgoingModelReferenceToModelixIdLocal = mutableMapOf<ModelWithModelReference, Long>()
+            deserialize(
+                split[5],
+                MODEL_WITH_OUTGOING_MODEL_REFERENCE_TO_MODELIX_ID_PREFIX,
+                modelWithOutgoingModelReferenceToModelixIdLocal,
+                modelWithModelReferenceSerializer,
+            )
+
+            // 2. load these values into the map
+            nodeToModelixIdLocal.forEach { put(it.key, it.value) }
+            modelToModelixIdLocal.forEach { put(it.key, it.value) }
+            moduleToModelixIdLocal.forEach { put(it.key, it.value) }
+            moduleWithOutgoingModuleReferenceToModelixIdLocal.forEach {
+                put(
+                    it.key.source,
+                    it.key.moduleReference,
+                    it.value,
+                )
+            }
+            modelWithOutgoingModuleReferenceToModelixIdLocal.forEach {
+                put(
+                    it.key.source,
+                    it.key.moduleReference,
+                    it.value,
+                )
+            }
+            modelWithOutgoingModelReferenceToModelixIdLocal.forEach {
+                put(
+                    it.key.source,
+                    it.key.modelReference,
+                    it.value,
+                )
+            }
+
+            return MpsToModelixMap
+        }
+
+        private fun <T> serialize(
+            values: Map<T, Long>,
+            prefix: String,
+            sb: StringBuilder,
+            serializer: org.modelix.mps.sync.transformation.cache.Serializer<T>,
+        ) {
+            sb.append(prefix)
+            values.entries.forEach {
+                sb.append(PREFIX_INSIDE_VALUES)
+                sb.append(serializer.serialize(it.key))
+                sb.append(it.value)
+                sb.append(SUFFIX_INSIDE_VALUES)
+            }
+            sb.removeSuffix(",")
+            sb.append("], ")
+        }
+
+        private fun <T> deserialize(
+            from: String,
+            prefix: String,
+            resultCollector: MutableMap<T, Long>,
+            deserializer: org.modelix.mps.sync.transformation.cache.Serializer<T>,
+        ) {
+            from.removePrefix(prefix).removeSuffix("]").split(", ").forEach {
+                val insideValues = it.split(SEPARATOR_INSIDE_VALUES)
+                require(insideValues.size == 2) { "There must be 2 parts after splitting inside values. But it ($it) has ${insideValues.size} parts." }
+
+                val serialized = insideValues[0].removePrefix(PREFIX_INSIDE_VALUES)
+                val deserialized = deserializer.deserializeNotNull(serialized)
+
+                val modelixId = insideValues[1].removeSuffix(SUFFIX_INSIDE_VALUES).removeSuffix("]").toLong()
+                resultCollector[deserialized] = modelixId
+            }
+        }
+    }
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
