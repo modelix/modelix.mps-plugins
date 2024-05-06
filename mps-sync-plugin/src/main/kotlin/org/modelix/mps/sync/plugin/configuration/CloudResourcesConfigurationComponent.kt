@@ -24,13 +24,9 @@ import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import jetbrains.mps.project.ModuleId
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.model.client2.ModelClientV2
-import org.modelix.mps.sync.bindings.BindingsRegistry
-import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.plugin.ModelSyncService
 import java.util.concurrent.CompletableFuture
@@ -80,9 +76,13 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
         var moduleIds: List<String> = listOf()
 
         fun getCurrentState(): State {
+            return State()
+
+            /*
+            // TODO fixme
             val replicatedModel = BranchRegistry.model
             // TODO is there a better way than a dirty cast?
-            clientUrl = (replicatedModel.client as ModelClientV2).baseUrl
+            clientUrl = (replicatedModel?.client as ModelClientV2).baseUrl
             repositoryId = replicatedModel.branchRef.repositoryId.id
             branchName = replicatedModel.branchRef.branchName
 
@@ -95,6 +95,7 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
             }
 
             return this
+             */
         }
 
         fun load() {
