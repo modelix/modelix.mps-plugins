@@ -23,29 +23,29 @@ import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun SModel.addDevKit(devKitModuleReference: SModuleReference) {
+internal fun SModel.addDevKit(devKitModuleReference: SModuleReference) {
     require(this is SModelDescriptorStub) { "Model ${this.modelId} must be an SModelDescriptorStub" }
     this.addDevKit(devKitModuleReference)
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun SModel.deleteDevKit(devKitModuleReference: SModuleReference) {
+internal fun SModel.deleteDevKit(devKitModuleReference: SModuleReference) {
     require(this is SModelDescriptorStub) { "Model ${this.modelId} must be an SModelDescriptorStub" }
     this.deleteDevKit(devKitModuleReference)
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun SModel.addLanguageImport(sLanguage: SLanguage, version: Int) {
+internal fun SModel.addLanguageImport(sLanguage: SLanguage, version: Int) {
     require(this is SModelDescriptorStub) { "Model ${this.modelId} must be an SModelDescriptorStub" }
     this.addLanguage(sLanguage)
     this.setLanguageImportVersion(sLanguage, version)
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun SModel.deleteLanguage(sLanguage: SLanguage) {
+internal fun SModel.deleteLanguage(sLanguage: SLanguage) {
     require(this is SModelDescriptorStub) { "Model ${this.modelId} must be an SModelDescriptorStub" }
     this.deleteLanguageId(sLanguage)
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun SModel.getModelixId() = this.modelId.toString()
+internal fun SModel.getModelixId() = this.modelId.toString()

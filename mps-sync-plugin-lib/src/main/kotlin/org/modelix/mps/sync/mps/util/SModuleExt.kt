@@ -27,7 +27,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.mps.ModelPersistenceWithFixedId
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun SModule.createModel(name: String, id: SModelId): SModel? {
+internal fun SModule.createModel(name: String, id: SModelId): SModel? {
     val modelName = SModelName(name)
     val modelRoot = this.modelRoots.filterIsInstance<DefaultModelRoot>().firstOrNull { it.canCreateModel(modelName) }
     try {
@@ -39,4 +39,4 @@ fun SModule.createModel(name: String, id: SModelId): SModel? {
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-fun SModule.getModelixId() = this.moduleId.toString()
+internal fun SModule.getModelixId() = this.moduleId.toString()
