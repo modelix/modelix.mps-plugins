@@ -21,15 +21,9 @@ import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
-import com.intellij.openapi.components.service
-import jetbrains.mps.project.ModuleId
-import kotlinx.coroutines.Dispatchers
-import org.jetbrains.mps.openapi.module.SModule
-import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
-import org.modelix.mps.sync.plugin.ModelSyncService
-import java.util.concurrent.CompletableFuture
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 
 // TODO move it into the mps-sync-plugin-lib project, because we want to use it in headless mode (without plugin UI) too
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -41,7 +35,7 @@ import java.util.concurrent.CompletableFuture
 )
 class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResourcesConfigurationComponent.State> {
 
-    private val dispatcher = Dispatchers.IO // rather IO-intensive tasks
+    // private val dispatcher = Dispatchers.IO // rather IO-intensive tasks
 
     override fun getState(): State {
         return State().getCurrentState()
@@ -68,15 +62,22 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
      */
     inner class State {
 
+        // modelix connection
         var clientUrl: String = ""
         var repositoryId: String = ""
         var branchName: String = ""
         var localVersion: String = ""
 
+        // synchronized modules
         var moduleIds: List<String> = listOf()
 
+        // MPS to Modelix mapping
+        var synchronizationCache: String = ""
+
         fun getCurrentState(): State {
-            return State()
+            ActiveMpsProjectInjector.runMpsReadAction {
+                synchronizationCache = MpsToModelixMap.Serializer().serialize()
+            }
 
             /*
             // TODO fixme
@@ -92,14 +93,19 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
 
             BindingsRegistry.getModuleBindings().forEach {
                 moduleIds = moduleIds + it.module.moduleId.toString()
-            }
+            }*/
 
             return this
-             */
         }
 
         fun load() {
-            val sRepository = ActiveMpsProjectInjector.activeMpsProject!!.repository
+            if (synchronizationCache.isNotEmpty()) {
+                ActiveMpsProjectInjector.runMpsReadAction {
+                    MpsToModelixMap.Serializer().deserialize(synchronizationCache)
+                }
+            }
+
+            /*val sRepository = ActiveMpsProjectInjector.activeMpsProject!!.repository
             val modulesFuture = CompletableFuture<List<SModule>>()
             ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction {
                 val modules = mutableListOf<SModule>()
@@ -118,7 +124,7 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
                 // TODO fixme authentication
                 // val jwt = null
                 // syncService.rebindModule(clientUrl, jwt, branchName, it, repositoryId, localVersion)
-            }
+            }*/
         }
     }
 }

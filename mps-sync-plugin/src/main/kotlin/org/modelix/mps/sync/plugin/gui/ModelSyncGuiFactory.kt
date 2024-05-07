@@ -47,6 +47,7 @@ import org.modelix.mps.sync.mps.notifications.AlertNotifier
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
 import org.modelix.mps.sync.mps.notifications.UserResponse
 import org.modelix.mps.sync.plugin.ModelSyncService
+import org.modelix.mps.sync.plugin.configuration.CloudResourcesConfigurationComponent
 import org.modelix.mps.sync.plugin.icons.CloudIcons
 import java.awt.Component
 import java.awt.FlowLayout
@@ -194,6 +195,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                 if (it.stateChange == ItemEvent.SELECTED) {
                     activeProject = it.item as Project
                     modelSyncService.setActiveProject(activeProject)
+                    // TODO fixme workaround to trigger State persistence
+                    activeProject.service<CloudResourcesConfigurationComponent>()
                 }
             }
 

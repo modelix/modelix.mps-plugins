@@ -21,6 +21,7 @@ import com.intellij.openapi.project.Project
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.MPSProject
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object ActiveMpsProjectInjector {
@@ -55,5 +56,22 @@ object ActiveMpsProjectInjector {
                 }
             },
         )
+    }
+
+    fun runMpsReadAction(action: () -> Unit) {
+        val busyWait = CompletableFuture<Any?>()
+        if (activeMpsProject == null) {
+            busyWait.completeExceptionally(IllegalStateException("Active MPS project is null."))
+        } else {
+            activeMpsProject!!.repository.modelAccess.runReadAction {
+                try {
+                    action()
+                    busyWait.complete(null)
+                } catch (t: Throwable) {
+                    busyWait.completeExceptionally(t)
+                }
+            }
+        }
+        busyWait.get()
     }
 }
