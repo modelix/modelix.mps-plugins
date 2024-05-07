@@ -24,7 +24,6 @@ import org.jetbrains.mps.openapi.model.SNodeChangeListener
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.mpsadapters.MPSProperty
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -50,9 +49,6 @@ class NodeChangeListener(branch: IBranch) : SNodeChangeListener {
     }
 
     override fun propertyChanged(event: SPropertyChangeEvent) {
-        val serializer = MpsToModelixMap.Serializer()
-        val serialized = serializer.serialize()
-        val result = serializer.deserialize(serialized)
         synchronizer.setProperty(MPSProperty(event.property), event.newValue) { it[event.node]!! }
     }
 
