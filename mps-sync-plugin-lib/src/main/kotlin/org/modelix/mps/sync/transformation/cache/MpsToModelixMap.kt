@@ -247,6 +247,8 @@ object MpsToModelixMap {
             private const val SEPARATOR_INSIDE_VALUES = ", $MODELIX_ID_SEPARATOR: "
             private const val PREFIX_INSIDE_VALUES = " ["
             private const val SUFFIX_INSIDE_VALUES = "],"
+
+            private const val FIELDS_SEPARATOR = ", "
         }
 
         private val repository
@@ -298,15 +300,15 @@ object MpsToModelixMap {
                 sb,
                 modelWithModelReferenceSerializer,
             )
-            sb.removeSuffix(", ")
+            sb.setLength(sb.length - FIELDS_SEPARATOR.length)
 
             sb.append("]")
             return sb.toString()
         }
 
-        fun deserialize(from: String): MpsToModelixMap {
+        fun deserialize(from: String): Collection<*> {
             val rest = from.removePrefix(MAP_PREFIX).removeSuffix("]")
-            val split = rest.split(", ")
+            val split = rest.split(FIELDS_SEPARATOR)
             require(split.size == 6) { "After splitting string ($from) by separator, it must consist of 6 parts, but it consist of ${split.size} parts." }
 
             // 1. deserialize all values locally
@@ -343,6 +345,10 @@ object MpsToModelixMap {
                 modelWithModelReferenceSerializer,
             )
 
+            // for testing purposes
+            return listOf(nodeToModelixIdLocal, modelToModelixIdLocal, moduleToModelixIdLocal, moduleWithOutgoingModuleReferenceToModelixIdLocal, modelWithOutgoingModuleReferenceToModelixIdLocal, modelWithOutgoingModelReferenceToModelixIdLocal)
+
+            /*
             // 2. load these values into the map
             nodeToModelixIdLocal.forEach { put(it.key, it.value) }
             modelToModelixIdLocal.forEach { put(it.key, it.value) }
@@ -369,7 +375,7 @@ object MpsToModelixMap {
                 )
             }
 
-            return MpsToModelixMap
+            return MpsToModelixMap*/
         }
 
         private fun <T> serialize(
@@ -382,11 +388,13 @@ object MpsToModelixMap {
             values.entries.forEach {
                 sb.append(PREFIX_INSIDE_VALUES)
                 sb.append(serializer.serialize(it.key))
+                sb.append(SEPARATOR_INSIDE_VALUES)
                 sb.append(it.value)
                 sb.append(SUFFIX_INSIDE_VALUES)
             }
-            sb.removeSuffix(",")
-            sb.append("], ")
+            // remove last character
+            sb.setLength(sb.length - 1)
+            sb.append("]$FIELDS_SEPARATOR")
         }
 
         private fun <T> deserialize(
