@@ -1,5 +1,7 @@
 package org.modelix.mps.sync.transformation.cache
 
+import jetbrains.mps.extapi.model.SModelBase
+import jetbrains.mps.smodel.ModelImports
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNode
@@ -8,7 +10,6 @@ import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.mps.util.clone
 import org.modelix.mps.sync.mps.util.getModelixId
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -137,11 +138,10 @@ internal class SModelReferenceSerializer(private val repository: SRepository? = 
         return serialize(serializedModel)
     }
 
-    // TODO maybe we have to deserialize it directly in the model, where it was used. Otherwise the ModelChangeListener will not work correctly for model imports
     override fun deserialize(from: String): SModelReference? {
         val serializedModel = extractValue(from)
         val model = modelSerializer.deserialize(serializedModel)
-        return model?.reference?.clone()
+        return model?.reference
     }
 }
 
@@ -162,11 +162,10 @@ internal class SModuleReferenceSerializer(private val repository: SRepository? =
         return serialize(serializedModule)
     }
 
-    // TODO maybe we have to deserialize it directly in the model, where it was used. Otherwise the ModelChangeListener will not work correctly for devkit/language/module dependencies
     override fun deserialize(from: String): SModuleReference? {
         val serializedModule = extractValue(from)
         val module = moduleSerializer.deserialize(serializedModule)
-        return module?.moduleReference?.clone()
+        return module?.moduleReference
     }
 }
 
@@ -190,7 +189,15 @@ internal class ModelWithModelReferenceSerializer(repository: SRepository? = null
         val split = splitIntoLhsAndRhs(from)
 
         val model = modelSerializer.deserializeNotNull(split[0])
-        val modelReference = modelReferenceSerializer.deserializeNotNull(split[1])
+        val deserializedModelReference = modelReferenceSerializer.deserializeNotNull(split[1])
+
+        /*
+         * We have to find the model import that corresponds to the model reference. Otherwise, we would return a
+         * different modelReference object than what is inside the model, which will break the synchronization mapping.
+         */
+        val modelReference =
+            ModelImports(model).importedModels.firstOrNull { it.modelId == deserializedModelReference.modelId }
+        requireNotNull(modelReference) { "Model reference ($deserializedModelReference) was not found as an outgoing reference from the model ($model)." }
 
         return ModelWithModelReference(model, modelReference)
     }
@@ -216,7 +223,22 @@ internal class ModelWithModuleReferenceSerializer(repository: SRepository? = nul
         val split = splitIntoLhsAndRhs(from)
 
         val model = modelSerializer.deserializeNotNull(split[0])
-        val moduleReference = moduleReferenceSerializer.deserializeNotNull(split[1])
+        require(model is SModelBase) { "Deserialized model ($model) is not an SModelBase." }
+
+        /*
+         * We have to find the devkit or language dependency that corresponds to the module reference. Otherwise, we
+         * would return a different moduleReference object than what is inside the model, which will break the
+         * synchronization mapping.
+         */
+        val deserializedModuleReference = moduleReferenceSerializer.deserializeNotNull(split[1])
+        var moduleReference =
+            model.importedDevkits().firstOrNull { it.moduleId == deserializedModuleReference.moduleId }
+        if (moduleReference == null) {
+            moduleReference = model.importedLanguageIds()
+                .firstOrNull { it.sourceModuleReference.moduleId == deserializedModuleReference.moduleId }
+                ?.sourceModuleReference
+        }
+        requireNotNull(moduleReference) { "Module reference ($deserializedModuleReference) was not found as an outgoing reference from the model ($model)." }
 
         return ModelWithModuleReference(model, moduleReference)
     }
@@ -238,12 +260,20 @@ internal class ModuleWithModuleReferenceSerializer(repository: SRepository? = nu
         return serializeWithRhs(serializedModule, it, it.moduleReference, moduleReferenceSerializer)
     }
 
+    /*
+     * We have to find the module dependency that corresponds to the module reference. Otherwise, we
+     * would return a different moduleReference object than what is inside the module, which will break the
+     * synchronization mapping.
+     */
     override fun deserialize(from: String): ModuleWithModuleReference {
         val split = splitIntoLhsAndRhs(from)
 
         val module = moduleSerializer.deserializeNotNull(split[0])
-        val moduleReference = moduleReferenceSerializer.deserializeNotNull(split[1])
+        val deserializedModuleReference = moduleReferenceSerializer.deserializeNotNull(split[1])
 
+        val moduleReference = module.declaredDependencies
+            .firstOrNull { it.targetModule.moduleId == deserializedModuleReference.moduleId }?.targetModule
+        requireNotNull(moduleReference) { "Module reference ($deserializedModuleReference) was not found as an outgoing reference from the module ($module)." }
         return ModuleWithModuleReference(module, moduleReference)
     }
 }
