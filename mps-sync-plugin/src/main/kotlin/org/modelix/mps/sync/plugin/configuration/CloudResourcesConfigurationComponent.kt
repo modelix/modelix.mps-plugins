@@ -21,14 +21,22 @@ import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
+import jetbrains.mps.project.AbstractModule
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
+import org.jetbrains.mps.openapi.module.SModule
+import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.client2.ModelClientV2
+import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
+import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.plugin.ModelSyncService
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import java.util.concurrent.CompletableFuture
 
 // TODO move it into the mps-sync-plugin-lib project, because we want to use it in headless mode (without plugin UI) too
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -68,6 +76,7 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
     class State {
 
         private val logger = KotlinLogging.logger {}
+        private val notifier = InjectableNotifierWrapper
 
         // modelix connection
         var clientUrl: String = ""
@@ -84,7 +93,10 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
         fun getCurrentState(): State {
             val replicatedModel = BranchRegistry.model
             if (replicatedModel == null) {
-                logger.warn { "Replicated Model is null, therefore an empty State will be saved." }
+                notifier.notifyAndLogWarning(
+                    "Replicated Model is null, therefore an empty State will be saved.",
+                    logger,
+                )
                 return this
             }
 
@@ -108,32 +120,60 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
         }
 
         fun load() {
-            if (synchronizationCache.isNotEmpty()) {
-                ActiveMpsProjectInjector.runMpsReadAction {
-                    MpsToModelixMap.Serializer().deserialize(synchronizationCache)
+            try {
+                if (synchronizationCache.isNotEmpty()) {
+                    ActiveMpsProjectInjector.runMpsReadAction {
+                        // TODO testme what happens if deserialization fails because of an exception
+                        MpsToModelixMap.Serializer().deserialize(synchronizationCache)
+                        logger.debug { "Synchronization cache is restored." }
+                    }
+                } else {
+                    notifier.notifyAndLogWarning(
+                        "Serialized synchronization cache is empty, thus it is not restored.",
+                        logger,
+                    )
                 }
-            }
 
-            /*val sRepository = ActiveMpsProjectInjector.activeMpsProject!!.repository
-            val modulesFuture = CompletableFuture<List<SModule>>()
-            ActiveMpsProjectInjector.runMpsReadAction {
-                val modules = mutableListOf<SModule>()
-                for (moduleId in moduleIds) {
-                    val id = PersistenceFacade.getInstance().createModuleId(moduleId)
-                    val module = sRepository.getModule(id as ModuleId)
-                    assert(module != null) { "Could not restore module from id. [id = $id]" }
-                    modules.add(module!!)
+                logger.debug { "Restoring connection to model server." }
+                // TODO fixme this will not work in SECURE
+                val syncService = service<ModelSyncService>()
+
+                // TODO call client = ISyncService.connectModelServer(...) and client.loadVersion(repository, lastKnownVersionHash, null) to get the initialVersion
+
+                logger.debug { "Connection to model server is restored." }
+                // TODO What to do with the unattended client? (Where is it going to closed? How to propagate it to the plugin GUI?)
+
+                logger.debug { "Restoring SModules." }
+                val modulesFuture = CompletableFuture<List<SModule>>()
+                ActiveMpsProjectInjector.runMpsReadAction { repository ->
+                    // TODO test what happens if an Exception has occurred
+                    val modules = moduleIds.map {
+                        val id = PersistenceFacade.getInstance().createModuleId(it)
+                        val module = repository.getModule(id)
+                        requireNotNull(module) { "Could not restore module from ID ($id)." }
+                        require(module is AbstractModule) { "Module ($module) is not an AbstractModule." }
+                        module
+                    }
+                    modulesFuture.complete(modules)
+                    logger.debug { "${modules.count()} SModules are restored." }
                 }
-                modulesFuture.complete(modules)
-            }
-            val modules = modulesFuture.get()
 
-            val syncService = service<ModelSyncService>()
-            modules.forEach {
-                // TODO fixme authentication
-                // val jwt = null
-                // syncService.rebindModule(clientUrl, jwt, branchName, it, repositoryId, localVersion)
-            }*/
+                logger.debug { "Recreating Bindings." }
+                val modules = modulesFuture.get()
+                // TODO call ISyncService.rebindModules(...)
+                val bindings: Iterable<IBinding> = listOf()
+
+                logger.debug { "Bindings are recreated, now activating them." }
+                bindings.forEach(IBinding::activate)
+                logger.debug { "Bindings are activated." }
+
+                // TODO test this whole scenario on the happy path
+                // TODO test it on the not-happy path (i.e. exceptions occur in the two ActiveMpsProjectInjector.runMpsReadAction actions)
+            } catch (t: Throwable) {
+                val message =
+                    "Error occurred, while restoring persisted state. Connection to model server, bindings and synchronization cache might not be established and activated. Please check logs for details."
+                notifier.notifyAndLogError(message, t, logger)
+            }
         }
     }
 }

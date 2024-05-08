@@ -20,6 +20,7 @@ import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.project.Project
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.MPSProject
+import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.util.concurrent.CompletableFuture
 
@@ -58,14 +59,15 @@ object ActiveMpsProjectInjector {
         )
     }
 
-    fun runMpsReadAction(action: () -> Unit) {
+    fun runMpsReadAction(action: (SRepository) -> Unit) {
         val busyWait = CompletableFuture<Any?>()
         if (activeMpsProject == null) {
             busyWait.completeExceptionally(IllegalStateException("Active MPS project is null."))
         } else {
-            activeMpsProject!!.repository.modelAccess.runReadAction {
+            val repository = activeMpsProject!!.repository
+            repository.modelAccess.runReadAction {
                 try {
-                    action()
+                    action(repository)
                     busyWait.complete(null)
                 } catch (t: Throwable) {
                     busyWait.completeExceptionally(t)
