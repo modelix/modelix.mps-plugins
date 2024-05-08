@@ -35,8 +35,6 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 )
 class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResourcesConfigurationComponent.State> {
 
-    // private val dispatcher = Dispatchers.IO // rather IO-intensive tasks
-
     override fun getState(): State {
         return State().getCurrentState()
     }
@@ -54,13 +52,15 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
      * reopened. Technically, it should also be possible to create a state yourself in order to load it, although this
      * is not what they were made for.
      *
-     * WARNING about the State's fields:
+     * WARNING:
+     * About the State class:
+     * - do not make it an inner class, otherwise deserialization will fail with an exception
+     * About the State's fields:
      * - Mutable collections will not be persisted!!!
-     * - Maps and Collections will only be persisted 2 layers deep (List<List<String>> works, but
-     * List<List<List<String>>> not)
+     * - Maps and Collections will only be persisted 2 layers deep (List<List<String>> works, but List<List<List<String>>> not)
      * - Pairs will not be persisted
      */
-    inner class State {
+    class State {
 
         // modelix connection
         var clientUrl: String = ""
@@ -87,7 +87,7 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
             repositoryId = replicatedModel.branchRef.repositoryId.id
             branchName = replicatedModel.branchRef.branchName
 
-            runBlocking(dispatcher) {
+            runBlocking {
                 localVersion = replicatedModel.getCurrentVersion().getContentHash()
             }
 
@@ -107,7 +107,7 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
 
             /*val sRepository = ActiveMpsProjectInjector.activeMpsProject!!.repository
             val modulesFuture = CompletableFuture<List<SModule>>()
-            ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction {
+            ActiveMpsProjectInjector.runMpsReadAction {
                 val modules = mutableListOf<SModule>()
                 for (moduleId in moduleIds) {
                     val id = PersistenceFacade.getInstance().createModuleId(moduleId)
