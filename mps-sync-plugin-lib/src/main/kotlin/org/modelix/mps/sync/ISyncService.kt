@@ -7,6 +7,8 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.CLVersion
+import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import java.io.IOException
 import java.net.URL
 import java.util.concurrent.CompletableFuture
@@ -28,7 +30,14 @@ interface ISyncService : AutoCloseable {
     fun bindModuleFromServer(
         client: ModelClientV2,
         branchReference: BranchReference,
-        moduleId: String,
+        module: ModuleIdWithName,
+    ): Iterable<IBinding>
+
+    fun rebindModules(
+        client: ModelClientV2,
+        branchReference: BranchReference,
+        initialVersion: CLVersion,
+        modules: Iterable<AbstractModule>,
     ): Iterable<IBinding>
 
     fun bindModuleFromMps(module: AbstractModule, branch: IBranch): Iterable<IBinding>

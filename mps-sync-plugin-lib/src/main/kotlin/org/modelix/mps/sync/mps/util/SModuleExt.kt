@@ -40,3 +40,6 @@ internal fun SModule.createModel(name: String, id: SModelId): SModel? {
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 internal fun SModule.getModelixId() = this.moduleId.toString()
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+data class ModuleIdWithName(val id: String, val name: String)

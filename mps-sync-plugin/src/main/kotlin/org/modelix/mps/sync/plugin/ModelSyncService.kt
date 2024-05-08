@@ -48,8 +48,8 @@ import org.modelix.mps.sync.ISyncService
 import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.plugin.action.ModelixActionGroup
-import org.modelix.mps.sync.plugin.gui.ModuleIdWithName
 import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -127,7 +127,7 @@ class ModelSyncService : Disposable {
             syncService.bindModuleFromServer(
                 client,
                 BranchReference(RepositoryId(repositoryID), branchName),
-                module.id,
+                module,
             ).forEach { it.activate() }
         } catch (t: Throwable) {
             val message =

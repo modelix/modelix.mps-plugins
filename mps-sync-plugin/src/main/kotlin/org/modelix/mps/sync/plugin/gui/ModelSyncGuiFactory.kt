@@ -46,6 +46,7 @@ import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.AlertNotifier
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
 import org.modelix.mps.sync.mps.notifications.UserResponse
+import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.plugin.ModelSyncService
 import org.modelix.mps.sync.plugin.configuration.CloudResourcesConfigurationComponent
 import org.modelix.mps.sync.plugin.icons.CloudIcons
@@ -80,6 +81,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         content.dispose()
     }
 
+    @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
     class ModelSyncGui(toolWindow: ToolWindow) {
 
         companion object {
@@ -518,6 +520,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
     }
 
+    @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
     class CustomCellRenderer : DefaultListCellRenderer() {
         override fun getListCellRendererComponent(
             list: JList<*>?,
@@ -539,5 +542,3 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
     }
 }
-
-data class ModuleIdWithName(val id: String, val name: String)
