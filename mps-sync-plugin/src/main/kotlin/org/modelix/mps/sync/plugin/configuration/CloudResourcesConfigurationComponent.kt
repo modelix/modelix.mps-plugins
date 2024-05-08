@@ -21,7 +21,12 @@ import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import kotlinx.coroutines.runBlocking
+import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.client2.ModelClientV2
+import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 
@@ -62,6 +67,8 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
      */
     class State {
 
+        private val logger = KotlinLogging.logger {}
+
         // modelix connection
         var clientUrl: String = ""
         var repositoryId: String = ""
@@ -75,15 +82,13 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
         var synchronizationCache: String = ""
 
         fun getCurrentState(): State {
-            ActiveMpsProjectInjector.runMpsReadAction {
-                synchronizationCache = MpsToModelixMap.Serializer().serialize()
+            val replicatedModel = BranchRegistry.model
+            if (replicatedModel == null) {
+                logger.warn { "Replicated Model is null, therefore an empty State will be saved." }
+                return this
             }
 
-            /*
-            // TODO fixme
-            val replicatedModel = BranchRegistry.model
-            // TODO is there a better way than a dirty cast?
-            clientUrl = (replicatedModel?.client as ModelClientV2).baseUrl
+            clientUrl = (replicatedModel.client as ModelClientV2).baseUrl
             repositoryId = replicatedModel.branchRef.repositoryId.id
             branchName = replicatedModel.branchRef.branchName
 
@@ -92,8 +97,12 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
             }
 
             BindingsRegistry.getModuleBindings().forEach {
-                moduleIds = moduleIds + it.module.moduleId.toString()
-            }*/
+                moduleIds += it.module.moduleId.toString()
+            }
+
+            ActiveMpsProjectInjector.runMpsReadAction {
+                synchronizationCache = MpsToModelixMap.Serializer().serialize()
+            }
 
             return this
         }

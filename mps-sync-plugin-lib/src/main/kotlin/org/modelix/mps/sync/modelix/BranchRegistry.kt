@@ -36,7 +36,8 @@ object BranchRegistry : AutoCloseable {
 
     private var branchReference: BranchReference? = null
 
-    private lateinit var model: ReplicatedModel
+    var model: ReplicatedModel? = null
+        private set
     private lateinit var branchListener: ModelixBranchListener
 
     // the MPS Project and its registered change listener
@@ -63,9 +64,9 @@ object BranchRegistry : AutoCloseable {
         close()
 
         model = client.getReplicatedModel(branchReference, replicatedModelCoroutineScope)
-        branch = model.start()
+        branch = model!!.start()
 
-        branchListener = ModelixBranchListener(model, languageRepository)
+        branchListener = ModelixBranchListener(model!!, languageRepository)
         branch!!.addListener(branchListener)
 
         val repositoryChangeListener = RepositoryChangeListener(branch!!)
@@ -85,7 +86,7 @@ object BranchRegistry : AutoCloseable {
         branch!!.removeListener(branchListener)
         project.repository.removeRepositoryListener(repoChangeListener)
 
-        model.dispose()
+        model?.dispose()
 
         branch = null
     }
