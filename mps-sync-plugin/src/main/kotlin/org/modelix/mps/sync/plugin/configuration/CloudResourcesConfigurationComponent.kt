@@ -38,7 +38,6 @@ import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.plugin.ModelSyncService
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import java.util.concurrent.CompletableFuture
 
 // TODO move it into the mps-sync-plugin-lib project, because we want to use it in headless mode (without plugin UI) too
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -128,6 +127,11 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
                     return
                 }
 
+                if (moduleIds.isEmpty()) {
+                    logger.debug { "List of restorable Modules is empty, therefore skipping synchronization plugin state restoration." }
+                    return
+                }
+
                 if (synchronizationCache.isNotBlank()) {
                     ActiveMpsProjectInjector.runMpsReadAction {
                         // TODO testme what happens if deserialization fails because of an exception
@@ -166,10 +170,9 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
                 }
                 logger.debug { "Connection to model server is restored." }
 
-                logger.debug { "Restoring SModules." }
-                val modulesFuture = CompletableFuture<List<AbstractModule>>()
                 ActiveMpsProjectInjector.runMpsReadAction { repository ->
                     // TODO test what happens if an Exception has occurred
+                    logger.debug { "Restoring SModules." }
                     val modules = moduleIds.map {
                         val id = PersistenceFacade.getInstance().createModuleId(it)
                         val module = repository.getModule(id)
@@ -177,19 +180,17 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
                         require(module is AbstractModule) { "Module ($module) is not an AbstractModule." }
                         module
                     }
-                    modulesFuture.complete(modules)
                     logger.debug { "${modules.count()} SModules are restored." }
+
+                    logger.debug { "Recreating Bindings." }
+                    val branchReference = BranchReference(repositoryId, branchName)
+                    val bindings = syncService.rebindModules(client, branchReference, initialVersion, modules)
+                    bindings?.let {
+                        logger.debug { "Bindings are recreated, now activating them." }
+                        bindings.forEach(IBinding::activate)
+                        logger.debug { "Bindings are activated." }
+                    }
                 }
-
-                logger.debug { "Recreating Bindings." }
-                val modules = modulesFuture.get()
-                val branchReference = BranchReference(repositoryId, branchName)
-                syncService.rebindModules(client, branchReference, initialVersion, modules)
-                val bindings: Iterable<IBinding> = listOf()
-
-                logger.debug { "Bindings are recreated, now activating them." }
-                bindings.forEach(IBinding::activate)
-                logger.debug { "Bindings are activated." }
 
                 // TODO test this whole scenario on the happy path
                 // TODO test it on the not-happy path (i.e. exceptions occur in the two ActiveMpsProjectInjector.runMpsReadAction actions)

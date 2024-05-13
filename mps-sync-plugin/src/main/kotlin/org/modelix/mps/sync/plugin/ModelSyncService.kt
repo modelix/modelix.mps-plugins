@@ -45,6 +45,7 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.ISyncService
 import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
@@ -143,12 +144,13 @@ class ModelSyncService : Disposable {
         branchReference: BranchReference,
         initialVersion: CLVersion,
         modules: Iterable<AbstractModule>,
-    ) {
+    ): Iterable<IBinding>? {
         try {
-            syncService.rebindModules(client, branchReference, initialVersion, modules)
+            return syncService.rebindModules(client, branchReference, initialVersion, modules)
         } catch (t: Throwable) {
             val message = "Error while binding modules to Branch '$branchReference'. Cause: ${t.message}"
             notifierInjector.notifyAndLogError(message, t, logger)
+            return null
         }
     }
 

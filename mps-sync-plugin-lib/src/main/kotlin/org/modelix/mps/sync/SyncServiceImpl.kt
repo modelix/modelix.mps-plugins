@@ -153,7 +153,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         modules: Iterable<AbstractModule>,
     ): Iterable<IBinding> {
         val numberOfModules = modules.count()
-        logger.info { "Creating Bindings for $numberOfModules Modules and their Models." }
+        logger.info { "Restoring Bindings for $numberOfModules Modules and their Models." }
 
         val branch = connectToBranch(client, branchReference, initialVersion)
 
@@ -166,16 +166,19 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
                 require(model is SModelBase) { "Model ($model) is not an SModelBase." }
                 val modelBinding = ModelBinding(model, branch)
                 BindingsRegistry.addModelBinding(modelBinding)
+                bindings.add(modelBinding)
             }
+
+            bindings.add(moduleBinding)
         }
 
         val hasAnyBinding = bindings.iterator().hasNext()
         if (hasAnyBinding) {
-            val message = "Module- and Model Bindings for $numberOfModules Modules are created."
+            val message = "Module- and Model Bindings for $numberOfModules Modules are restored."
             notifierInjector.notifyAndLogInfo(message, logger)
         } else {
             val message =
-                "No Module- or Model Binding is created for $numberOfModules Modules. This might be due to an error."
+                "No Module- or Model Binding is restored for $numberOfModules Modules. This might be due to an error."
             notifierInjector.notifyAndLogWarning(message, logger)
         }
 
