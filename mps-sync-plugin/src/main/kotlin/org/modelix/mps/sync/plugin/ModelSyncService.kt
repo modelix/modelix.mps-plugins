@@ -43,6 +43,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.ISyncService
 import org.modelix.mps.sync.SyncServiceImpl
@@ -59,6 +60,7 @@ class ModelSyncService : Disposable {
     private val logger = KotlinLogging.logger { }
     private val notifierInjector = InjectableNotifierWrapper
 
+    private val unattendedClients = mutableListOf<ModelClientV2>()
     private lateinit var syncService: ISyncService
 
     init {
@@ -136,6 +138,20 @@ class ModelSyncService : Disposable {
         }
     }
 
+    fun rebindModules(
+        client: ModelClientV2,
+        branchReference: BranchReference,
+        initialVersion: CLVersion,
+        modules: Iterable<AbstractModule>,
+    ) {
+        try {
+            syncService.rebindModules(client, branchReference, initialVersion, modules)
+        } catch (t: Throwable) {
+            val message = "Error while binding modules to Branch '$branchReference'. Cause: ${t.message}"
+            notifierInjector.notifyAndLogError(message, t, logger)
+        }
+    }
+
     fun bindModuleFromMps(module: AbstractModule, branch: IBranch) = syncService.bindModuleFromMps(module, branch)
 
     fun bindModelFromMps(model: SModelBase, branch: IBranch) = syncService.bindModelFromMps(model, branch)
@@ -154,9 +170,19 @@ class ModelSyncService : Disposable {
         logger.debug { "ModelixSyncPlugin: EnsureStarted" }
     }
 
+    fun registerUnattendedClient(client: ModelClientV2) {
+        unattendedClients.add(client)
+    }
+
     override fun dispose() {
         logger.debug { "ModelixSyncPlugin: Dispose" }
-        syncService.close()
+        try {
+            unattendedClients.forEach(::disconnectServer)
+        } catch (_: Throwable) {
+            // ignored
+        } finally {
+            syncService.close()
+        }
     }
 
     private fun registerSyncActions() {

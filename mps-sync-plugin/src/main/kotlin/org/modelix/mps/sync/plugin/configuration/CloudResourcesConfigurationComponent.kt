@@ -25,10 +25,12 @@ import com.intellij.openapi.components.service
 import jetbrains.mps.project.AbstractModule
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
-import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.modelix.BranchRegistry
@@ -135,16 +137,32 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
                 }
 
                 logger.debug { "Restoring connection to model server." }
-                // TODO fixme this will not work in SECURE
+                // TODO fixme this service<ModelSyncService>() not work in SECURE
                 val syncService = service<ModelSyncService>()
+                val client = syncService.connectModelServer(clientUrl, "")
+                if (client == null) {
+                    val exception =
+                        IllegalStateException("Connection to $clientUrl failed, thus cloud synchronization plugin state is not restored.")
+                    notifier.notifyAndLogError(exception.message!!, exception, logger)
+                    return
+                }
+                syncService.registerUnattendedClient(client)
 
-                // TODO call client = ISyncService.connectModelServer(...) and client.loadVersion(repository, lastKnownVersionHash, null) to get the initialVersion
-
+                val repositoryId = RepositoryId(repositoryId)
+                var initialVersion: CLVersion
+                runBlocking {
+                    // TODO testme exception
+                    try {
+                        initialVersion = client.loadVersion(repositoryId, localVersion, null) as CLVersion
+                    } catch (t: Throwable) {
+                        client.close()
+                        throw t
+                    }
+                }
                 logger.debug { "Connection to model server is restored." }
-                // TODO What to do with the unattended client? (Where is it going to closed? How to propagate it to the plugin GUI?)
 
                 logger.debug { "Restoring SModules." }
-                val modulesFuture = CompletableFuture<List<SModule>>()
+                val modulesFuture = CompletableFuture<List<AbstractModule>>()
                 ActiveMpsProjectInjector.runMpsReadAction { repository ->
                     // TODO test what happens if an Exception has occurred
                     val modules = moduleIds.map {
@@ -160,7 +178,8 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
 
                 logger.debug { "Recreating Bindings." }
                 val modules = modulesFuture.get()
-                // TODO call ISyncService.rebindModules(...)
+                val branchReference = BranchReference(repositoryId, branchName)
+                syncService.rebindModules(client, branchReference, initialVersion, modules)
                 val bindings: Iterable<IBinding> = listOf()
 
                 logger.debug { "Bindings are recreated, now activating them." }
