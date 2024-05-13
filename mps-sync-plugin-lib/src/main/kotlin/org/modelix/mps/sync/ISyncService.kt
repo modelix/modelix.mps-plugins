@@ -7,14 +7,15 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.CLVersion
 import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import java.io.IOException
 import java.net.URL
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-interface ISyncService : AutoCloseable {
+interface ISyncService : AutoCloseable, IRebindSyncService {
+
+    override fun connectModelServer(serverURL: String, jwt: String?) = connectModelServer(URL(serverURL), jwt)
 
     @Throws(IOException::class)
     fun connectModelServer(serverURL: URL, jwt: String? = null): ModelClientV2
@@ -31,13 +32,6 @@ interface ISyncService : AutoCloseable {
         client: ModelClientV2,
         branchReference: BranchReference,
         module: ModuleIdWithName,
-    ): Iterable<IBinding>
-
-    fun rebindModules(
-        client: ModelClientV2,
-        branchReference: BranchReference,
-        initialVersion: CLVersion,
-        modules: Iterable<AbstractModule>,
     ): Iterable<IBinding>
 
     fun bindModuleFromMps(module: AbstractModule, branch: IBranch): Iterable<IBinding>

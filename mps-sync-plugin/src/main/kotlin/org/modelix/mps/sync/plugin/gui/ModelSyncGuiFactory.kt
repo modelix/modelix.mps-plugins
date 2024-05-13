@@ -29,6 +29,7 @@ import com.intellij.ui.content.ContentFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -42,13 +43,14 @@ import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.ofConcept
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
+import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.AlertNotifier
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
 import org.modelix.mps.sync.mps.notifications.UserResponse
 import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.plugin.ModelSyncService
-import org.modelix.mps.sync.plugin.configuration.CloudResourcesConfigurationComponent
+import org.modelix.mps.sync.plugin.configuration.SyncPluginState
 import org.modelix.mps.sync.plugin.icons.CloudIcons
 import java.awt.Component
 import java.awt.FlowLayout
@@ -146,6 +148,22 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             branchName.text = "master"
             moduleName.text = "University.Schedule.modelserver.backend.sandbox"
             jwt.text = ""
+
+            // trigger state reload
+            val loadedState = activeProject.service<SyncPluginState>().latestLoadedState
+            loadedState?.let { state ->
+                state.restoredStateContext?.let { context ->
+                    setActiveConnection(context.modelClient, context.repositoryId, context.branchReference)
+                }
+            }
+        }
+
+        fun populateBindingCB(bindings: List<IBinding>) {
+            bindingsModel.removeAllElements()
+            bindingsModel.addAll(bindings)
+            if (bindingsModel.size > 0) {
+                bindingsModel.selectedItem = bindingsModel.getElementAt(0)
+            }
         }
 
         private fun createInputBox(): Box {
@@ -200,8 +218,6 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                 if (it.stateChange == ItemEvent.SELECTED) {
                     activeProject = it.item as Project
                     modelSyncService.setActiveProject(activeProject)
-                    // TODO fixme workaround to trigger State persistence
-                    activeProject.service<CloudResourcesConfigurationComponent>()
                 }
             }
 
@@ -515,37 +531,43 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             disconnectBranchButton.isEnabled = isEnabled
         }
 
-        fun populateBindingCB(bindings: List<IBinding>) {
-            bindingsModel.removeAllElements()
-            bindingsModel.addAll(bindings)
-            if (bindingsModel.size > 0) {
-                bindingsModel.selectedItem = bindingsModel.getElementAt(0)
+        private fun setActiveConnection(
+            client: ModelClientV2,
+            repositoryId: RepositoryId,
+            branchReference: BranchReference,
+        ) {
+            runBlocking(dispatcher) {
+                populateConnectionsCB(client)
+                populateRepoCB()
+
+                reposModel.removeAllElements()
+                reposModel.addElement(repositoryId)
+
+                branchesModel.removeAllElements()
+                branchesModel.addElement(branchReference)
+                activeBranch = BranchRegistry.branch
             }
         }
-    }
 
-    @UnstableModelixFeature(
-        reason = "The new modelix MPS plugin is under construction",
-        intendedFinalization = "2024.1",
-    )
-    class CustomCellRenderer : DefaultListCellRenderer() {
-        override fun getListCellRendererComponent(
-            list: JList<*>?,
-            value: Any?,
-            index: Int,
-            isSelected: Boolean,
-            cellHasFocus: Boolean,
-        ): Component {
-            val formatted = when (value) {
-                is Project -> value.name
-                is IBinding -> value.toString()
-                is ModelClientV2 -> value.baseUrl
-                is RepositoryId -> value.toString()
-                is BranchReference -> value.branchName
-                is ModuleIdWithName -> value.name
-                else -> return super.getListCellRendererComponent(list, null, index, isSelected, cellHasFocus)
+        private class CustomCellRenderer : DefaultListCellRenderer() {
+            override fun getListCellRendererComponent(
+                list: JList<*>?,
+                value: Any?,
+                index: Int,
+                isSelected: Boolean,
+                cellHasFocus: Boolean,
+            ): Component {
+                val formatted = when (value) {
+                    is Project -> value.name
+                    is IBinding -> value.toString()
+                    is ModelClientV2 -> value.baseUrl
+                    is RepositoryId -> value.toString()
+                    is BranchReference -> value.branchName
+                    is ModuleIdWithName -> value.name
+                    else -> return super.getListCellRendererComponent(list, null, index, isSelected, cellHasFocus)
+                }
+                return super.getListCellRendererComponent(list, formatted, index, isSelected, cellHasFocus)
             }
-            return super.getListCellRendererComponent(list, formatted, index, isSelected, cellHasFocus)
         }
     }
 }
