@@ -94,10 +94,7 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
         fun getCurrentState(): State {
             val replicatedModel = BranchRegistry.model
             if (replicatedModel == null) {
-                notifier.notifyAndLogWarning(
-                    "Replicated Model is null, therefore an empty State will be saved.",
-                    logger,
-                )
+                logger.warn { "Replicated Model is null, therefore an empty State will be saved." }
                 return this
             }
 

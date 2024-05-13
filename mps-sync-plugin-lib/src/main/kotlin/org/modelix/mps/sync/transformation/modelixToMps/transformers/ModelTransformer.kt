@@ -46,6 +46,7 @@ import org.modelix.mps.sync.mps.util.ModelRenameHelper
 import org.modelix.mps.sync.mps.util.createModel
 import org.modelix.mps.sync.mps.util.deleteDevKit
 import org.modelix.mps.sync.mps.util.deleteLanguage
+import org.modelix.mps.sync.mps.util.descriptorSuffix
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -328,7 +329,7 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
 
     private fun isDescriptorModel(iNode: INode): Boolean {
         val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
-        return iNode.isModel() && name?.endsWith("@descriptor") == true
+        return iNode.isModel() && name?.endsWith(descriptorSuffix) == true
     }
 
     private fun notifyAndLogError(message: String) {

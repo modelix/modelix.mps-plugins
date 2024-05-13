@@ -35,6 +35,7 @@ import org.modelix.mps.sync.modelix.ModelAlreadySynchronized
 import org.modelix.mps.sync.modelix.ModelAlreadySynchronizedException
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.mps.util.getModelixId
+import org.modelix.mps.sync.mps.util.isDescriptorModel
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -70,6 +71,11 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
 
     fun addModel(model: SModelBase) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+            // We do not track changes in descriptor models. See ModelTransformer.isDescriptorModel()
+            if (model.isDescriptorModel()) {
+                return@enqueue ModelAlreadySynchronized(model)
+            }
+
             val parentModule = model.module
             if (parentModule == null) {
                 val message = "Model ($model) cannot be synchronized to the server, because its Module is null."

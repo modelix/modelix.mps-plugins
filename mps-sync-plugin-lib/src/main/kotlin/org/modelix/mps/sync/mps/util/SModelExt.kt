@@ -49,3 +49,8 @@ internal fun SModel.deleteLanguage(sLanguage: SLanguage) {
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 internal fun SModel.getModelixId() = this.modelId.toString()
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+internal fun SModel.isDescriptorModel() = this.name.value.endsWith(descriptorSuffix)
+
+internal const val descriptorSuffix = "@descriptor"

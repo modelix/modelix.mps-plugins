@@ -25,6 +25,7 @@ import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.INotifier
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.mps.util.ModuleIdWithName
+import org.modelix.mps.sync.mps.util.isDescriptorModel
 import org.modelix.mps.sync.tasks.FuturesWaitQueue
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
@@ -164,9 +165,15 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
 
             module.models.forEach { model ->
                 require(model is SModelBase) { "Model ($model) is not an SModelBase." }
-                val modelBinding = ModelBinding(model, branch)
-                BindingsRegistry.addModelBinding(modelBinding)
-                bindings.add(modelBinding)
+                val binding = if (model.isDescriptorModel()) {
+                    // We do not track changes in descriptor models. See ModelTransformer.isDescriptorModel()
+                    EmptyBinding()
+                } else {
+                    val modelBinding = ModelBinding(model, branch)
+                    BindingsRegistry.addModelBinding(modelBinding)
+                    modelBinding
+                }
+                bindings.add(binding)
             }
 
             bindings.add(moduleBinding)
