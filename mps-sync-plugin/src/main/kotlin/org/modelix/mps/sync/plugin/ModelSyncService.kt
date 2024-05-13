@@ -175,6 +175,7 @@ class ModelSyncService : Disposable, IRebindSyncService {
     override fun dispose() {
         logger.debug { "ModelixSyncPlugin: Dispose" }
         syncService.close()
+        logger.debug { "ModelixSyncPlugin: Disposed" }
     }
 
     private fun registerSyncActions() {

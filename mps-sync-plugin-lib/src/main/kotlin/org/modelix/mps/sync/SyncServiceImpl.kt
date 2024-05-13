@@ -247,6 +247,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
     }
 
     override fun close() {
+        logger.debug { "Closing SyncServiceImpl." }
         // dispose task and wait queues
         SyncQueue.close()
         FuturesWaitQueue.close()
@@ -254,6 +255,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         BranchRegistry.close()
         // dispose all bindings
         BindingsRegistry.deactivateBindings()
+        logger.debug { "SyncServiceImpl is closed." }
     }
 
     private fun registerLanguages(project: MPSProject): MPSLanguageRepository {
