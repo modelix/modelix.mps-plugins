@@ -81,7 +81,10 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         content.dispose()
     }
 
-    @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+    @UnstableModelixFeature(
+        reason = "The new modelix MPS plugin is under construction",
+        intendedFinalization = "2024.1",
+    )
     class ModelSyncGui(toolWindow: ToolWindow) {
 
         companion object {
@@ -222,7 +225,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             branchesCB.model = branchesModel
             branchesCB.renderer = CustomCellRenderer()
             branchesCB.addActionListener {
-                if (it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
+                val selectedItem = branchesModel.selectedItem
+                if (selectedItem != null && it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
                     if (activeBranch != null) {
                         // reset value to the previous one
                         branchesModel.selectedItem = selectedBranch
@@ -233,7 +237,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                         return@addActionListener
                     }
 
-                    selectedBranch = branchesModel.selectedItem as BranchReference
+                    selectedBranch = selectedItem as BranchReference
                     callDisablingUiControls(::populateModuleCB)
                 }
             }
@@ -520,7 +524,10 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
     }
 
-    @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+    @UnstableModelixFeature(
+        reason = "The new modelix MPS plugin is under construction",
+        intendedFinalization = "2024.1",
+    )
     class CustomCellRenderer : DefaultListCellRenderer() {
         override fun getListCellRendererComponent(
             list: JList<*>?,
