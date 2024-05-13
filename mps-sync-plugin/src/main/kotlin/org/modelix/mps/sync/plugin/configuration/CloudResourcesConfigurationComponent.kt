@@ -123,7 +123,12 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
 
         fun load() {
             try {
-                if (synchronizationCache.isNotEmpty()) {
+                if (clientUrl.isBlank() || repositoryId.isBlank() || branchName.isBlank() || localVersion.isBlank()) {
+                    logger.debug { "Saved client URL, Repository ID, branch name or local version is empty, therefore skipping synchronization plugin state restoration." }
+                    return
+                }
+
+                if (synchronizationCache.isNotBlank()) {
                     ActiveMpsProjectInjector.runMpsReadAction {
                         // TODO testme what happens if deserialization fails because of an exception
                         MpsToModelixMap.Serializer().deserialize(synchronizationCache)
