@@ -32,7 +32,7 @@ import org.modelix.mps.sync.util.synchronizedMap
  * WARNING:
  * - use with caution, otherwise this cache may cause memory leaks
  * - if you add a new Map as a field in the class, then please also add it to the `remove`, `isMappedToMps`, and
- * `isMappedToModelix` methods below
+ * `isMappedToModelix`. `isEmpty`, `clear` methods below
  * - if you want to persist the new field into a file, then add it to the `MpsToModelixMap.Serializer.serialize` and
  * `MpsToModelixMap.Serializer.deserialize` methods below.
  */
@@ -231,6 +231,25 @@ object MpsToModelixMap {
     fun isMappedToModelix(module: SModule) = this[module] != null
 
     fun isMappedToModelix(node: SNode) = this[node] != null
+
+    fun isEmpty() = objectsRelatedToAModel.isEmpty() && objectsRelatedToAModule.isEmpty()
+
+    fun clear() {
+        nodeToModelixId.clear()
+        modelixIdToNode.clear()
+        modelToModelixId.clear()
+        modelixIdToModel.clear()
+        moduleToModelixId.clear()
+        modelixIdToModule.clear()
+        moduleWithOutgoingModuleReferenceToModelixId.clear()
+        modelixIdToModuleWithOutgoingModuleReference.clear()
+        modelWithOutgoingModuleReferenceToModelixId.clear()
+        modelixIdToModelWithOutgoingModuleReference.clear()
+        modelWithOutgoingModelReferenceToModelixId.clear()
+        modelixIdToModelWithOutgoingModelReference.clear()
+        objectsRelatedToAModel.clear()
+        objectsRelatedToAModule.clear()
+    }
 
     class Serializer {
 

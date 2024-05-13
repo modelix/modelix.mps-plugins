@@ -113,7 +113,7 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
                 moduleIds += it.module.moduleId.toString()
             }
 
-            ActiveMpsProjectInjector.runMpsReadAction {
+            ActiveMpsProjectInjector.runMpsReadActionBlocking {
                 synchronizationCache = MpsToModelixMap.Serializer().serialize()
             }
 
@@ -121,57 +121,55 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
         }
 
         fun load() {
+            var client: ModelClientV2? = null
+
             try {
                 if (clientUrl.isBlank() || repositoryId.isBlank() || branchName.isBlank() || localVersion.isBlank()) {
-                    logger.debug { "Saved client URL, Repository ID, branch name or local version is empty, therefore skipping synchronization plugin state restoration." }
+                    logger.debug { "Saved client URL, Repository ID, branch name or local version is empty, thus skipping synchronization plugin state restoration." }
                     return
                 }
 
                 if (moduleIds.isEmpty()) {
-                    logger.debug { "List of restorable Modules is empty, therefore skipping synchronization plugin state restoration." }
+                    logger.debug { "List of restorable Modules is empty, thus skipping synchronization plugin state restoration." }
                     return
                 }
 
-                if (synchronizationCache.isNotBlank()) {
-                    ActiveMpsProjectInjector.runMpsReadAction {
-                        // TODO testme what happens if deserialization fails because of an exception
+                var cacheIsEmpty = synchronizationCache.isBlank()
+                if (!cacheIsEmpty) {
+                    ActiveMpsProjectInjector.runMpsReadActionBlocking {
                         MpsToModelixMap.Serializer().deserialize(synchronizationCache)
+                        cacheIsEmpty = MpsToModelixMap.isEmpty()
                         logger.debug { "Synchronization cache is restored." }
                     }
-                } else {
+                }
+
+                if (cacheIsEmpty) {
                     notifier.notifyAndLogWarning(
-                        "Serialized synchronization cache is empty, thus it is not restored.",
+                        "Serialized synchronization cache is empty, thus cloud synchronization plugin state is not restored.",
                         logger,
                     )
+                    return
                 }
 
                 logger.debug { "Restoring connection to model server." }
                 // TODO fixme this service<ModelSyncService>() not work in SECURE
                 val syncService = service<ModelSyncService>()
-                val client = syncService.connectModelServer(clientUrl, "")
+                client = syncService.connectModelServer(clientUrl, "")
                 if (client == null) {
                     val exception =
                         IllegalStateException("Connection to $clientUrl failed, thus cloud synchronization plugin state is not restored.")
                     notifier.notifyAndLogError(exception.message!!, exception, logger)
                     return
                 }
-                syncService.registerUnattendedClient(client)
 
                 val repositoryId = RepositoryId(repositoryId)
                 var initialVersion: CLVersion
                 runBlocking {
-                    // TODO testme exception
-                    try {
-                        initialVersion = client.loadVersion(repositoryId, localVersion, null) as CLVersion
-                    } catch (t: Throwable) {
-                        client.close()
-                        throw t
-                    }
+                    initialVersion = client.loadVersion(repositoryId, localVersion, null) as CLVersion
                 }
                 logger.debug { "Connection to model server is restored." }
 
-                ActiveMpsProjectInjector.runMpsReadAction { repository ->
-                    // TODO test what happens if an Exception has occurred
+                ActiveMpsProjectInjector.runMpsReadActionBlocking { repository ->
                     logger.debug { "Restoring SModules." }
                     val modules = moduleIds.map {
                         val id = PersistenceFacade.getInstance().createModuleId(it)
@@ -187,17 +185,19 @@ class CloudResourcesConfigurationComponent : PersistentStateComponent<CloudResou
                     val bindings = syncService.rebindModules(client, branchReference, initialVersion, modules)
                     bindings?.let {
                         logger.debug { "Bindings are recreated, now activating them." }
-                        bindings.forEach(IBinding::activate)
+                        it.forEach(IBinding::activate)
                         logger.debug { "Bindings are activated." }
                     }
                 }
 
-                // TODO test this whole scenario on the happy path
-                // TODO test it on the not-happy path (i.e. exceptions occur in the two ActiveMpsProjectInjector.runMpsReadAction actions)
+                syncService.registerUnattendedClient(client)
             } catch (t: Throwable) {
                 val message =
                     "Error occurred, while restoring persisted state. Connection to model server, bindings and synchronization cache might not be established and activated. Please check logs for details."
                 notifier.notifyAndLogError(message, t, logger)
+
+                client?.close()
+                MpsToModelixMap.clear()
             }
         }
     }

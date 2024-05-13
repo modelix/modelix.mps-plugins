@@ -59,7 +59,7 @@ object ActiveMpsProjectInjector {
         )
     }
 
-    fun runMpsReadAction(action: (SRepository) -> Unit) {
+    fun runMpsReadActionBlocking(action: (SRepository) -> Unit) {
         val busyWait = CompletableFuture<Any?>()
         if (activeMpsProject == null) {
             busyWait.completeExceptionally(IllegalStateException("Active MPS project is null."))
