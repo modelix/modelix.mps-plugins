@@ -23,7 +23,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.mpsadapters.MPSNode
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.nodeIdAsLong(): Long =
     when (this) {
         is PNodeAdapter -> this.nodeId
@@ -36,31 +36,31 @@ fun INode.nodeIdAsLong(): Long =
         else -> throw IllegalStateException("Unsupported INode implementation")
     }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.isModule(): Boolean {
     val concept = this.concept ?: return false
     return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Module)
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.isModel(): Boolean {
     val concept = this.concept ?: return false
     return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Model)
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.isDevKitDependency(): Boolean {
     val concept = this.concept ?: return false
     return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.isSingleLanguageDependency(): Boolean {
     val concept = this.concept ?: return false
     return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency)
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.isModelImport(): Boolean {
     val concept = this.concept ?: return false
     val isModelReference = concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.ModelReference)
@@ -68,19 +68,19 @@ fun INode.isModelImport(): Boolean {
     return isModelReference && isModelImportRole
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.isModuleDependency(): Boolean {
     val concept = this.concept ?: return false
     return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.getModel(): INode? = findNode { it.isModel() }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.getModule(): INode? = findNode { it.isModule() }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 private fun INode.findNode(criterion: (INode) -> Boolean): INode? {
     if (criterion(this)) {
         return this

@@ -51,7 +51,7 @@ import org.modelix.mps.sync.util.waitForCompletionOfEach
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.concurrent.CompletableFuture
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
 
     private val logger = KotlinLogging.logger {}

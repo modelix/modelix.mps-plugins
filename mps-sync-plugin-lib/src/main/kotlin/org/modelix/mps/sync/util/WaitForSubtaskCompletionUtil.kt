@@ -32,7 +32,7 @@ import java.util.concurrent.CompletableFuture
  * avoid busy-waiting on the lock. The continuation of SyncTasks will take care of waiting for all futures to complete.
  * If you run a SyncTask on its own, then you have to manually wait for the task to complete.
  */
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun <T> Collection<T>.waitForCompletionOfEachTask(
     collectResults: Boolean = false,
     continuableSyncTaskProducer: (T) -> ContinuableSyncTask,
@@ -52,7 +52,7 @@ fun <T> Collection<T>.waitForCompletionOfEachTask(
  *
  *  @param collectResults if true, then collects the Iterable<Any?> results of futureProducer
  */
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun <T> Iterable<T>.waitForCompletionOfEachTask(
     collectResults: Boolean = false,
     continuableSyncTaskProducer: (T) -> ContinuableSyncTask,
@@ -73,7 +73,7 @@ fun <T> Iterable<T>.waitForCompletionOfEachTask(
  *
  * @param collectResults if true, then collects the Iterable<Any?> results of futureProducer into an Iterable<Any?>
  */
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun <T> Iterable<T>.waitForCompletionOfEach(
     collectResults: Boolean = false,
     futureProducer: (T) -> CompletableFuture<Any?>,

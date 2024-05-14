@@ -27,7 +27,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
  * This component handles the storage of the cloud configuration.
  * For information about component persistence refer to https://jetbrains.org/intellij/sdk/docs/basics/persisting_state_of_components.html
  */
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 @Service(Service.Level.PROJECT)
 @State(
     name = "CloudResources",

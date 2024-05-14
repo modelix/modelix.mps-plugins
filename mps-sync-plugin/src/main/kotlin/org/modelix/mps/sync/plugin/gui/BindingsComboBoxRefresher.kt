@@ -22,7 +22,7 @@ import org.modelix.mps.sync.bindings.BindingLifecycleState
 import org.modelix.mps.sync.bindings.BindingSortComparator
 import org.modelix.mps.sync.bindings.BindingsRegistry
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class BindingsComboBoxRefresher(private val gui: ModelSyncGuiFactory.ModelSyncGui) : Thread() {
 
     private val bindingsComparator = BindingSortComparator()

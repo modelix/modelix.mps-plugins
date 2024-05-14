@@ -27,7 +27,7 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.RepositoryChangeListener
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 object BranchRegistry : AutoCloseable {
 
     var branch: IBranch? = null

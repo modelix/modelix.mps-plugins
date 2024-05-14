@@ -14,34 +14,34 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
  * Module C to the server. So in this case Module A just creates this token to let the sync flow know that Module C
  * does not have to be synced again.
  */
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 abstract class ItemAlreadySynchronized(val item: Any)
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class ModelAlreadySynchronized(val model: SModel) : ItemAlreadySynchronized(model)
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class ModuleAlreadySynchronized(val module: SModule) : ItemAlreadySynchronized(module)
 
 /**
  * An exception to show that the referred item is already synchronized to Modelix.
  */
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 abstract class ItemAlreadySynchronizedException(val item: Any, message: String) : Exception(message)
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class ModelAlreadySynchronizedException(val model: SModel) : ItemAlreadySynchronizedException(
     model,
     "Model '${model.name}' in Module '${model.module?.moduleName}' already exists on the server, therefore it and its parent module will not be synchronized completely. Remove the parent module from the project and synchronize it from the server instead.",
 )
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class ModuleAlreadySynchronizedException(val module: SModule) : ItemAlreadySynchronizedException(
     module,
     "Module '${module.moduleName}' already exists on the server, therefore it will not be synchronized. Remove it from the project and synchronize it from the server instead.",
 )
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class NodeAlreadySynchronizedException(val node: SNode) : ItemAlreadySynchronizedException(
     node,
     "Node '${node.name}' already exists on server, therefore it will not be synched. Remove its parent node or its parent model and synchronize the parent model from the server instead.",

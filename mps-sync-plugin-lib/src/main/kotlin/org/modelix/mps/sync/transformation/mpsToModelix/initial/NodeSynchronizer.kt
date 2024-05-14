@@ -41,7 +41,7 @@ import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.nodeIdAsLong
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class NodeSynchronizer(
     private val branch: IBranch,
     private val resolvableReferences: MutableCollection<CloudResolvableReference>? = null,
@@ -180,7 +180,7 @@ class NodeSynchronizer(
     }
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 data class CloudResolvableReference(
     val sourceNode: INode,
     val referenceLink: IReferenceLink,

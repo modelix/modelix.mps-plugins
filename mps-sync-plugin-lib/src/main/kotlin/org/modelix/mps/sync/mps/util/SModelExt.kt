@@ -22,30 +22,30 @@ import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun SModel.addDevKit(devKitModuleReference: SModuleReference) {
     require(this is SModelDescriptorStub) { "Model ${this.modelId} must be an SModelDescriptorStub" }
     this.addDevKit(devKitModuleReference)
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun SModel.deleteDevKit(devKitModuleReference: SModuleReference) {
     require(this is SModelDescriptorStub) { "Model ${this.modelId} must be an SModelDescriptorStub" }
     this.deleteDevKit(devKitModuleReference)
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun SModel.addLanguageImport(sLanguage: SLanguage, version: Int) {
     require(this is SModelDescriptorStub) { "Model ${this.modelId} must be an SModelDescriptorStub" }
     this.addLanguage(sLanguage)
     this.setLanguageImportVersion(sLanguage, version)
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun SModel.deleteLanguage(sLanguage: SLanguage) {
     require(this is SModelDescriptorStub) { "Model ${this.modelId} must be an SModelDescriptorStub" }
     this.deleteLanguageId(sLanguage)
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun SModel.getModelixId() = this.modelId.toString()

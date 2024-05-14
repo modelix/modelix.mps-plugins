@@ -8,7 +8,7 @@ import com.intellij.openapi.project.Project
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import javax.swing.event.HyperlinkEvent
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class BalloonNotifier(
     private val project: Project,
     private val title: String = "Modelix Sync Plugin",
@@ -38,7 +38,7 @@ class BalloonNotifier(
     }
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 private class UrlListenerToUserResponseAdapter(
     private val userResponseListener: UserResponseListener?,
 ) : NotificationListener {

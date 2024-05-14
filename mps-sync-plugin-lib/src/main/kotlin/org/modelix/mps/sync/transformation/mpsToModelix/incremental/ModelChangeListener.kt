@@ -35,7 +35,7 @@ import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class ModelChangeListener(branch: IBranch, private val binding: ModelBinding) : SModelListener {
 
     private val modelSynchronizer = ModelSynchronizer(branch)

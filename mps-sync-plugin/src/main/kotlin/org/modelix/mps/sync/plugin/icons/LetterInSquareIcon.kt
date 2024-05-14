@@ -28,7 +28,7 @@ import java.awt.RenderingHints
 import java.awt.geom.RoundRectangle2D
 import javax.swing.Icon
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class LetterInSquareIcon(
     private val letter: String,
     private val fontSize: Int,

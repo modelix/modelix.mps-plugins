@@ -52,7 +52,7 @@ import org.modelix.mps.sync.plugin.action.ModelixActionGroup
 import org.modelix.mps.sync.plugin.gui.ModuleIdWithName
 import java.net.URL
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 @Service(Service.Level.APP)
 class ModelSyncService : Disposable {
 

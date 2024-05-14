@@ -26,7 +26,7 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class NodeChangeListener(branch: IBranch) : SNodeChangeListener {
 
     private val synchronizer = NodeSynchronizer(branch)
