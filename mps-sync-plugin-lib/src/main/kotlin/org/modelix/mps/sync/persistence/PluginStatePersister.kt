@@ -16,7 +16,7 @@ class PluginStatePersister {
             val xmlMapper = XmlMapper()
             xmlMapper.writeValue(getFilePath(baseDirectory), state)
         } catch (t: Throwable) {
-            logger.error(t) { "Saving the plugin state failed. Reason: ${t.message}" }
+            logger.error(t) { "Saving the plugin state failed. Cause: ${t.message}" }
         }
     }
 
@@ -25,7 +25,7 @@ class PluginStatePersister {
             val xmlMapper = XmlMapper()
             return xmlMapper.readValue(getFilePath(baseDirectory), PersistableState::class.java)
         } catch (t: Throwable) {
-            logger.error(t) { "Loading the plugin state failed. Reason: ${t.message}" }
+            logger.error(t) { "Loading the plugin state failed. Cause: ${t.message}" }
             return null
         }
     }
