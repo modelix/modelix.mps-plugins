@@ -35,5 +35,5 @@ class PluginStatePersister {
         return state.restoreState(syncService)
     }
 
-    private fun getFilePath(baseDirectory: File) = File(baseDirectory, "syncState.xml")
+    private fun getFilePath(baseDirectory: File) = baseDirectory.resolve(".mps").resolve("syncState.xml")
 }
