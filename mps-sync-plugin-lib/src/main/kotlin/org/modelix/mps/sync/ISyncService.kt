@@ -13,7 +13,7 @@ import java.net.URL
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-interface ISyncService : AutoCloseable, IRebindSyncService {
+interface ISyncService : AutoCloseable, IRebindModulesSyncService {
 
     override fun connectModelServer(serverURL: String, jwt: String?) = connectModelServer(URL(serverURL), jwt)
 

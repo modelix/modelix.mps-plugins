@@ -150,9 +150,9 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             jwt.text = ""
 
             // trigger state reload
-            val loadedState = activeProject.service<SyncPluginState>().latestLoadedState
-            loadedState?.let { state ->
-                state.restoredStateContext?.let { context ->
+            val loadedState = activeProject.service<SyncPluginState>()
+            loadedState.let { state ->
+                state.latestRestoredContext?.let { context ->
                     setActiveConnection(context.modelClient, context.repositoryId, context.branchReference)
                 }
             }

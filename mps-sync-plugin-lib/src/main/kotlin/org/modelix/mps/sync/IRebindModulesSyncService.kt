@@ -8,7 +8,7 @@ import org.modelix.model.lazy.CLVersion
 import java.io.IOException
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-interface IRebindSyncService {
+interface IRebindModulesSyncService {
 
     @Throws(IOException::class)
     fun connectModelServer(serverURL: String, jwt: String? = null): ModelClientV2?

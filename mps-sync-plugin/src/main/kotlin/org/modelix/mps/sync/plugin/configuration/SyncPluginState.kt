@@ -24,6 +24,7 @@ import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.persistence.PersistableState
+import org.modelix.mps.sync.persistence.RestoredStateContext
 import org.modelix.mps.sync.plugin.ModelSyncService
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -35,16 +36,15 @@ import org.modelix.mps.sync.plugin.ModelSyncService
 )
 class SyncPluginState : PersistentStateComponent<PersistableState> {
 
-    var latestLoadedState: PersistableState? = null
+    var latestRestoredContext: RestoredStateContext? = null
         private set
 
     override fun getState(): PersistableState {
-        return PersistableState().getCurrentState()
+        return PersistableState().fetchState()
     }
 
     override fun loadState(newState: PersistableState) {
         val syncService = service<ModelSyncService>()
-        newState.load(syncService)
-        latestLoadedState = newState
+        latestRestoredContext = newState.restoreState(syncService)
     }
 }

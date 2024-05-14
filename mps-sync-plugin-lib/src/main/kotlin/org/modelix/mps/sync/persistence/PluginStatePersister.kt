@@ -3,7 +3,7 @@ package org.modelix.mps.sync.persistence
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.IRebindSyncService
+import org.modelix.mps.sync.IRebindModulesSyncService
 import java.io.File
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -30,10 +30,9 @@ class PluginStatePersister {
         }
     }
 
-    fun restore(baseDirectory: File, syncService: IRebindSyncService): RestoredStateContext? {
+    fun restore(baseDirectory: File, syncService: IRebindModulesSyncService): RestoredStateContext? {
         val state = load(baseDirectory) ?: return null
-        state.load(syncService)
-        return state.restoredStateContext
+        return state.restoreState(syncService)
     }
 
     private fun getFilePath(baseDirectory: File) = File(baseDirectory, "syncState.xml")

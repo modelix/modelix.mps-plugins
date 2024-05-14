@@ -46,7 +46,7 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.IBinding
-import org.modelix.mps.sync.IRebindSyncService
+import org.modelix.mps.sync.IRebindModulesSyncService
 import org.modelix.mps.sync.ISyncService
 import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
@@ -57,7 +57,7 @@ import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 @Service(Service.Level.APP)
-class ModelSyncService : Disposable, IRebindSyncService {
+class ModelSyncService : Disposable, IRebindModulesSyncService {
 
     private val logger = KotlinLogging.logger { }
     private val notifierInjector = InjectableNotifierWrapper
