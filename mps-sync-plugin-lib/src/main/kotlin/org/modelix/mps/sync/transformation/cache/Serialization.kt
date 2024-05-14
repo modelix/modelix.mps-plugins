@@ -54,15 +54,6 @@ internal abstract class Serializer<T> {
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-internal class DefaultSerializer(override val typeDelimiter: String, override val infixSeparator: String? = null) :
-    Serializer<Any>() {
-
-    override fun serialize(it: Any): String = ""
-
-    override fun deserialize(from: String): Any? = null
-}
-
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 internal class SModuleSerializer(private val repository: SRepository? = null) : Serializer<SModule>() {
 
     override val typeDelimiter = "SModule"
