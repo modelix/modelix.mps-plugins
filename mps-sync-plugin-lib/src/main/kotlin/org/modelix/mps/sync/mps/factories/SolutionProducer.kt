@@ -34,7 +34,7 @@ import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import java.io.File
 
 // TODO hacky solution. A nicer one could be: https://github.com/JetBrains/MPS/blob/master/workbench/mps-platform/jetbrains.mps.ide.platform/source_gen/jetbrains/mps/project/modules/SolutionProducer.java
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class SolutionProducer {
 
     private val project

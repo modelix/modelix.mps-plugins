@@ -44,7 +44,7 @@ import java.io.IOException
  * Uses the provided model ID instead of SModelId.generate().
  * Everything else is just copied from DefaultModelPersistence.
  */
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 open class ModelPersistenceWithFixedId(val moduleRef: SModuleReference, val modelId: SModelId) :
     DefaultModelPersistence() {
 
@@ -69,7 +69,7 @@ open class ModelPersistenceWithFixedId(val moduleRef: SModuleReference, val mode
     }
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 open class ModelPersistenceFacility(modelFactory: DefaultModelPersistence, dataSource: StreamDataSource) :
     LazyLoadFacility(modelFactory, dataSource, true) {
     protected val source0: StreamDataSource

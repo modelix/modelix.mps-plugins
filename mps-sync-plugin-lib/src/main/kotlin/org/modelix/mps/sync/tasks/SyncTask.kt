@@ -19,7 +19,7 @@ package org.modelix.mps.sync.tasks
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.util.concurrent.CompletableFuture
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class SyncTask(
     requiredLocks: LinkedHashSet<SyncLock>,
     val syncDirection: SyncDirection,
@@ -33,7 +33,7 @@ class SyncTask(
     private val stackTrace: List<StackTraceElement> = Thread.currentThread().stackTrace.toList()
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class ContinuableSyncTask(private val previousTask: SyncTask) {
 
     fun continueWith(
@@ -61,5 +61,5 @@ class ContinuableSyncTask(private val previousTask: SyncTask) {
     fun getResult() = previousTask.result
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 typealias SyncTaskAction = (Any?) -> Any?

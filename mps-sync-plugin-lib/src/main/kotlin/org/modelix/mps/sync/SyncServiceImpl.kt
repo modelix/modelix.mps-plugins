@@ -28,7 +28,7 @@ import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchroniz
 import java.io.IOException
 import java.net.URL
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
 
     private val logger = KotlinLogging.logger {}

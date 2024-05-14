@@ -19,7 +19,7 @@ package org.modelix.mps.sync.bindings
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class BindingSortComparator : Comparator<IBinding> {
     /**
      * ModelBindings should come first, then ModuleBindings. If both bindings have the same type, then they are sorted lexicographically.

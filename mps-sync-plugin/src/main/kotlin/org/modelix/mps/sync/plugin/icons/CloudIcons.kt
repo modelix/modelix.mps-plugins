@@ -20,7 +20,7 @@ import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.JBColor
 import org.modelix.kotlin.utils.UnstableModelixFeature
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 object CloudIcons {
 
     private const val FONT_SIZE = 14

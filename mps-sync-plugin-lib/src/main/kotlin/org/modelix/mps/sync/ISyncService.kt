@@ -11,7 +11,7 @@ import java.io.IOException
 import java.net.URL
 import java.util.concurrent.CompletableFuture
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 interface ISyncService : AutoCloseable {
 
     @Throws(IOException::class)
@@ -34,7 +34,7 @@ interface ISyncService : AutoCloseable {
     fun setActiveProject(project: Project)
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 interface IBinding {
 
     fun activate(callback: Runnable? = null)

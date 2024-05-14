@@ -26,7 +26,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.stream.Collectors
 import java.util.stream.Stream
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 object FuturesWaitQueue : Runnable, AutoCloseable {
 
     private val logger = KotlinLogging.logger {}
@@ -174,10 +174,10 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
     }
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 data class FutureWithPredecessors(val predecessors: Set<CompletableFuture<Any?>>, val future: FillableFuture)
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 data class FillableFuture(
     val future: CompletableFuture<Any?>,
     val shallBeFilled: Boolean = false,

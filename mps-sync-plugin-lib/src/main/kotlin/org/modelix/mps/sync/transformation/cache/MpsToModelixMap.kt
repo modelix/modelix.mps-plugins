@@ -32,7 +32,7 @@ import org.modelix.mps.sync.util.synchronizedMap
  * - use with caution, otherwise this cache may cause memory leaks
  * - if you add a new Map as a field in the class, then please also add it to the `remove`, `isMappedToMps`, and `isMappedToModelix` methods below
  */
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 object MpsToModelixMap {
 
     private val nodeToModelixId = synchronizedMap<SNode, Long>()
@@ -229,11 +229,11 @@ object MpsToModelixMap {
     fun isMappedToModelix(node: SNode) = this[node] != null
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 data class ModelWithModelReference(val source: SModel, val modelReference: SModelReference)
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 data class ModelWithModuleReference(val source: SModel, val moduleReference: SModuleReference)
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 data class ModuleWithModuleReference(val source: SModule, val moduleReference: SModuleReference)

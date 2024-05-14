@@ -44,7 +44,7 @@ import org.modelix.mps.sync.util.isModuleDependency
 import org.modelix.mps.sync.util.isSingleLanguageDependency
 import org.modelix.mps.sync.util.nodeIdAsLong
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class ModelixTreeChangeVisitor(
     private val replicatedModel: ReplicatedModel,
     branch: IBranch,
