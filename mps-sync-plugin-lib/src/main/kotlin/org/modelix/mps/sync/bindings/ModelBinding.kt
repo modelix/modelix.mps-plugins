@@ -75,6 +75,7 @@ class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
 
     override fun deactivate(removeFromServer: Boolean, callback: Runnable?): CompletableFuture<Any?> {
         if (isDisposed) {
+            callback?.run()
             return CompletableFuture<Any?>().completeWithDefault()
         }
 

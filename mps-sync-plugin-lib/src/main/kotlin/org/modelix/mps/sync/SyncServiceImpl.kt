@@ -69,14 +69,14 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         logger.info { "Disconnected from ${client.baseUrl}" }
 
         logger.info { "Deactivating bindings and disposing cloned branch." }
-        BindingsRegistry.deactivateBindings()
+        BindingsRegistry.deactivateBindings(waitForCompletion = true)
         BranchRegistry.close()
         logger.info { "Bindings are deactivated and branch is disposed." }
     }
 
     override fun disconnectFromBranch(branch: IBranch, branchName: String) {
         logger.info { "Deactivating bindings and disposing cloned branch $branchName." }
-        BindingsRegistry.deactivateBindings()
+        BindingsRegistry.deactivateBindings(waitForCompletion = true)
         BranchRegistry.unsetBranch(branch)
         logger.info { "Bindings are deactivated and branch ($branchName) is disposed." }
     }

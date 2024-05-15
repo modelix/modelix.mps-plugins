@@ -24,7 +24,10 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.synchronizedMap
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.function.BiConsumer
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 object BindingsRegistry {
@@ -76,9 +79,39 @@ object BindingsRegistry {
     fun bindingActivated(binding: IBinding) =
         changedBindings.put(BindingState(binding, BindingLifecycleState.ACTIVATE))
 
-    fun deactivateBindings() {
-        getModuleBindings().forEach { it.deactivate(removeFromServer = false) }
-        getModelBindings().forEach { it.deactivate(removeFromServer = false) }
+    fun deactivateBindings(waitForCompletion: Boolean = false) {
+        val moduleBindings = getModuleBindings()
+        val modelBindings = getModelBindings()
+
+        if (!waitForCompletion) {
+            moduleBindings.forEach { it.deactivate(removeFromServer = false) }
+            modelBindings.forEach { it.deactivate(removeFromServer = false) }
+            // return immediately, do not wait until the bindings are completely deactivated
+            return
+        }
+
+        // wait until all module/model bindings are deactivated  or any of them throws an exception
+
+        val countDownLatch = CountDownLatch(moduleBindings.size + modelBindings.size)
+        val continuation = CompletableFuture<Any?>()
+        if (countDownLatch.count == 0L) {
+            continuation.complete(null)
+        }
+
+        val countDownOrAbort = BiConsumer<Any?, Throwable?> { _, throwable ->
+            if (throwable != null) {
+                continuation.completeExceptionally(throwable)
+            }
+            countDownLatch.countDown()
+            if (countDownLatch.count == 0L) {
+                continuation.complete(null)
+            }
+        }
+
+        moduleBindings.forEach { it.deactivate(removeFromServer = false).whenComplete(countDownOrAbort) }
+        modelBindings.forEach { it.deactivate(removeFromServer = false).whenComplete(countDownOrAbort) }
+
+        continuation.get()
     }
 
     private fun bindingAdded(binding: IBinding) =
