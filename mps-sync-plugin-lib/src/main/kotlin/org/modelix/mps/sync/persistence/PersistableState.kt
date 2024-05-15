@@ -55,7 +55,7 @@ data class PersistableState(
     fun fetchState(): PersistableState {
         val replicatedModel = BranchRegistry.model
         if (replicatedModel == null) {
-            logger.warn { "Replicated Model is null, therefore an empty State will be saved." }
+            logger.warn { "Replicated Model is null, therefore an empty PersistableState will be saved." }
             return this
         }
 
@@ -83,12 +83,12 @@ data class PersistableState(
 
         try {
             if (clientUrl.isBlank() || repositoryId.isBlank() || branchName.isBlank() || localVersion.isBlank()) {
-                logger.debug { "Saved client URL, Repository ID, branch name or local version is empty, thus skipping synchronization plugin state restoration." }
+                logger.debug { "Saved client URL, Repository ID, branch name or local version is empty, thus skipping PersistableState restoration." }
                 return null
             }
 
             if (moduleIds.isEmpty()) {
-                logger.debug { "List of restorable Modules is empty, thus skipping synchronization plugin state restoration." }
+                logger.debug { "List of restorable Modules is empty, thus skipping PersistableState restoration." }
                 return null
             }
 
@@ -102,19 +102,16 @@ data class PersistableState(
             }
 
             if (cacheIsEmpty) {
-                notifier.notifyAndLogWarning(
-                    "Serialized synchronization cache is empty, thus cloud synchronization plugin state is not restored.",
-                    logger,
-                )
+                logger.debug { "Serialized synchronization cache is empty, thus PersistableState is not restored." }
                 return null
             }
 
             logger.debug { "Restoring connection to model server." }
             client = syncService.connectModelServer(clientUrl, "")
             if (client == null) {
-                val exception =
-                    IllegalStateException("Connection to $clientUrl failed, thus cloud synchronization plugin state is not restored.")
-                notifier.notifyAndLogError(exception.message!!, exception, logger)
+                val message = "Connection to $clientUrl failed, thus PersistableState is not restored."
+                notifier.notifyAndLogWarning(message, logger)
+                close(client, MpsToModelixMap)
                 return null
             }
 
@@ -125,8 +122,9 @@ data class PersistableState(
             }
             logger.debug { "Connection to model server is restored." }
 
-            lateinit var branchReference: BranchReference
-            lateinit var modules: List<AbstractModule>
+            var branchReference = BranchReference(RepositoryId("dummy"), "dummy")
+            var modules = listOf<AbstractModule>()
+            var bindings: Iterable<IBinding>? = null
             ActiveMpsProjectInjector.runMpsReadActionBlocking { repository ->
                 logger.debug { "Restoring SModules." }
                 modules = moduleIds.map {
@@ -140,25 +138,38 @@ data class PersistableState(
 
                 logger.debug { "Recreating Bindings." }
                 branchReference = BranchReference(repositoryId, branchName)
-                val bindings = syncService.rebindModules(client, branchReference, initialVersion, modules)
-                bindings?.let {
-                    logger.debug { "Bindings are recreated, now activating them." }
-                    it.forEach(IBinding::activate)
-                    logger.debug { "Bindings are activated." }
-                }
+                bindings = syncService.rebindModules(client, branchReference, initialVersion, modules)
             }
 
-            return RestoredStateContext(client, repositoryId, branchReference, modules)
+            return if (bindings == null) {
+                val message = "Rebinding modules failed, thus PersistableState is not restored."
+                notifier.notifyAndLogWarning(message, logger)
+                close(client, MpsToModelixMap)
+                null
+            } else {
+                logger.debug { "Bindings are recreated, now activating them." }
+                bindings!!.forEach(IBinding::activate)
+                logger.debug { "Bindings are activated." }
+                RestoredStateContext(client, repositoryId, branchReference, modules)
+            }
         } catch (t: Throwable) {
             val message =
                 "Error occurred, while restoring persisted state. Connection to model server, bindings and synchronization cache might not be established and activated. Please check logs for details."
             notifier.notifyAndLogError(message, t, logger)
 
-            client?.close()
-            MpsToModelixMap.clear()
+            close(client, MpsToModelixMap)
 
             return null
         }
+    }
+
+    private fun close(client: ModelClientV2?, cache: MpsToModelixMap) {
+        client?.let {
+            it.close()
+            val message = "Disconnected from server: ${it.baseUrl}"
+            notifier.notifyAndLogInfo(message, logger)
+        }
+        cache.clear()
     }
 }
 
