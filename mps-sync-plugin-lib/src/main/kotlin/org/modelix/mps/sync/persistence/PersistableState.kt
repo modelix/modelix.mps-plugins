@@ -109,10 +109,7 @@ data class PersistableState(
             logger.debug { "Restoring connection to model server." }
             client = syncService.connectModelServer(clientUrl, "")
             if (client == null) {
-                val message = "Connection to $clientUrl failed, thus PersistableState is not restored."
-                notifier.notifyAndLogWarning(message, logger)
-                close(client, MpsToModelixMap)
-                return null
+                throw IllegalStateException("Connection to $clientUrl failed, thus PersistableState is not restored.")
             }
 
             val repositoryId = RepositoryId(repositoryId)
@@ -141,17 +138,14 @@ data class PersistableState(
                 bindings = syncService.rebindModules(client, branchReference, initialVersion, modules)
             }
 
-            return if (bindings == null) {
-                val message = "Rebinding modules failed, thus PersistableState is not restored."
-                notifier.notifyAndLogWarning(message, logger)
-                close(client, MpsToModelixMap)
-                null
-            } else {
-                logger.debug { "Bindings are recreated, now activating them." }
-                bindings!!.forEach(IBinding::activate)
-                logger.debug { "Bindings are activated." }
-                RestoredStateContext(client, repositoryId, branchReference, modules)
+            if (bindings == null) {
+                throw IllegalStateException("Rebinding modules failed, thus PersistableState is not restored.")
             }
+
+            logger.debug { "Bindings are recreated, now activating them." }
+            bindings!!.forEach(IBinding::activate)
+            logger.debug { "Bindings are activated." }
+            return RestoredStateContext(client, repositoryId, branchReference, modules)
         } catch (t: Throwable) {
             val message =
                 "Error occurred, while restoring persisted state. Connection to model server, bindings and synchronization cache might not be established and activated. Please check logs for details."
