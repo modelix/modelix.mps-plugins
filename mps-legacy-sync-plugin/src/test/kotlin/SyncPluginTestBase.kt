@@ -51,6 +51,7 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.mps.ProjectAsNode
 import org.modelix.model.mpsadapters.mps.SModuleAsNode
+import org.modelix.model.server.Main.installStatusPages
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
@@ -145,6 +146,7 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
             install(io.ktor.server.websocket.WebSockets)
             install(io.ktor.server.resources.Resources)
             install(io.ktor.server.routing.IgnoreTrailingSlash)
+            installStatusPages()
             val storeClient = InMemoryStoreClient()
             storeClient.put("server-id", "sync-plugin-test")
             val repositoriesManager = RepositoriesManager(LocalModelClient(storeClient))
