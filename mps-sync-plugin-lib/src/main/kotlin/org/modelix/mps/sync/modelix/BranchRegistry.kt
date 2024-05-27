@@ -24,6 +24,7 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.CLVersion
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.RepositoryChangeListener
 import java.util.Objects
@@ -36,7 +37,8 @@ object BranchRegistry : AutoCloseable {
 
     private var branchReference: BranchReference? = null
 
-    private lateinit var model: ReplicatedModel
+    var model: ReplicatedModel? = null
+        private set
     private lateinit var branchListener: ModelixBranchListener
 
     // the MPS Project and its registered change listener
@@ -54,7 +56,7 @@ object BranchRegistry : AutoCloseable {
         branchReference: BranchReference,
         languageRepository: MPSLanguageRepository,
         targetProject: MPSProject,
-        replicatedModelCoroutineScope: CoroutineScope,
+        replicatedModelContext: ReplicatedModelInitContext,
     ): IBranch {
         if (this.branchReference == branchReference) {
             return branch!!
@@ -62,11 +64,11 @@ object BranchRegistry : AutoCloseable {
 
         close()
 
-        model = client.getReplicatedModel(branchReference, replicatedModelCoroutineScope)
-        branch = model.start()
-
-        branchListener = ModelixBranchListener(model, languageRepository)
-        branch!!.addListener(branchListener)
+        model = client.getReplicatedModel(branchReference, replicatedModelContext.coroutineScope)
+        branch = model!!.start(replicatedModelContext.initialVersion) { branch ->
+            branchListener = ModelixBranchListener(branch, languageRepository)
+            branch.addListener(branchListener)
+        }
 
         val repositoryChangeListener = RepositoryChangeListener(branch!!)
         targetProject.repository.addRepositoryListener(repositoryChangeListener)
@@ -85,8 +87,14 @@ object BranchRegistry : AutoCloseable {
         branch!!.removeListener(branchListener)
         project.repository.removeRepositoryListener(repoChangeListener)
 
-        model.dispose()
+        model?.dispose()
 
         branch = null
     }
 }
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+data class ReplicatedModelInitContext(
+    val coroutineScope: CoroutineScope,
+    val initialVersion: CLVersion? = null,
+)

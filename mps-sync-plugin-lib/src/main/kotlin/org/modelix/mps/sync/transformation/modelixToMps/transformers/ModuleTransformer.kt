@@ -199,15 +199,20 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             val iNode = branch.getNode(nodeId)
             val targetModuleId = getTargetModuleIdFromModuleDependency(iNode)
 
-            val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
-            val moduleReference = ModuleReference(moduleName, targetModuleId)
-            val reexport = (
-                iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
-                    ?: "false"
-                ).toBoolean()
-            parentModule.addDependency(moduleReference, reexport)
+            if (parentModule.moduleId != targetModuleId) {
+                val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
+                val moduleReference = ModuleReference(moduleName, targetModuleId)
+                val reexport = (
+                    iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
+                        ?: "false"
+                    ).toBoolean()
+                parentModule.addDependency(moduleReference, reexport)
 
-            nodeMap.put(parentModule, moduleReference, iNode.nodeIdAsLong())
+                nodeMap.put(parentModule, moduleReference, iNode.nodeIdAsLong())
+            } else {
+                // do not transform self-dependencies
+                logger.warn { "Self-dependency of Module ($parentModule) is ignored." }
+            }
 
             dependencyBinding
         }

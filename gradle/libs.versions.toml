@@ -31,3 +31,4 @@ ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref =
 
 zt-zip = { group = "org.zeroturnaround", name = "zt-zip", version = "1.17" }
 logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.5.6" }
+jackson-dataformat-xml = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-xml", version = "2.17.1" }
