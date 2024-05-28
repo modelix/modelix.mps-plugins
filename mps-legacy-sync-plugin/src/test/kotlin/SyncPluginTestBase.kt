@@ -57,6 +57,7 @@ import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.forContextRepository
 import org.modelix.mps.sync.ModelSyncService
 import org.modelix.mps.sync.api.IBinding
 import org.modelix.mps.sync.api.ISyncService
@@ -147,7 +148,7 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
             install(io.ktor.server.resources.Resources)
             install(io.ktor.server.routing.IgnoreTrailingSlash)
             installStatusPages()
-            val storeClient = InMemoryStoreClient()
+            val storeClient = InMemoryStoreClient().forContextRepository()
             storeClient.put("server-id", "sync-plugin-test")
             val repositoriesManager = RepositoriesManager(LocalModelClient(storeClient))
             ModelReplicationServer(repositoriesManager).init(this)
