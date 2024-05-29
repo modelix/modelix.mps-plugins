@@ -118,7 +118,7 @@ class SNodeFactory(
             mpsId
         } else {
             val id = iNode.nodeIdAsLong()
-            jetbrains.mps.smodel.SNodeId.Regular(id)
+            jetbrains.mps.smodel.SNodeId.Foreign(id.toString())
         }
     }
 
