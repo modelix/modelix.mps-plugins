@@ -14,7 +14,6 @@ import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.IModelClientV2
-import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.asData
@@ -41,8 +40,8 @@ suspend fun <T> IModelClientV2.runWrite(branchRef: BranchReference, body: (INode
 
 suspend fun <T> IModelClientV2.runWriteOnBranch(branchRef: BranchReference, body: (IBranch) -> T): T {
     val client = this
-    val baseVersion = client.pull(branchRef, null)
-    val branch = OTBranch(TreePointer(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), (client as ModelClientV2).store)
+    val baseVersion = client.pull(branchRef, null) as CLVersion
+    val branch = OTBranch(TreePointer(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), baseVersion.store)
     val result = branch.computeWrite {
         body(branch)
     }
@@ -51,7 +50,7 @@ suspend fun <T> IModelClientV2.runWriteOnBranch(branchRef: BranchReference, body
         id = client.getIdGenerator().generate(),
         author = client.getUserId(),
         tree = newTree as CLTree,
-        baseVersion = baseVersion as CLVersion?,
+        baseVersion = baseVersion,
         operations = ops.map { it.getOriginalOp() }.toTypedArray(),
     )
     client.push(branchRef, newVersion, baseVersion)
