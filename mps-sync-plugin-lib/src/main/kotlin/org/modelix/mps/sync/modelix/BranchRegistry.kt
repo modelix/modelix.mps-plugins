@@ -29,7 +29,10 @@ import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.RepositoryChangeListener
 import java.util.Objects
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 object BranchRegistry : AutoCloseable {
 
     var branch: IBranch? = null
@@ -64,10 +67,25 @@ object BranchRegistry : AutoCloseable {
 
         close()
 
-        model = client.getReplicatedModel(branchReference, replicatedModelContext.coroutineScope)
-        branch = model!!.start(replicatedModelContext.initialVersion) { branch ->
-            branchListener = ModelixBranchListener(branch, languageRepository)
-            branch.addListener(branchListener)
+        if (replicatedModelContext.initialVersion != null) {
+            model = ReplicatedModel(
+                client,
+                branchReference,
+                replicatedModelContext.coroutineScope,
+                replicatedModelContext.initialVersion,
+            )
+            /*
+             * Register branch listener before starting, because initialVersion contains the data already and we want
+             * to react to the changes that come after initialVersion.
+             */
+            branch = model!!.getBranch()
+            registerBranchListener(branch!!, languageRepository)
+            model!!.start()
+        } else {
+            model = client.getReplicatedModel(branchReference, replicatedModelContext.coroutineScope)
+            // Register branch listener after stating, because we will start with the latest version anyway.
+            branch = model!!.start()
+            registerBranchListener(branch!!, languageRepository)
         }
 
         val repositoryChangeListener = RepositoryChangeListener(branch!!)
@@ -90,6 +108,11 @@ object BranchRegistry : AutoCloseable {
         model?.dispose()
 
         branch = null
+    }
+
+    private fun registerBranchListener(branch: IBranch, languageRepository: MPSLanguageRepository) {
+        branchListener = ModelixBranchListener(branch, languageRepository)
+        branch.addListener(branchListener)
     }
 }
 
