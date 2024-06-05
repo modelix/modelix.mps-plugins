@@ -98,8 +98,7 @@ val testClassPartitionsToRunInIsolation = listOf(
 // Tests currently fail for these versions because of some deadlock.
 // The deadlock does not seem to be caused by our test code.
 // Even an unmodified `HeavyPlatformTestCase` hangs.
-// Disable tests in the CI, because they are failing with a timeout anyway. See MODELIX-931.
-val enableTests = System.getenv("GITHUB_ACTIONS") != "true" && !setOf(212, 213, 222).contains(mpsPlatformVersion)
+val enableTests = !setOf(212, 213, 222).contains(mpsPlatformVersion)
 
 tasks {
     patchPluginXml {

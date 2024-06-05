@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-import io.ktor.client.request.parameter
-import io.ktor.client.request.post
-import io.ktor.http.appendPathSegments
-import io.ktor.http.takeFrom
 import jetbrains.mps.smodel.SModelId
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.client2.ModelClientV2
@@ -67,13 +63,8 @@ class PersistedBindingsLoadingTest : SyncPluginTestBase("projectWithPersistedBin
 
     override suspend fun postModelServerSetup() {
         val moduleConcept = BuiltinLanguages.MPSRepositoryConcepts.Module
-        httpClient.post {
-            url {
-                takeFrom(baseUrl)
-                appendPathSegments("repositories", "${defaultBranchRef.repositoryId}", "init")
-                parameter("useRoleIds", "false")
-            }
-        }
+        // The legacy sync plugin uses V1-API, therefore `useLegacyGlobalStorage` needs to be used.
+        httpClient.initRepository(baseUrl, defaultBranchRef.repositoryId, false, useLegacyGlobalStorage = true)
         ModelClientV2.builder().url(baseUrl).client(httpClient).build().use { client ->
             client.init()
             client.runWrite(defaultBranchRef) { root ->

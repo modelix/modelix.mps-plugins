@@ -40,8 +40,9 @@ suspend fun <T> IModelClientV2.runWrite(branchRef: BranchReference, body: (INode
 
 suspend fun <T> IModelClientV2.runWriteOnBranch(branchRef: BranchReference, body: (IBranch) -> T): T {
     val client = this
-    val baseVersion = client.pull(branchRef, null) as CLVersion
-    val branch = OTBranch(TreePointer(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), baseVersion.store)
+    val baseVersion = client.pull(branchRef, null)
+    val store = (baseVersion as CLVersion).store
+    val branch = OTBranch(TreePointer(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), store)
     val result = branch.computeWrite {
         body(branch)
     }
@@ -112,13 +113,21 @@ fun IBranch.asData() = ModelData(
     root = getRootNode().asData(),
 )
 
-suspend fun HttpClient.initRepository(baseUrl: String, repository: RepositoryId, useRoleIds: Boolean) {
+suspend fun HttpClient.initRepository(
+    baseUrl: String,
+    repository: RepositoryId,
+    useRoleIds: Boolean,
+    useLegacyGlobalStorage: Boolean,
+) {
     post {
         url {
             takeFrom(baseUrl)
             appendPathSegmentsEncodingSlash("repositories", repository.id, "init")
             if (!useRoleIds) {
                 parameter("useRoleIds", useRoleIds.toString())
+            }
+            if (useLegacyGlobalStorage) {
+                parameter("legacyGlobalStorage", useLegacyGlobalStorage.toString())
             }
         }
     }
