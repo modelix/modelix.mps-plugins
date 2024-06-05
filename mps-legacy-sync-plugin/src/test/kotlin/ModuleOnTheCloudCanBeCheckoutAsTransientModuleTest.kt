@@ -47,7 +47,8 @@ abstract class ModuleOnTheCloudCanBeCheckoutAsTransientModuleTest(val useRoleIds
         )
         println(json.encodeToString(dataForServerInit))
         val moduleNodeIdOnServer = runWithNewConnection { client ->
-            httpClient.initRepository(baseUrl, defaultBranchRef.repositoryId, useRoleIds)
+            // TODO Olekz check and comment, why this is needed
+            httpClient.initRepository(baseUrl, defaultBranchRef.repositoryId, useRoleIds, useLegacyGlobalStorage = true)
             // client.initRepository(defaultBranchRef.repositoryId) // TODO , useRoleIds = useRoleIds)
             client.runWriteOnBranch(defaultBranchRef) { branch ->
                 dataForServerInit.load(branch)

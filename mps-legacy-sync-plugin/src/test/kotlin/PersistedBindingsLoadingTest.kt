@@ -72,6 +72,8 @@ class PersistedBindingsLoadingTest : SyncPluginTestBase("projectWithPersistedBin
                 takeFrom(baseUrl)
                 appendPathSegments("repositories", "${defaultBranchRef.repositoryId}", "init")
                 parameter("useRoleIds", "false")
+                // TODO Olekz check and comment, why this is needed
+                parameter("legacyGlobalStorage", "true")
             }
         }
         ModelClientV2.builder().url(baseUrl).client(httpClient).build().use { client ->
