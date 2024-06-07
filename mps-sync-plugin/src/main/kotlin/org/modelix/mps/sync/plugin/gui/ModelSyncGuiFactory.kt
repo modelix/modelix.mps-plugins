@@ -64,7 +64,10 @@ import javax.swing.JList
 import javax.swing.JPanel
 import javax.swing.JSeparator
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
     private lateinit var toolWindowContent: ModelSyncGui
@@ -151,10 +154,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
             // trigger state reload
             val loadedState = activeProject.service<SyncPluginState>()
-            loadedState.let { state ->
-                state.latestRestoredContext?.let { context ->
-                    setActiveConnection(context.modelClient, context.repositoryId, context.branchReference)
-                }
+            loadedState.latestRestoredContext?.let { context ->
+                setActiveConnection(context.modelClient, context.repositoryId, context.branchReference)
             }
         }
 
