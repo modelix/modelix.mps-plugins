@@ -119,7 +119,7 @@ data class PersistableState(
             }
             logger.debug { "Connection to model server is restored." }
 
-            var branchReference = BranchReference(RepositoryId("dummy"), "dummy")
+            val branchReference = BranchReference(repositoryId, branchName)
             var modules = listOf<AbstractModule>()
             var bindings: Iterable<IBinding>? = null
             ActiveMpsProjectInjector.runMpsReadActionBlocking { repository ->
