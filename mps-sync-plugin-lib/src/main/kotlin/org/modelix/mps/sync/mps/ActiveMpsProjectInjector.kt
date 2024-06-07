@@ -22,9 +22,11 @@ import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.MPSProject
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import java.util.concurrent.CompletableFuture
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 object ActiveMpsProjectInjector {
 
     // TODO what shall happen if we switch MPSProjects? Some threads might still be working on the old MPSProject. (with other words: search for all places where this field is referred to and think about if it can cause trouble if we change this reference to another one suddenly..)
@@ -59,21 +61,14 @@ object ActiveMpsProjectInjector {
         )
     }
 
-    fun runMpsReadActionBlocking(action: (SRepository) -> Unit) {
-        val busyWait = CompletableFuture<Any?>()
+    fun runMpsReadAction(action: (SRepository) -> Unit) {
         if (activeMpsProject == null) {
-            busyWait.completeExceptionally(IllegalStateException("Active MPS project is null."))
+            throw IllegalStateException("Active MPS project is null.")
         } else {
             val repository = activeMpsProject!!.repository
             repository.modelAccess.runReadAction {
-                try {
-                    action(repository)
-                    busyWait.complete(null)
-                } catch (t: Throwable) {
-                    busyWait.completeExceptionally(t)
-                }
+                action(repository)
             }
         }
-        busyWait.get()
     }
 }

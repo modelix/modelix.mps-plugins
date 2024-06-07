@@ -71,7 +71,7 @@ data class PersistableState(
             moduleIds += it.module.moduleId.toString()
         }
 
-        ActiveMpsProjectInjector.runMpsReadActionBlocking {
+        ActiveMpsProjectInjector.runMpsReadAction {
             synchronizationCache = MpsToModelixMap.Serializer().serialize()
         }
 
@@ -94,7 +94,7 @@ data class PersistableState(
 
             var cacheIsEmpty = synchronizationCache.isBlank()
             if (!cacheIsEmpty) {
-                ActiveMpsProjectInjector.runMpsReadActionBlocking {
+                ActiveMpsProjectInjector.runMpsReadAction {
                     MpsToModelixMap.Serializer().deserialize(synchronizationCache)
                     cacheIsEmpty = MpsToModelixMap.isEmpty()
                     logger.debug { "Synchronization cache is restored." }
@@ -122,7 +122,7 @@ data class PersistableState(
             val branchReference = BranchReference(repositoryId, branchName)
             var modules = listOf<AbstractModule>()
             var bindings: Iterable<IBinding>? = null
-            ActiveMpsProjectInjector.runMpsReadActionBlocking { repository ->
+            ActiveMpsProjectInjector.runMpsReadAction { repository ->
                 logger.debug { "Restoring SModules." }
                 modules = moduleIds.map {
                     val id = PersistenceFacade.getInstance().createModuleId(it)
