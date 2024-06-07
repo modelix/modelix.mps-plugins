@@ -134,7 +134,6 @@ data class PersistableState(
                 logger.debug { "${modules.count()} SModules are restored." }
 
                 logger.debug { "Recreating Bindings." }
-                branchReference = BranchReference(repositoryId, branchName)
                 bindings = syncService.rebindModules(client, branchReference, initialVersion, modules)
             }
 
