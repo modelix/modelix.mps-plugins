@@ -34,7 +34,10 @@ import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchroniz
 import java.io.IOException
 import java.net.URL
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
 
     private val logger = KotlinLogging.logger {}
@@ -152,12 +155,15 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         branchReference: BranchReference,
         initialVersion: CLVersion,
         modules: Iterable<AbstractModule>,
-    ): Iterable<IBinding> {
-        val numberOfModules = modules.count()
-        logger.info { "Restoring Bindings for $numberOfModules Modules and their Models." }
+    ): Iterable<IBinding>? {
+        if (!modules.iterator().hasNext()) {
+            val message =
+                "The list is restorable Modules is empty, therefore no Module- or Model Binding is restored for them."
+            notifierInjector.notifyAndLogWarning(message, logger)
+            return null
+        }
 
         val branch = connectToBranch(client, branchReference, initialVersion)
-
         val bindings = mutableListOf<IBinding>()
         modules.forEach { module ->
             val moduleBinding = ModuleBinding(module, branch)
@@ -176,17 +182,8 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
                 bindings.add(binding)
             }
 
+            notifyUserAboutBindings(listOf(moduleBinding), module.moduleName)
             bindings.add(moduleBinding)
-        }
-
-        val hasAnyBinding = bindings.iterator().hasNext()
-        if (hasAnyBinding) {
-            val message = "Module- and Model Bindings for $numberOfModules Modules are restored."
-            notifierInjector.notifyAndLogInfo(message, logger)
-        } else {
-            val message =
-                "No Module- or Model Binding is restored for $numberOfModules Modules. This might be due to an error."
-            notifierInjector.notifyAndLogWarning(message, logger)
         }
 
         return bindings
@@ -202,12 +199,12 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         @Suppress("UNCHECKED_CAST")
         val bindings = ModuleSynchronizer(branch).addModule(module, true).getResult().get() as Iterable<IBinding>
 
-        notifyUserAboutBindings(bindings, module.moduleName ?: "null")
+        notifyUserAboutBindings(bindings, module.moduleName)
 
         return bindings
     }
 
-    private fun notifyUserAboutBindings(bindings: Iterable<IBinding>, moduleName: String) {
+    private fun notifyUserAboutBindings(bindings: Iterable<IBinding>, moduleName: String? = "null") {
         val hasAnyBinding = bindings.iterator().hasNext()
         if (hasAnyBinding) {
             val message = "Module- and Model Bindings for Module '$moduleName' are created."
