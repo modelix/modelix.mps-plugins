@@ -14,6 +14,7 @@ val mpsZip by configurations.creating
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(libs.kotlin.logging.microutils)
+    implementation(libs.kotlin.serialization.json)
     implementation(libs.jackson.dataformat.xml)
 
     implementation(libs.modelix.model.api)

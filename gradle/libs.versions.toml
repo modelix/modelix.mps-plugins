@@ -8,6 +8,7 @@ npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.2" }
 modelixCore = "8.1.2"
 kotlinCoroutines="1.8.1"
 ktor="2.3.11"
+kotlinSerializationJson="1.7.0"
 
 [libraries]
 modelix-model-api = { group = "org.modelix", name = "model-api", version.ref = "modelixCore" }
@@ -26,6 +27,7 @@ kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version =
 kotlin-logging-microutils = { group = "io.github.microutils", name = "kotlin-logging", version = "3.0.5" }
 kotlin-html = "org.jetbrains.kotlinx:kotlinx-html:0.11.0"
 kotlin-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinCoroutines" }
+kotlin-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinSerializationJson" }
 
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 
