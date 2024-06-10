@@ -36,16 +36,21 @@ import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.clear
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.isEmpty
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.isMappedToModelix
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.isMappedToMps
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.remove
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.synchronizedMap
 
 /**
  * WARNING:
  * - use with caution, otherwise this cache may cause memory leaks
- * - if you add a new Map as a field in the class, then please also add it to the `remove`, `isMappedToMps`, and
- * `isMappedToModelix`. `isEmpty`, `clear` methods below
- * - if you want to persist the new field into a file, then add it to the `MpsToModelixMap.Serializer.serialize` and
- * `MpsToModelixMap.Serializer.deserialize` methods below.
+ * - if you add a new Map as a field in the class, then please also add it to the [remove], [isMappedToMps],
+ * [isMappedToModelix], [isEmpty], [clear] methods below.
+ * - if you want to persist the new field into a file, then add it to the [MpsToModelixMap.Serializer.serialize] and
+ * [MpsToModelixMap.Serializer.deserialize] methods below.
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -266,10 +271,10 @@ object MpsToModelixMap {
     }
 
     /**
-     * Serializes the `MpsToModelixMap` class to JSON.
+     * Serializes the [MpsToModelixMap] class to JSON.
      *
      * Before using the serializer, do not forget to enable `allowStructuredMapKeys = true` in your JSON builder.
-     * I.e. `Json { allowStructuredMapKeys = true }` or use `MpsToModelixMap.Serializer.DEFAULT_JSON_BUILDER`.
+     * I.e. `Json { allowStructuredMapKeys = true }` or use [MpsToModelixMap.Serializer.DEFAULT_JSON_BUILDER].
      *
      * The serialized `MpsToModelixMap` will look like this:
      *
@@ -278,12 +283,13 @@ object MpsToModelixMap {
      *    "FIELD_NAME_1":[{KEY_1_1}, VALUE_1_1, {KEY_1_2}, VALUE_1_2],
      *    "FIELD_NAME_2":[{KEY_2_1}, VALUE_2_1, {KEY_2_2}, VALUE_2_2],
      * }
+     * ```
      *
-     * where `FIELD_NAME_x` is the name of a field in `MpsToModelixMap`. Because all Map fields have a composite key,
+     * where `FIELD_NAME_x` is the name of a field in [MpsToModelixMap]. Because all Map fields have a composite key,
      * therefore kotlinx serializes them in an array like `[{KEY_1}, VALUE_1, {KEY_2}, VALUE_2, ...]`. KEY_1 is the
      * JSON-serialized composite key and VALUE_1 is the serialized primitive value (in this case Long).
      *
-     * Note, that if the serialized `MpsToModelixMap` is stored as a String, then `"` will be escaped as `&quot;` or
+     * Note, that if the serialized [MpsToModelixMap] is stored as a String, then `"` will be escaped as `&quot;` or
      * `\"`. Therefore, before debugging, replace all `&quot;` and `\"` with `"` to make the escaped serialized string
      * human-readable.
      */

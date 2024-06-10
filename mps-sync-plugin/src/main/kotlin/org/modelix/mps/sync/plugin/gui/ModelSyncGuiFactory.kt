@@ -155,7 +155,8 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             // trigger state reload
             val loadedState = activeProject.service<SyncPluginState>()
             loadedState.latestRestoredContext?.let { context ->
-                setActiveConnection(context.modelClient, context.repositoryId, context.branchReference)
+                val branch = context.branchReference
+                setActiveConnection(context.modelClient, branch.repositoryId, branch)
             }
         }
 

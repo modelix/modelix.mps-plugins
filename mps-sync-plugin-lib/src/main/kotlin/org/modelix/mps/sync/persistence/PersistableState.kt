@@ -46,6 +46,13 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
  * - Mutable collections will not be persisted!!!
  * - Maps and Collections will only be persisted 2 layers deep (List<List<String>> works, but List<List<List<String>>> not)
  * - Pairs will not be persisted
+ *
+ * @property clientUrl the URL of the model server to which we were connected
+ * @property repositoryId the ID of the modelix repository to which we were connected
+ * @property branchName the name of the branch in the modelix branch
+ * @property localVersion the latest version hash we know from the branch
+ * @property moduleIds the IDs of the Modules that were synchronized
+ * @property synchronizationCache the [MpsToModelixMap] serialized into a string
  */
 data class PersistableState(
     // modelix connection
@@ -64,6 +71,12 @@ data class PersistableState(
     private val logger = KotlinLogging.logger {}
     private val notifier = InjectableNotifierWrapper
 
+    /**
+     * Initializes the [PersistableState]'s fields with values fetched from the internal state of the modelix sync lib.
+     * The method overrides the values of the [this]' fields.
+     *
+     * @return this with initialized fields, or the original state if [BranchRegistry.model] is null
+     */
     fun fetchState(): PersistableState {
         val replicatedModel = BranchRegistry.model
         if (replicatedModel == null) {
@@ -92,6 +105,19 @@ data class PersistableState(
         return this
     }
 
+    /**
+     * Restores the internal state of the modelix sync lib via the @param syncService, in the following order:
+
+     * 1. deserializes [PersistableState.synchronizationCache] into a [MpsToModelixMap],
+     * 2. connects to the model server denoted by [PersistableState.clientUrl],
+     * 3. loads the specific version ([PersistableState.localVersion]) of the [PersistableState.repositoryId],
+     * 4. connects to the branch ([PersistableState.branchName])
+     * 5. creates bindings for the synchronized modules ([PersistableState.moduleIds])
+     *
+     * @param syncService the interface to the modelix sync lib to restore its state
+     *
+     * @return some context statistics about the restored state
+     */
     fun restoreState(syncService: IRebindModulesSyncService): RestoredStateContext? {
         var client: ModelClientV2? = null
 
@@ -159,7 +185,7 @@ data class PersistableState(
             logger.debug { "Bindings are recreated, now activating them." }
             bindings!!.forEach(IBinding::activate)
             logger.debug { "Bindings are activated." }
-            return RestoredStateContext(client, repositoryId, branchReference, modules)
+            return RestoredStateContext(client, branchReference, modules)
         } catch (t: Throwable) {
             val message =
                 "Error occurred, while restoring persisted state. Connection to model server, bindings and synchronization cache might not be established and activated. Please check logs for details."
@@ -187,10 +213,16 @@ data class PersistableState(
     }
 }
 
+/**
+ * Some context after the [PersistableState] has restored the sync plugin's internal state.
+ *
+ * @property modelClient the client that is connected to the model server
+ * @property branchReference the branch in the repository to which we are connected
+ * @property modules the MPS modules for which we established the bindings
+ */
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
 data class RestoredStateContext(
     val modelClient: ModelClientV2,
-    val repositoryId: RepositoryId,
     val branchReference: BranchReference,
     val modules: List<AbstractModule>,
 )
