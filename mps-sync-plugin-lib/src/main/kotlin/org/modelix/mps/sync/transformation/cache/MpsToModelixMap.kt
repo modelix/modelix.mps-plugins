@@ -16,6 +16,16 @@
 
 package org.modelix.mps.sync.transformation.cache
 
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.builtins.LongAsStringSerializer
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.encoding.CompositeDecoder.Companion.DECODE_DONE
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encoding.decodeStructure
+import kotlinx.serialization.encoding.encodeStructure
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelReference
@@ -23,8 +33,8 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
+import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.synchronizedMap
 
@@ -36,7 +46,10 @@ import org.modelix.mps.sync.util.synchronizedMap
  * - if you want to persist the new field into a file, then add it to the `MpsToModelixMap.Serializer.serialize` and
  * `MpsToModelixMap.Serializer.deserialize` methods below.
  */
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 object MpsToModelixMap {
 
     private val nodeToModelixId = synchronizedMap<SNode, Long>()
@@ -251,212 +264,154 @@ object MpsToModelixMap {
         objectsRelatedToAModule.clear()
     }
 
-    class Serializer {
+    @UnstableModelixFeature(
+        reason = "The new modelix MPS plugin is under construction",
+        intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+    )
+    class Serializer(repository: SRepository) : KSerializer<MpsToModelixMap> {
 
-        companion object {
-            private const val MPS_TO_MODELIX_MAP_PREFIX = "MpsToModelixMap: "
-            private const val NODE_TO_MODELIX_ID_PREFIX = "nodeToModelixId: "
-            private const val MODEL_TO_MODELIX_ID_PREFIX = "modelToModelixId: "
-            private const val MODULE_TO_MODELIX_ID_PREFIX = "moduleToModelixId: "
-            private const val MODULE_WITH_OUTGOING_MODULE_REFERENCE_TO_MODELIX_ID_PREFIX =
-                "moduleWithOutgoingModuleReferenceToModelixId: "
-            private const val MODEL_WITH_OUTGOING_MODULE_REFERENCE_TO_MODELIX_ID_PREFIX =
-                "modelWithOutgoingModuleReferenceToModelixId: "
-            private const val MODEL_WITH_OUTGOING_MODEL_REFERENCE_TO_MODELIX_ID_PREFIX =
-                "modelWithOutgoingModelReferenceToModelixId: "
+        private val nodeToModelixIdSerializer = MapSerializer(SNodeSerializer(repository), LongAsStringSerializer)
+        private val modelToModelixIdSerializer = MapSerializer(SModelSerializer(repository), LongAsStringSerializer)
+        private val moduleToModelixIdSerializer = MapSerializer(SModuleSerializer(repository), LongAsStringSerializer)
+        private val moduleWithOutgoingModuleReferenceToModelixIdSerializer =
+            MapSerializer(ModuleWithModuleReferenceSerializer(repository), LongAsStringSerializer)
+        private val modelWithOutgoingModuleReferenceToModelixIdSerializer =
+            MapSerializer(ModelWithModuleReferenceSerializer(repository), LongAsStringSerializer)
+        private val modelWithOutgoingModelReferenceToModelixIdSerializer =
+            MapSerializer(ModelWithModelReferenceSerializer(repository), LongAsStringSerializer)
 
-            private const val MODELIX_ID_SEPARATOR = "modelixId"
-            private const val SEPARATOR_INSIDE_RECORDS = ", $MODELIX_ID_SEPARATOR: "
-            private const val RECORD_PREFIX = "["
-            private const val RECORD_SUFFIX = "]"
-            private const val SEPARATOR_BETWEEN_RECORDS = " % "
-
-            private const val FIELD_PREFIX = "["
-            private const val FIELD_SUFFIX = "]"
-            private const val SEPARATOR_BETWEEN_FIELDS = "; "
-
-            private const val MAP_PREFIX = FIELD_PREFIX + MPS_TO_MODELIX_MAP_PREFIX
-            private const val MAP_SUFFIX = "]"
+        override val descriptor = buildClassSerialDescriptor(MpsToModelixMap::class.simpleName!!) {
+            element("nodeToModelixId", nodeToModelixIdSerializer.descriptor)
+            element("modelToModelixId", modelToModelixIdSerializer.descriptor)
+            element("moduleToModelixId", moduleToModelixIdSerializer.descriptor)
+            element(
+                "moduleWithOutgoingModuleReferenceToModelixId",
+                moduleWithOutgoingModuleReferenceToModelixIdSerializer.descriptor,
+            )
+            element(
+                "modelWithOutgoingModuleReferenceToModelixId",
+                modelWithOutgoingModuleReferenceToModelixIdSerializer.descriptor,
+            )
+            element(
+                "modelWithOutgoingModelReferenceToModelixId",
+                modelWithOutgoingModelReferenceToModelixIdSerializer.descriptor,
+            )
         }
 
-        private val repository
-            get() = ActiveMpsProjectInjector.activeMpsProject?.repository
-
-        private val nodeSerializer
-            get() = SNodeSerializer(repository)
-
-        private val modelSerializer
-            get() = SModelSerializer(repository)
-
-        private val moduleSerializer
-            get() = SModuleSerializer(repository)
-
-        private val moduleWithModuleReferenceSerializer
-            get() = ModuleWithModuleReferenceSerializer(repository)
-
-        private val modelWithModuleReferenceSerializer
-            get() = ModelWithModuleReferenceSerializer(repository)
-
-        private val modelWithModelReferenceSerializer
-            get() = ModelWithModelReferenceSerializer(repository)
-
-        fun serialize(): String {
-            /**
-             * serialized structure:
-             * [MpsToModelixMap: [nodeToModelixId: [[Node], modelixId: 42], [[Node], modelixId: 43]], ..., [modelWithOutgoingModuleReferenceToModelixId: [[ModuleWithModuleReference], modelixId: 44], [[ModuleWithModuleReference], modelixId: 45]]
-             */
-
-            val sb = StringBuilder(MAP_PREFIX)
-            serialize(nodeToModelixId, NODE_TO_MODELIX_ID_PREFIX, sb, nodeSerializer)
-            serialize(modelToModelixId, MODEL_TO_MODELIX_ID_PREFIX, sb, modelSerializer)
-            serialize(moduleToModelixId, MODULE_TO_MODELIX_ID_PREFIX, sb, moduleSerializer)
-            serialize(
+        override fun serialize(encoder: Encoder, value: MpsToModelixMap) = encoder.encodeStructure(descriptor) {
+            encodeSerializableElement(descriptor, 0, nodeToModelixIdSerializer, nodeToModelixId)
+            encodeSerializableElement(descriptor, 1, modelToModelixIdSerializer, modelToModelixId)
+            encodeSerializableElement(descriptor, 2, moduleToModelixIdSerializer, moduleToModelixId)
+            encodeSerializableElement(
+                descriptor,
+                3,
+                moduleWithOutgoingModuleReferenceToModelixIdSerializer,
                 moduleWithOutgoingModuleReferenceToModelixId,
-                MODULE_WITH_OUTGOING_MODULE_REFERENCE_TO_MODELIX_ID_PREFIX,
-                sb,
-                moduleWithModuleReferenceSerializer,
             )
-            serialize(
+            encodeSerializableElement(
+                descriptor,
+                4,
+                modelWithOutgoingModuleReferenceToModelixIdSerializer,
                 modelWithOutgoingModuleReferenceToModelixId,
-                MODEL_WITH_OUTGOING_MODULE_REFERENCE_TO_MODELIX_ID_PREFIX,
-                sb,
-                modelWithModuleReferenceSerializer,
             )
-            serialize(
+            encodeSerializableElement(
+                descriptor,
+                5,
+                modelWithOutgoingModelReferenceToModelixIdSerializer,
                 modelWithOutgoingModelReferenceToModelixId,
-                MODEL_WITH_OUTGOING_MODEL_REFERENCE_TO_MODELIX_ID_PREFIX,
-                sb,
-                modelWithModelReferenceSerializer,
             )
-            sb.setLength(sb.length - SEPARATOR_BETWEEN_FIELDS.length)
-
-            sb.append(MAP_SUFFIX)
-            return sb.toString()
         }
 
-        fun deserialize(from: String): MpsToModelixMap {
-            val rest = from.removePrefix(MAP_PREFIX).removeSuffix(MAP_SUFFIX)
-            val split = rest.split(SEPARATOR_BETWEEN_FIELDS)
-            require(split.size == 6) { "After splitting string ($from) by separator, it must consist of 6 parts, but it consist of ${split.size} parts." }
+        override fun deserialize(decoder: Decoder): MpsToModelixMap {
+            return decoder.decodeStructure(descriptor) {
+                var nodeToModelixIdLocal = mapOf<SNode, Long>()
+                var modelToModelixIdLocal = mapOf<SModel, Long>()
+                var moduleToModelixIdLocal = mapOf<SModule, Long>()
+                var moduleWithOutgoingModuleReferenceToModelixIdLocal = mapOf<ModuleWithModuleReference, Long>()
+                var modelWithOutgoingModuleReferenceToModelixIdLocal = mapOf<ModelWithModuleReference, Long>()
+                var modelWithOutgoingModelReferenceToModelixIdLocal = mapOf<ModelWithModelReference, Long>()
 
-            // 1. deserialize all values locally
-            val nodeToModelixIdLocal = mutableMapOf<SNode, Long>()
-            deserialize(split[0], NODE_TO_MODELIX_ID_PREFIX, nodeToModelixIdLocal, nodeSerializer)
+                // 1. deserialize all values locally
+                loop@ while (true) {
+                    when (val index = decodeElementIndex(descriptor)) {
+                        DECODE_DONE -> break@loop
+                        0 -> nodeToModelixIdLocal = decodeSerializableElement(descriptor, 0, nodeToModelixIdSerializer)
+                        1 ->
+                            modelToModelixIdLocal =
+                                decodeSerializableElement(descriptor, 1, modelToModelixIdSerializer)
 
-            val modelToModelixIdLocal = mutableMapOf<SModel, Long>()
-            deserialize(split[1], MODEL_TO_MODELIX_ID_PREFIX, modelToModelixIdLocal, modelSerializer)
+                        2 ->
+                            moduleToModelixIdLocal =
+                                decodeSerializableElement(descriptor, 2, moduleToModelixIdSerializer)
 
-            val moduleToModelixIdLocal = mutableMapOf<SModule, Long>()
-            deserialize(split[2], MODULE_TO_MODELIX_ID_PREFIX, moduleToModelixIdLocal, moduleSerializer)
+                        3 -> moduleWithOutgoingModuleReferenceToModelixIdLocal = decodeSerializableElement(
+                            descriptor,
+                            3,
+                            moduleWithOutgoingModuleReferenceToModelixIdSerializer,
+                        )
 
-            val moduleWithOutgoingModuleReferenceToModelixIdLocal = mutableMapOf<ModuleWithModuleReference, Long>()
-            deserialize(
-                split[3],
-                MODULE_WITH_OUTGOING_MODULE_REFERENCE_TO_MODELIX_ID_PREFIX,
-                moduleWithOutgoingModuleReferenceToModelixIdLocal,
-                moduleWithModuleReferenceSerializer,
-            )
+                        4 -> modelWithOutgoingModuleReferenceToModelixIdLocal = decodeSerializableElement(
+                            descriptor,
+                            4,
+                            modelWithOutgoingModuleReferenceToModelixIdSerializer,
+                        )
 
-            val modelWithOutgoingModuleReferenceToModelixIdLocal = mutableMapOf<ModelWithModuleReference, Long>()
-            deserialize(
-                split[4],
-                MODEL_WITH_OUTGOING_MODULE_REFERENCE_TO_MODELIX_ID_PREFIX,
-                modelWithOutgoingModuleReferenceToModelixIdLocal,
-                modelWithModuleReferenceSerializer,
-            )
+                        5 -> modelWithOutgoingModelReferenceToModelixIdLocal = decodeSerializableElement(
+                            descriptor,
+                            5,
+                            modelWithOutgoingModelReferenceToModelixIdSerializer,
+                        )
 
-            val modelWithOutgoingModelReferenceToModelixIdLocal = mutableMapOf<ModelWithModelReference, Long>()
-            deserialize(
-                split[5],
-                MODEL_WITH_OUTGOING_MODEL_REFERENCE_TO_MODELIX_ID_PREFIX,
-                modelWithOutgoingModelReferenceToModelixIdLocal,
-                modelWithModelReferenceSerializer,
-            )
+                        else -> throw SerializationException("Unexpected index $index")
+                    }
+                }
 
-            // 2. load these values into the map
-            nodeToModelixIdLocal.forEach { put(it.key, it.value) }
-            modelToModelixIdLocal.forEach { put(it.key, it.value) }
-            moduleToModelixIdLocal.forEach { put(it.key, it.value) }
-            moduleWithOutgoingModuleReferenceToModelixIdLocal.forEach {
-                put(
-                    it.key.source,
-                    it.key.moduleReference,
-                    it.value,
-                )
-            }
-            modelWithOutgoingModuleReferenceToModelixIdLocal.forEach {
-                put(
-                    it.key.source,
-                    it.key.moduleReference,
-                    it.value,
-                )
-            }
-            modelWithOutgoingModelReferenceToModelixIdLocal.forEach {
-                put(
-                    it.key.source,
-                    it.key.modelReference,
-                    it.value,
-                )
-            }
+                // 2. load these values into the map
+                nodeToModelixIdLocal.forEach { put(it.key, it.value) }
+                modelToModelixIdLocal.forEach { put(it.key, it.value) }
+                moduleToModelixIdLocal.forEach { put(it.key, it.value) }
+                moduleWithOutgoingModuleReferenceToModelixIdLocal.forEach {
+                    put(
+                        it.key.source,
+                        it.key.moduleReference,
+                        it.value,
+                    )
+                }
+                modelWithOutgoingModuleReferenceToModelixIdLocal.forEach {
+                    put(
+                        it.key.source,
+                        it.key.moduleReference,
+                        it.value,
+                    )
+                }
+                modelWithOutgoingModelReferenceToModelixIdLocal.forEach {
+                    put(
+                        it.key.source,
+                        it.key.modelReference,
+                        it.value,
+                    )
+                }
 
-            return MpsToModelixMap
-        }
-
-        private fun <T> serialize(
-            values: Map<T, Long>,
-            prefix: String,
-            sb: StringBuilder,
-            serializer: org.modelix.mps.sync.transformation.cache.Serializer<T>,
-        ) {
-            sb.append(FIELD_PREFIX)
-            sb.append(prefix)
-            values.entries.forEach {
-                sb.append(RECORD_PREFIX)
-                sb.append(serializer.serialize(it.key))
-                sb.append(SEPARATOR_INSIDE_RECORDS)
-                sb.append(it.value)
-                sb.append(RECORD_SUFFIX)
-                sb.append(SEPARATOR_BETWEEN_RECORDS)
-            }
-            if (values.entries.isNotEmpty()) {
-                // remove last character
-                sb.setLength(sb.length - SEPARATOR_BETWEEN_RECORDS.length)
-            }
-
-            sb.append(FIELD_SUFFIX)
-            sb.append(SEPARATOR_BETWEEN_FIELDS)
-        }
-
-        private fun <T> deserialize(
-            from: String,
-            prefix: String,
-            resultCollector: MutableMap<T, Long>,
-            deserializer: org.modelix.mps.sync.transformation.cache.Serializer<T>,
-        ) {
-            val cleaned = from.removePrefix(FIELD_PREFIX + prefix).removeSuffix(FIELD_SUFFIX)
-            if (cleaned.isBlank()) {
-                return
-            }
-
-            cleaned.split(SEPARATOR_BETWEEN_RECORDS).forEach {
-                val insideValues = it.split(SEPARATOR_INSIDE_RECORDS)
-                require(insideValues.size == 2) { "There must be 2 parts after splitting inside values. But it has ${insideValues.size} parts. See string: $it" }
-
-                val serialized = insideValues[0].removePrefix(RECORD_PREFIX)
-                val deserialized = deserializer.deserializeNotNull(serialized)
-
-                val modelixId = insideValues[1].removeSuffix(RECORD_SUFFIX).toLong()
-                resultCollector[deserialized] = modelixId
+                MpsToModelixMap
             }
         }
     }
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class ModelWithModelReference(val source: SModel, val modelReference: SModelReference)
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class ModelWithModuleReference(val source: SModel, val moduleReference: SModuleReference)
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class ModuleWithModuleReference(val source: SModule, val moduleReference: SModuleReference)

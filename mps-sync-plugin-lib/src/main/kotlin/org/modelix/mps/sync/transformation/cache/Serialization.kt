@@ -3,7 +3,6 @@ package org.modelix.mps.sync.transformation.cache
 import jetbrains.mps.extapi.model.SModelBase
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.descriptors.element
 import kotlinx.serialization.encoding.CompositeDecoder.Companion.DECODE_DONE
@@ -27,7 +26,7 @@ import org.modelix.mps.sync.mps.util.getModelixId
 )
 internal class SModuleSerializer(private val repository: SRepository) : KSerializer<SModule> {
 
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor(SModule::class.simpleName!!) {
+    override val descriptor = buildClassSerialDescriptor(SModule::class.simpleName!!) {
         element<String>("id")
     }
 
@@ -62,7 +61,7 @@ internal class SModelSerializer(repository: SRepository) : KSerializer<SModel> {
 
     private val parentModuleSerializer = SModuleSerializer(repository)
 
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor(SModel::class.simpleName!!) {
+    override val descriptor = buildClassSerialDescriptor(SModel::class.simpleName!!) {
         element<String>("id")
         element<SModule>("parentModule")
     }
@@ -101,7 +100,7 @@ internal class SNodeSerializer(repository: SRepository) : KSerializer<SNode> {
 
     private val parentModelSerializer = SModelSerializer(repository)
 
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor(SNode::class.simpleName!!) {
+    override val descriptor = buildClassSerialDescriptor(SNode::class.simpleName!!) {
         element<String>("id")
         element<SModel>("parentModel")
     }
@@ -140,7 +139,7 @@ internal class SNodeSerializer(repository: SRepository) : KSerializer<SNode> {
 )
 internal class SModelReferenceSerializer(private val repository: SRepository) : KSerializer<SModelReference> {
 
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor(SModelReference::class.simpleName!!) {
+    override val descriptor = buildClassSerialDescriptor(SModelReference::class.simpleName!!) {
         element<String>("modelId")
         element<String>("parentModuleId")
     }
@@ -183,7 +182,7 @@ internal class SModelReferenceSerializer(private val repository: SRepository) : 
 )
 internal class SModuleReferenceSerializer(private val repository: SRepository) : KSerializer<SModuleReference> {
 
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor(SModuleReference::class.simpleName!!) {
+    override val descriptor = buildClassSerialDescriptor(SModuleReference::class.simpleName!!) {
         element<String>("moduleId")
     }
 
@@ -221,7 +220,7 @@ internal class ModelWithModelReferenceSerializer(repository: SRepository) : KSer
     private val modelSerializer = SModelSerializer(repository)
     private val modelReferenceSerializer = SModelReferenceSerializer(repository)
 
-    override val descriptor: SerialDescriptor =
+    override val descriptor =
         buildClassSerialDescriptor(ModelWithModelReference::class.simpleName!!) {
             element<SModel>("sourceModel")
             element<SModelReference>("targetModelReference")
@@ -258,7 +257,7 @@ internal class ModelWithModuleReferenceSerializer(repository: SRepository) : KSe
     private val modelSerializer = SModelSerializer(repository)
     private val moduleReferenceSerializer = SModuleReferenceSerializer(repository)
 
-    override val descriptor: SerialDescriptor =
+    override val descriptor =
         buildClassSerialDescriptor(ModelWithModuleReference::class.simpleName!!) {
             element<SModel>("sourceModel")
             element<SModuleReference>("targetModuleReference")
@@ -315,7 +314,7 @@ internal class ModuleWithModuleReferenceSerializer(repository: SRepository) : KS
     private val moduleSerializer = SModuleSerializer(repository)
     private val moduleReferenceSerializer = SModuleReferenceSerializer(repository)
 
-    override val descriptor: SerialDescriptor =
+    override val descriptor =
         buildClassSerialDescriptor(ModuleWithModuleReference::class.simpleName!!) {
             element<SModel>("sourceModule")
             element<SModuleReference>("targetModuleReference")

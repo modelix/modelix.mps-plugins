@@ -2,6 +2,19 @@ package org.modelix.mps.sync.persistence
 
 import jetbrains.mps.project.AbstractModule
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.descriptors.element
+import kotlinx.serialization.encoding.CompositeDecoder.Companion.DECODE_DONE
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encoding.decodeStructure
+import kotlinx.serialization.encoding.encodeStructure
+import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -72,7 +85,8 @@ data class PersistableState(
         }
 
         ActiveMpsProjectInjector.runMpsReadAction {
-            synchronizationCache = MpsToModelixMap.Serializer().serialize()
+            val serializer = createCacheSerializer()
+            synchronizationCache = Json.encodeToString(serializer, MpsToModelixMap)
         }
 
         return this
@@ -95,7 +109,8 @@ data class PersistableState(
             var cacheIsEmpty = synchronizationCache.isBlank()
             if (!cacheIsEmpty) {
                 ActiveMpsProjectInjector.runMpsReadAction {
-                    MpsToModelixMap.Serializer().deserialize(synchronizationCache)
+                    val deserializer = createCacheSerializer()
+                    Json.decodeFromString(deserializer, synchronizationCache)
                     cacheIsEmpty = MpsToModelixMap.isEmpty()
                     logger.debug { "Synchronization cache is restored." }
                 }
@@ -164,6 +179,12 @@ data class PersistableState(
         }
         cache.clear()
     }
+
+    private fun createCacheSerializer(): KSerializer<MpsToModelixMap> {
+        val repository = ActiveMpsProjectInjector.activeMpsProject?.repository
+        requireNotNull(repository) { "SRepository cannot be null, before serialization." }
+        return MpsToModelixMap.Serializer(repository)
+    }
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
@@ -173,3 +194,54 @@ data class RestoredStateContext(
     val branchReference: BranchReference,
     val modules: List<AbstractModule>,
 )
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+internal class PersistableStateSerializer : KSerializer<PersistableState> {
+
+    private val moduleIdsSerializer = ListSerializer(String.serializer())
+
+    @OptIn(ExperimentalSerializationApi::class)
+    override val descriptor = buildClassSerialDescriptor(PersistableState::class.simpleName!!) {
+        element<String>("clientUrl")
+        element<String>("repositoryId")
+        element<String>("branchName")
+        element<String>("localVersion")
+        element("moduleIds", moduleIdsSerializer.descriptor)
+        element<String>("synchronizationCache")
+    }
+
+    override fun serialize(encoder: Encoder, value: PersistableState) = encoder.encodeStructure(descriptor) {
+        val updatedState = value.fetchState()
+
+        encodeStringElement(descriptor, 0, updatedState.clientUrl)
+        encodeStringElement(descriptor, 1, updatedState.repositoryId)
+        encodeStringElement(descriptor, 2, updatedState.branchName)
+        encodeStringElement(descriptor, 3, updatedState.localVersion)
+        encodeSerializableElement(descriptor, 4, moduleIdsSerializer, updatedState.moduleIds)
+        encodeStringElement(descriptor, 5, updatedState.synchronizationCache)
+    }
+
+    override fun deserialize(decoder: Decoder) = decoder.decodeStructure(descriptor) {
+        var clientUrl = ""
+        var repositoryId = ""
+        var branchName = ""
+        var localVersion = ""
+        var moduleIds: List<String> = listOf()
+        var synchronizationCache = ""
+
+        loop@ while (true) {
+            when (val index = decodeElementIndex(descriptor)) {
+                DECODE_DONE -> break@loop
+                0 -> clientUrl = decodeStringElement(descriptor, 0)
+                1 -> repositoryId = decodeStringElement(descriptor, 1)
+                2 -> branchName = decodeStringElement(descriptor, 2)
+                3 -> localVersion = decodeStringElement(descriptor, 3)
+                4 -> moduleIds = decodeSerializableElement(descriptor, 4, moduleIdsSerializer)
+                5 -> synchronizationCache = decodeStringElement(descriptor, 5)
+                else -> throw SerializationException("Unexpected index $index")
+            }
+        }
+
+        PersistableState(clientUrl, repositoryId, branchName, localVersion, moduleIds, synchronizationCache)
+    }
+}
