@@ -14,7 +14,6 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
-import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -86,7 +85,8 @@ data class PersistableState(
 
         ActiveMpsProjectInjector.runMpsReadAction {
             val serializer = createCacheSerializer()
-            synchronizationCache = Json.encodeToString(serializer, MpsToModelixMap)
+            synchronizationCache =
+                MpsToModelixMap.Serializer.DEFAULT_JSON_BUILDER.encodeToString(serializer, MpsToModelixMap)
         }
 
         return this
@@ -110,7 +110,7 @@ data class PersistableState(
             if (!cacheIsEmpty) {
                 ActiveMpsProjectInjector.runMpsReadAction {
                     val deserializer = createCacheSerializer()
-                    Json.decodeFromString(deserializer, synchronizationCache)
+                    MpsToModelixMap.Serializer.DEFAULT_JSON_BUILDER.decodeFromString(deserializer, synchronizationCache)
                     cacheIsEmpty = MpsToModelixMap.isEmpty()
                     logger.debug { "Synchronization cache is restored." }
                 }

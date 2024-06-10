@@ -26,6 +26,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
+import kotlinx.serialization.json.Json
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelReference
@@ -264,11 +265,37 @@ object MpsToModelixMap {
         objectsRelatedToAModule.clear()
     }
 
+    /**
+     * Serializes the `MpsToModelixMap` class to JSON.
+     *
+     * Before using the serializer, do not forget to enable `allowStructuredMapKeys = true` in your JSON builder.
+     * I.e. `Json { allowStructuredMapKeys = true }` or use `MpsToModelixMap.Serializer.DEFAULT_JSON_BUILDER`.
+     *
+     * The serialized `MpsToModelixMap` will look like this:
+     *
+     * ```
+     * {
+     *    "FIELD_NAME_1":[{KEY_1_1}, VALUE_1_1, {KEY_1_2}, VALUE_1_2],
+     *    "FIELD_NAME_2":[{KEY_2_1}, VALUE_2_1, {KEY_2_2}, VALUE_2_2],
+     * }
+     *
+     * where `FIELD_NAME_x` is the name of a field in `MpsToModelixMap`. Because all Map fields have a composite key,
+     * therefore kotlinx serializes them in an array like `[{KEY_1}, VALUE_1, {KEY_2}, VALUE_2, ...]`. KEY_1 is the
+     * JSON-serialized composite key and VALUE_1 is the serialized primitive value (in this case Long).
+     *
+     * Note, that if the serialized `MpsToModelixMap` is stored as a String, then `"` will be escaped as `&quot;` or
+     * `\"`. Therefore, before debugging, replace all `&quot;` and `\"` with `"` to make the escaped serialized string
+     * human-readable.
+     */
     @UnstableModelixFeature(
         reason = "The new modelix MPS plugin is under construction",
         intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
     )
     class Serializer(repository: SRepository) : KSerializer<MpsToModelixMap> {
+
+        companion object {
+            val DEFAULT_JSON_BUILDER = Json { allowStructuredMapKeys = true }
+        }
 
         private val nodeToModelixIdSerializer = MapSerializer(SNodeSerializer(repository), LongAsStringSerializer)
         private val modelToModelixIdSerializer = MapSerializer(SModelSerializer(repository), LongAsStringSerializer)

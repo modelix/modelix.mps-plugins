@@ -40,5 +40,5 @@ class PluginStatePersister {
         return state.restoreState(syncService)
     }
 
-    private fun getFilePath(baseDirectory: File) = baseDirectory.resolve(".mps").resolve("syncState.json").toPath()
+    private fun getFilePath(baseDirectory: File) = baseDirectory.resolve("syncState.json").toPath()
 }
