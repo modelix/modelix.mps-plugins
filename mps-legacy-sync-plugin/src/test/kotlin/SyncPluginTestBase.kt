@@ -42,6 +42,7 @@ import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.authorization.installAuthentication
+import org.modelix.model.InMemoryModels
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2
@@ -58,6 +59,7 @@ import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.server.store.forContextRepository
+import org.modelix.model.server.store.forGlobalRepository
 import org.modelix.mps.sync.ModelSyncService
 import org.modelix.mps.sync.api.IBinding
 import org.modelix.mps.sync.api.ISyncService
@@ -148,11 +150,13 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
             install(io.ktor.server.resources.Resources)
             install(io.ktor.server.routing.IgnoreTrailingSlash)
             installStatusPages()
-            val storeClient = InMemoryStoreClient().forContextRepository()
-            storeClient.put("server-id", "sync-plugin-test")
-            val repositoriesManager = RepositoriesManager(LocalModelClient(storeClient))
-            ModelReplicationServer(repositoriesManager).init(this)
-            KeyValueLikeModelServer(repositoriesManager).init(this)
+            val inMemoryModels = InMemoryModels()
+            val storeClient = InMemoryStoreClient()
+            val localModelClient = LocalModelClient(storeClient.forContextRepository())
+            storeClient.forGlobalRepository().put("server-id", "sync-plugin-test")
+            val repositoriesManager = RepositoriesManager(localModelClient)
+            KeyValueLikeModelServer(repositoriesManager, storeClient.forGlobalRepository(), inMemoryModels).init(this)
+            ModelReplicationServer(repositoriesManager, localModelClient, inMemoryModels).init(this)
         }
         httpClient = client
         postModelServerSetup()
