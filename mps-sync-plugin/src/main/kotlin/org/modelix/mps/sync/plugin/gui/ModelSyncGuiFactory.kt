@@ -43,7 +43,6 @@ import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.ofConcept
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
-import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.AlertNotifier
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
@@ -134,7 +133,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val bindingsModel = DefaultComboBoxModel<IBinding>()
 
         private lateinit var activeProject: Project
-        private var activeBranch: IBranch? = null
+        private var activeBranch: ActiveBranch? = null
 
         private var selectedBranch: BranchReference? = null
 
@@ -292,10 +291,14 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                 if (selectedConnection != null && selectedBranch != null) {
                     callDisablingUiControls(
                         suspend {
-                            activeBranch = modelSyncService.connectToBranch(
+                            val branchReference = selectedBranch as BranchReference
+                            val branch = modelSyncService.connectToBranch(
                                 selectedConnection as ModelClientV2,
-                                selectedBranch as BranchReference,
+                                branchReference,
                             )
+                            if (branch != null) {
+                                activeBranch = ActiveBranch(branch, branchReference)
+                            }
                         },
                     )
                 }
@@ -338,13 +341,16 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                     logger.info { "Binding Module ${moduleName.text} to project: ${ActiveMpsProjectInjector.activeMpsProject?.name}" }
                     callDisablingUiControls(
                         suspend {
+                            val branchName = (selectedBranch as BranchReference).branchName
                             modelSyncService.bindModuleFromServer(
                                 selectedConnection as ModelClientV2,
-                                (selectedBranch as BranchReference).branchName,
+                                branchName,
                                 selectedModuleWithName,
                                 (selectedRepo as RepositoryId).id,
                             )
-                            activeBranch = modelSyncService.getActiveBranch()
+                            val branch = modelSyncService.getActiveBranch()
+                            requireNotNull(branch) { "Active branch cannot be null after connection. " }
+                            activeBranch = ActiveBranch(branch, branchName)
                         },
                     )
                 }
@@ -401,9 +407,11 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             val disconnectAction = {
                 callDisablingUiControls(
                     suspend {
-                        val branchName = (branchesModel.selectedItem as? BranchReference)?.branchName ?: "null"
-                        modelSyncService.disconnectFromBranch(activeBranch!!, branchName)
-                        activeBranch = null
+                        activeBranch?.let {
+                            val branchName = it.branchName
+                            modelSyncService.disconnectFromBranch(it.branch, branchName)
+                            activeBranch = null
+                        }
                     },
                 )
             }
@@ -504,7 +512,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             }
         }
 
-        private fun callDisablingUiControls(action: suspend () -> Unit) {
+        private fun callDisablingUiControls(action: suspend () -> Unit?) {
             CoroutineScope(dispatcher).launch {
                 if (mutex.tryLock()) {
                     try {
@@ -547,7 +555,10 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
                 branchesModel.removeAllElements()
                 branchesModel.addElement(branchReference)
-                activeBranch = BranchRegistry.branch
+
+                val branch = modelSyncService.getActiveBranch()
+                requireNotNull(branch) { "Active branch cannot be null after connection. " }
+                activeBranch = ActiveBranch(branch, branchReference.branchName)
             }
         }
 
@@ -570,6 +581,10 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                 }
                 return super.getListCellRendererComponent(list, formatted, index, isSelected, cellHasFocus)
             }
+        }
+
+        private data class ActiveBranch(val branch: IBranch, val branchName: String) {
+            constructor(branch: IBranch, branchReference: BranchReference) : this(branch, branchReference.branchName)
         }
     }
 }
