@@ -16,17 +16,6 @@
 
 package org.modelix.mps.sync.transformation.cache
 
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.builtins.LongAsStringSerializer
-import kotlinx.serialization.builtins.MapSerializer
-import kotlinx.serialization.descriptors.buildClassSerialDescriptor
-import kotlinx.serialization.encoding.CompositeDecoder.Companion.DECODE_DONE
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.encoding.decodeStructure
-import kotlinx.serialization.encoding.encodeStructure
-import kotlinx.serialization.json.Json
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelReference
@@ -34,7 +23,6 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
-import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.clear
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.isEmpty
@@ -268,166 +256,6 @@ object MpsToModelixMap {
         modelixIdToModelWithOutgoingModelReference.clear()
         objectsRelatedToAModel.clear()
         objectsRelatedToAModule.clear()
-    }
-
-    /**
-     * Serializes the [MpsToModelixMap] class to JSON.
-     *
-     * Before using the serializer, do not forget to enable `allowStructuredMapKeys = true` in your JSON builder.
-     * I.e. `Json { allowStructuredMapKeys = true }` or use [MpsToModelixMap.Serializer.DEFAULT_JSON_BUILDER].
-     *
-     * The serialized `MpsToModelixMap` will look like this:
-     *
-     * ```
-     * {
-     *    "FIELD_NAME_1":[{KEY_1_1}, VALUE_1_1, {KEY_1_2}, VALUE_1_2],
-     *    "FIELD_NAME_2":[{KEY_2_1}, VALUE_2_1, {KEY_2_2}, VALUE_2_2],
-     * }
-     * ```
-     *
-     * where `FIELD_NAME_x` is the name of a field in [MpsToModelixMap]. Because all Map fields have a composite key,
-     * therefore kotlinx serializes them in an array like `[{KEY_1}, VALUE_1, {KEY_2}, VALUE_2, ...]`. KEY_1 is the
-     * JSON-serialized composite key and VALUE_1 is the serialized primitive value (in this case Long).
-     *
-     * Note, that if the serialized [MpsToModelixMap] is stored as a String, then `"` will be escaped as `&quot;` or
-     * `\"`. Therefore, before debugging, replace all `&quot;` and `\"` with `"` to make the escaped serialized string
-     * human-readable.
-     */
-    @UnstableModelixFeature(
-        reason = "The new modelix MPS plugin is under construction",
-        intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
-    )
-    class Serializer(repository: SRepository) : KSerializer<MpsToModelixMap> {
-
-        companion object {
-            val DEFAULT_JSON_BUILDER = Json { allowStructuredMapKeys = true }
-        }
-
-        private val nodeToModelixIdSerializer = MapSerializer(SNodeSerializer(repository), LongAsStringSerializer)
-        private val modelToModelixIdSerializer = MapSerializer(SModelSerializer(repository), LongAsStringSerializer)
-        private val moduleToModelixIdSerializer = MapSerializer(SModuleSerializer(repository), LongAsStringSerializer)
-        private val moduleWithOutgoingModuleReferenceToModelixIdSerializer =
-            MapSerializer(ModuleWithModuleReferenceSerializer(repository), LongAsStringSerializer)
-        private val modelWithOutgoingModuleReferenceToModelixIdSerializer =
-            MapSerializer(ModelWithModuleReferenceSerializer(repository), LongAsStringSerializer)
-        private val modelWithOutgoingModelReferenceToModelixIdSerializer =
-            MapSerializer(ModelWithModelReferenceSerializer(repository), LongAsStringSerializer)
-
-        override val descriptor = buildClassSerialDescriptor(MpsToModelixMap::class.simpleName!!) {
-            element("nodeToModelixId", nodeToModelixIdSerializer.descriptor)
-            element("modelToModelixId", modelToModelixIdSerializer.descriptor)
-            element("moduleToModelixId", moduleToModelixIdSerializer.descriptor)
-            element(
-                "moduleWithOutgoingModuleReferenceToModelixId",
-                moduleWithOutgoingModuleReferenceToModelixIdSerializer.descriptor,
-            )
-            element(
-                "modelWithOutgoingModuleReferenceToModelixId",
-                modelWithOutgoingModuleReferenceToModelixIdSerializer.descriptor,
-            )
-            element(
-                "modelWithOutgoingModelReferenceToModelixId",
-                modelWithOutgoingModelReferenceToModelixIdSerializer.descriptor,
-            )
-        }
-
-        override fun serialize(encoder: Encoder, value: MpsToModelixMap) = encoder.encodeStructure(descriptor) {
-            encodeSerializableElement(descriptor, 0, nodeToModelixIdSerializer, nodeToModelixId)
-            encodeSerializableElement(descriptor, 1, modelToModelixIdSerializer, modelToModelixId)
-            encodeSerializableElement(descriptor, 2, moduleToModelixIdSerializer, moduleToModelixId)
-            encodeSerializableElement(
-                descriptor,
-                3,
-                moduleWithOutgoingModuleReferenceToModelixIdSerializer,
-                moduleWithOutgoingModuleReferenceToModelixId,
-            )
-            encodeSerializableElement(
-                descriptor,
-                4,
-                modelWithOutgoingModuleReferenceToModelixIdSerializer,
-                modelWithOutgoingModuleReferenceToModelixId,
-            )
-            encodeSerializableElement(
-                descriptor,
-                5,
-                modelWithOutgoingModelReferenceToModelixIdSerializer,
-                modelWithOutgoingModelReferenceToModelixId,
-            )
-        }
-
-        override fun deserialize(decoder: Decoder): MpsToModelixMap {
-            return decoder.decodeStructure(descriptor) {
-                var nodeToModelixIdLocal = mapOf<SNode, Long>()
-                var modelToModelixIdLocal = mapOf<SModel, Long>()
-                var moduleToModelixIdLocal = mapOf<SModule, Long>()
-                var moduleWithOutgoingModuleReferenceToModelixIdLocal = mapOf<ModuleWithModuleReference, Long>()
-                var modelWithOutgoingModuleReferenceToModelixIdLocal = mapOf<ModelWithModuleReference, Long>()
-                var modelWithOutgoingModelReferenceToModelixIdLocal = mapOf<ModelWithModelReference, Long>()
-
-                // 1. deserialize all values locally
-                loop@ while (true) {
-                    when (val index = decodeElementIndex(descriptor)) {
-                        DECODE_DONE -> break@loop
-                        0 -> nodeToModelixIdLocal = decodeSerializableElement(descriptor, 0, nodeToModelixIdSerializer)
-                        1 ->
-                            modelToModelixIdLocal =
-                                decodeSerializableElement(descriptor, 1, modelToModelixIdSerializer)
-
-                        2 ->
-                            moduleToModelixIdLocal =
-                                decodeSerializableElement(descriptor, 2, moduleToModelixIdSerializer)
-
-                        3 -> moduleWithOutgoingModuleReferenceToModelixIdLocal = decodeSerializableElement(
-                            descriptor,
-                            3,
-                            moduleWithOutgoingModuleReferenceToModelixIdSerializer,
-                        )
-
-                        4 -> modelWithOutgoingModuleReferenceToModelixIdLocal = decodeSerializableElement(
-                            descriptor,
-                            4,
-                            modelWithOutgoingModuleReferenceToModelixIdSerializer,
-                        )
-
-                        5 -> modelWithOutgoingModelReferenceToModelixIdLocal = decodeSerializableElement(
-                            descriptor,
-                            5,
-                            modelWithOutgoingModelReferenceToModelixIdSerializer,
-                        )
-
-                        else -> throw SerializationException("Unexpected index $index")
-                    }
-                }
-
-                // 2. load these values into the map
-                nodeToModelixIdLocal.forEach { put(it.key, it.value) }
-                modelToModelixIdLocal.forEach { put(it.key, it.value) }
-                moduleToModelixIdLocal.forEach { put(it.key, it.value) }
-                moduleWithOutgoingModuleReferenceToModelixIdLocal.forEach {
-                    put(
-                        it.key.source,
-                        it.key.moduleReference,
-                        it.value,
-                    )
-                }
-                modelWithOutgoingModuleReferenceToModelixIdLocal.forEach {
-                    put(
-                        it.key.source,
-                        it.key.moduleReference,
-                        it.value,
-                    )
-                }
-                modelWithOutgoingModelReferenceToModelixIdLocal.forEach {
-                    put(
-                        it.key.source,
-                        it.key.modelReference,
-                        it.value,
-                    )
-                }
-
-                MpsToModelixMap
-            }
-        }
     }
 }
 

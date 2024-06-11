@@ -63,9 +63,6 @@ data class PersistableState(
 
     // synchronized modules
     var moduleIds: List<String> = listOf(),
-
-    // MPS to Modelix mapping
-    var synchronizationCache: String = "",
 ) {
 
     private val logger = KotlinLogging.logger {}
@@ -96,12 +93,6 @@ data class PersistableState(
             moduleIds += it.module.moduleId.toString()
         }
 
-        ActiveMpsProjectInjector.runMpsReadAction {
-            val serializer = createCacheSerializer()
-            synchronizationCache =
-                MpsToModelixMap.Serializer.DEFAULT_JSON_BUILDER.encodeToString(serializer, MpsToModelixMap)
-        }
-
         return this
     }
 
@@ -129,21 +120,6 @@ data class PersistableState(
 
             if (moduleIds.isEmpty()) {
                 logger.debug { "List of restorable Modules is empty, thus skipping PersistableState restoration." }
-                return null
-            }
-
-            var cacheIsEmpty = synchronizationCache.isBlank()
-            if (!cacheIsEmpty) {
-                ActiveMpsProjectInjector.runMpsReadAction {
-                    val deserializer = createCacheSerializer()
-                    MpsToModelixMap.Serializer.DEFAULT_JSON_BUILDER.decodeFromString(deserializer, synchronizationCache)
-                    cacheIsEmpty = MpsToModelixMap.isEmpty()
-                    logger.debug { "Synchronization cache is restored." }
-                }
-            }
-
-            if (cacheIsEmpty) {
-                logger.debug { "Serialized synchronization cache is empty, thus PersistableState is not restored." }
                 return null
             }
 
@@ -205,12 +181,6 @@ data class PersistableState(
         }
         cache.clear()
     }
-
-    private fun createCacheSerializer(): KSerializer<MpsToModelixMap> {
-        val repository = ActiveMpsProjectInjector.activeMpsProject?.repository
-        requireNotNull(repository) { "SRepository cannot be null, before serialization." }
-        return MpsToModelixMap.Serializer(repository)
-    }
 }
 
 /**
@@ -250,7 +220,6 @@ internal class PersistableStateSerializer : KSerializer<PersistableState> {
         encodeStringElement(descriptor, 2, updatedState.branchName)
         encodeStringElement(descriptor, 3, updatedState.localVersion)
         encodeSerializableElement(descriptor, 4, moduleIdsSerializer, updatedState.moduleIds)
-        encodeStringElement(descriptor, 5, updatedState.synchronizationCache)
     }
 
     override fun deserialize(decoder: Decoder) = decoder.decodeStructure(descriptor) {
@@ -259,7 +228,6 @@ internal class PersistableStateSerializer : KSerializer<PersistableState> {
         var branchName = ""
         var localVersion = ""
         var moduleIds: List<String> = listOf()
-        var synchronizationCache = ""
 
         loop@ while (true) {
             when (val index = decodeElementIndex(descriptor)) {
@@ -269,11 +237,10 @@ internal class PersistableStateSerializer : KSerializer<PersistableState> {
                 2 -> branchName = decodeStringElement(descriptor, 2)
                 3 -> localVersion = decodeStringElement(descriptor, 3)
                 4 -> moduleIds = decodeSerializableElement(descriptor, 4, moduleIdsSerializer)
-                5 -> synchronizationCache = decodeStringElement(descriptor, 5)
                 else -> throw SerializationException("Unexpected index $index")
             }
         }
 
-        PersistableState(clientUrl, repositoryId, branchName, localVersion, moduleIds, synchronizationCache)
+        PersistableState(clientUrl, repositoryId, branchName, localVersion, moduleIds)
     }
 }
