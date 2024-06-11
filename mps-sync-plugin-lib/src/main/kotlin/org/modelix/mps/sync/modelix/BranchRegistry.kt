@@ -22,7 +22,6 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
-import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.mpsadapters.MPSLanguageRepository
@@ -54,46 +53,34 @@ object BranchRegistry : AutoCloseable {
         }
     }
 
-    suspend fun setBranch(
+    fun setReplicatedModel(
         client: ModelClientV2,
         branchReference: BranchReference,
         languageRepository: MPSLanguageRepository,
         targetProject: MPSProject,
         replicatedModelContext: ReplicatedModelInitContext,
-    ): IBranch {
+    ): ReplicatedModel {
         if (this.branchReference == branchReference) {
-            return branch!!
+            return model!!
         }
 
         close()
 
-        if (replicatedModelContext.initialVersion != null) {
-            model = ReplicatedModel(
-                client,
-                branchReference,
-                replicatedModelContext.coroutineScope,
-                replicatedModelContext.initialVersion,
-            )
-            /*
-             * Register branch listener before starting, because initialVersion contains the data already and we want
-             * to react to the changes that come after initialVersion.
-             */
-            branch = model!!.getBranch()
-            registerBranchListener(branch!!, languageRepository)
-            model!!.start()
-        } else {
-            model = client.getReplicatedModel(branchReference, replicatedModelContext.coroutineScope)
-            // Register branch listener after stating, because we will start with the latest version anyway.
-            branch = model!!.start()
-            registerBranchListener(branch!!, languageRepository)
-        }
+        model = ReplicatedModel(
+            client,
+            branchReference,
+            replicatedModelContext.coroutineScope,
+            replicatedModelContext.initialVersion,
+        )
+        branch = model!!.getBranch()
+        registerBranchListener(branch!!, languageRepository)
 
         val repositoryChangeListener = RepositoryChangeListener(branch!!)
         targetProject.repository.addRepositoryListener(repositoryChangeListener)
         project = targetProject
         repoChangeListener = repositoryChangeListener
 
-        return branch!!
+        return model!!
     }
 
     override fun close() {

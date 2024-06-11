@@ -12,6 +12,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.mpsadapters.MPSLanguageRepository
@@ -90,30 +91,33 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
      * WARNING: this is a long-running blocking call.
      */
     override fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch =
-        connectToBranch(client, branchReference, null)
+        runBlocking(dispatcher) {
+            val model = setReplicatedModel(client, branchReference)
+            try {
+                model.start()
+            } catch (ignored: IllegalStateException) {
+                // Start may throw exception if ReplicatedModel is already started. But it should not disturb us.
+            }
+            model.getBranch()
+        }
 
-    /**
-     * WARNING: this is a long-running blocking call.
-     */
-    private fun connectToBranch(
+    private fun setReplicatedModel(
         client: ModelClientV2,
         branchReference: BranchReference,
         initialVersion: CLVersion? = null,
-    ): IBranch {
+    ): ReplicatedModel {
         logger.info { "Connecting to branch $branchReference with initial version $initialVersion (null = latest version)." }
         val targetProject = mpsProjectInjector.activeMpsProject!!
         val languageRepository = registerLanguages(targetProject)
-        return runBlocking(dispatcher) {
-            val branch = BranchRegistry.setBranch(
-                client,
-                branchReference,
-                languageRepository,
-                targetProject,
-                ReplicatedModelInitContext(CoroutineScope(dispatcher), initialVersion),
-            )
-            logger.info { "Connected to branch $branchReference with initial version $initialVersion" }
-            branch
-        }
+        val model = BranchRegistry.setReplicatedModel(
+            client,
+            branchReference,
+            languageRepository,
+            targetProject,
+            ReplicatedModelInitContext(CoroutineScope(dispatcher), initialVersion),
+        )
+        logger.info { "Connected to branch $branchReference with initial version $initialVersion" }
+        return model
     }
 
     /**
@@ -144,11 +148,6 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
     }
 
     /**
-     * WARNING:
-     * 1. This is a long-running blocking call.
-     * 2. From the Modelix-MPS synchronization point of view, we expect that the synchronization cache (MpsToModelixMap)
-     * is already initialized with the mappings between the MPS elements and the Modelix Nodes. Otherwise, the change
-     * listeners registered in this method will not work correctly.
      */
     override fun rebindModules(
         client: ModelClientV2,
@@ -163,7 +162,12 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
             return null
         }
 
-        val branch = connectToBranch(client, branchReference, initialVersion)
+        val model = setReplicatedModel(client, branchReference, initialVersion)
+
+        // TODO traverse
+
+        val branch = model.getBranch()
+
         val bindings = mutableListOf<IBinding>()
         modules.forEach { module ->
             val moduleBinding = ModuleBinding(module, branch)
