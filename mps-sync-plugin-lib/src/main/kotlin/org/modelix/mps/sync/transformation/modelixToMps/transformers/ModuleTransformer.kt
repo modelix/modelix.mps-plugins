@@ -124,7 +124,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             val iNode = branch.getNode(nodeId)
             val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
             check(serializedId.isNotEmpty()) {
-                val message = "Node ($iNode) cannot be transformed to Module, because it's ID is empty."
+                val message = "Node ($iNode) cannot be transformed to Module, because its ID is empty."
                 notifyAndLogError(message)
                 message
             }
