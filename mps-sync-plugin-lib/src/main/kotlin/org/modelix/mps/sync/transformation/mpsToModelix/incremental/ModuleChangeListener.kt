@@ -31,6 +31,7 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.getNode
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.mps.util.descriptorSuffix
@@ -46,7 +47,6 @@ import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchroniz
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 import org.modelix.mps.sync.transformation.pleaseCheckLogs
 import org.modelix.mps.sync.util.completeWithDefault
-import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.waitForCompletionOfEach
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask

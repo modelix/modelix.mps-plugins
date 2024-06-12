@@ -24,6 +24,14 @@ import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.modelix.util.getModule
+import org.modelix.mps.sync.modelix.util.isDevKitDependency
+import org.modelix.mps.sync.modelix.util.isModel
+import org.modelix.mps.sync.modelix.util.isModelImport
+import org.modelix.mps.sync.modelix.util.isModule
+import org.modelix.mps.sync.modelix.util.isModuleDependency
+import org.modelix.mps.sync.modelix.util.isSingleLanguageDependency
+import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.tasks.SyncDirection
@@ -34,14 +42,6 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.NodeTransformer
-import org.modelix.mps.sync.util.getModule
-import org.modelix.mps.sync.util.isDevKitDependency
-import org.modelix.mps.sync.util.isModel
-import org.modelix.mps.sync.util.isModelImport
-import org.modelix.mps.sync.util.isModule
-import org.modelix.mps.sync.util.isModuleDependency
-import org.modelix.mps.sync.util.isSingleLanguageDependency
-import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class ModelixTreeChangeVisitor(

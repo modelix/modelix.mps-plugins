@@ -10,11 +10,11 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.getRootNode
-import org.modelix.mps.sync.util.isDevKitDependency
-import org.modelix.mps.sync.util.isModel
-import org.modelix.mps.sync.util.isModule
-import org.modelix.mps.sync.util.isSingleLanguageDependency
-import org.modelix.mps.sync.util.nodeIdAsLong
+import org.modelix.mps.sync.modelix.util.isDevKitDependency
+import org.modelix.mps.sync.modelix.util.isModel
+import org.modelix.mps.sync.modelix.util.isModule
+import org.modelix.mps.sync.modelix.util.isSingleLanguageDependency
+import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",

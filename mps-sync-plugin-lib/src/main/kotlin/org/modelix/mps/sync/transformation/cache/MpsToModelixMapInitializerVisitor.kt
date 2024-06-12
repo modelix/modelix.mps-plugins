@@ -9,10 +9,10 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.mps.sync.modelix.ITreeVisitor
+import org.modelix.mps.sync.modelix.util.getModel
+import org.modelix.mps.sync.modelix.util.getMpsNodeId
+import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.util.runReadAction
-import org.modelix.mps.sync.util.getModel
-import org.modelix.mps.sync.util.getMpsNodeId
-import org.modelix.mps.sync.util.nodeIdAsLong
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -124,9 +124,8 @@ class MpsToModelixMapInitializerVisitor(
 
         val targetModelImport = model.modelImports.firstOrNull { it.modelId == modelId }
         requireNotNull(targetModelImport) {
-            // targetModel may be null so we need a null-safe call here
             val targetModelName =
-                targetModel?.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+                targetModel.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
             "Model '${model.name}' (parent Module: ${model.module?.moduleName}) has no Model Import with ID '$targetModelId' and name '$targetModelName'."
         }
 

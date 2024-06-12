@@ -32,6 +32,12 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSProperty
+import org.modelix.mps.sync.modelix.util.getModel
+import org.modelix.mps.sync.modelix.util.isDevKitDependency
+import org.modelix.mps.sync.modelix.util.isModel
+import org.modelix.mps.sync.modelix.util.isModule
+import org.modelix.mps.sync.modelix.util.isSingleLanguageDependency
+import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.factories.SNodeFactory
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
@@ -43,12 +49,6 @@ import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.getModel
-import org.modelix.mps.sync.util.isDevKitDependency
-import org.modelix.mps.sync.util.isModel
-import org.modelix.mps.sync.util.isModule
-import org.modelix.mps.sync.util.isSingleLanguageDependency
-import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.UUID
 import kotlin.reflect.KFunction2
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.util
+package org.modelix.mps.sync.modelix.util
 
 import jetbrains.mps.smodel.SNodeId.Regular
 import org.jetbrains.mps.openapi.model.SNodeId

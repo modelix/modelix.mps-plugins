@@ -22,12 +22,12 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.modelix.util.isModule
+import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
-import org.modelix.mps.sync.util.isModule
-import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(
