@@ -23,7 +23,6 @@ import org.jetbrains.mps.openapi.language.SInterfaceConcept
 import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
-import org.jetbrains.mps.openapi.model.SNodeId
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
@@ -38,6 +37,7 @@ import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.util.getMpsNodeId
 import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
@@ -80,7 +80,7 @@ class SNodeFactory(
             }
 
             // 1. create node
-            val mpsNodeId = getMpsNodeId(iNode)
+            val mpsNodeId = iNode.getMpsNodeId()
             val sNode = jetbrains.mps.smodel.SNode(concept, mpsNodeId)
 
             // 2. add to parent
@@ -113,24 +113,6 @@ class SNodeFactory(
             // 4. set references
             prepareLinkReferences(iNode)
         }
-
-    private fun getMpsNodeId(iNode: INode): SNodeId {
-        val mpsNodeIdAsString = iNode.getOriginalReference()
-        val mpsId = mpsNodeIdAsString?.let { PersistenceFacade.getInstance().createNodeId(it) }
-        return if (mpsId != null) {
-            mpsId
-        } else {
-            val id = iNode.nodeIdAsLong().toString().let {
-                val foreignPrefix = jetbrains.mps.smodel.SNodeId.Foreign.ID_PREFIX
-                if (!it.startsWith(foreignPrefix)) {
-                    "$foreignPrefix$it"
-                } else {
-                    it
-                }
-            }
-            jetbrains.mps.smodel.SNodeId.Foreign(id)
-        }
-    }
 
     private fun setProperties(source: INode, target: SNode) {
         target.concept.properties.forEach { sProperty ->

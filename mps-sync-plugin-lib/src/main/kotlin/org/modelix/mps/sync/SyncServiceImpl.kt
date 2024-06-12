@@ -6,6 +6,7 @@ import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -22,6 +23,7 @@ import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.modelix.ReplicatedModelInitContext
+import org.modelix.mps.sync.modelix.visit
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.INotifier
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
@@ -29,6 +31,8 @@ import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.mps.util.isDescriptorModel
 import org.modelix.mps.sync.tasks.FuturesWaitQueue
 import org.modelix.mps.sync.tasks.SyncQueue
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMapInitializerVisitor
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
@@ -148,6 +152,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
     }
 
     /**
+     * WARNING: this is a long-running blocking call.
      */
     override fun rebindModules(
         client: ModelClientV2,
@@ -162,12 +167,19 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
             return null
         }
 
-        val model = setReplicatedModel(client, branchReference, initialVersion)
+        // connect to modelix and fetch the initial version
+        val replicatedModel = setReplicatedModel(client, branchReference, initialVersion)
 
-        // TODO traverse
+        // recreate the mapping between the local MPS elements and the modelix Nodes
+        val branch = replicatedModel.getBranch()
+        runBlocking(dispatcher) {
+            val repository = ActiveMpsProjectInjector.activeMpsProject?.repository
+            requireNotNull(repository) { "SRepository must exist, otherwise we cannot restore the Modules." }
+            val mappingRecreator = MpsToModelixMapInitializerVisitor(MpsToModelixMap, repository)
+            branch.visit(mappingRecreator, CoroutineScope(coroutineContext))
+        }
 
-        val branch = model.getBranch()
-
+        // register the bindings
         val bindings = mutableListOf<IBinding>()
         modules.forEach { module ->
             val moduleBinding = ModuleBinding(module, branch)
@@ -189,6 +201,9 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
             notifyUserAboutBindings(listOf(moduleBinding), module.moduleName)
             bindings.add(moduleBinding)
         }
+
+        // let modelix get the changes from model server
+        CoroutineScope(dispatcher).launch { replicatedModel.start() }
 
         return bindings
     }

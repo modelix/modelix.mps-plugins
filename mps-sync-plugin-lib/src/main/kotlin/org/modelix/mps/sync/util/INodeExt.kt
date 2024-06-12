@@ -17,6 +17,8 @@
 package org.modelix.mps.sync.util
 
 import jetbrains.mps.smodel.SNodeId.Regular
+import org.jetbrains.mps.openapi.model.SNodeId
+import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
@@ -79,6 +81,25 @@ fun INode.getModel(): INode? = findNode { it.isModel() }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.getModule(): INode? = findNode { it.isModule() }
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+fun INode.getMpsNodeId(): SNodeId {
+    val mpsNodeIdAsString = getOriginalReference()
+    val mpsId = mpsNodeIdAsString?.let { PersistenceFacade.getInstance().createNodeId(it) }
+    return if (mpsId != null) {
+        mpsId
+    } else {
+        val id = nodeIdAsLong().toString().let {
+            val foreignPrefix = jetbrains.mps.smodel.SNodeId.Foreign.ID_PREFIX
+            if (!it.startsWith(foreignPrefix)) {
+                "$foreignPrefix$it"
+            } else {
+                it
+            }
+        }
+        jetbrains.mps.smodel.SNodeId.Foreign(id)
+    }
+}
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 private fun INode.findNode(criterion: (INode) -> Boolean): INode? {

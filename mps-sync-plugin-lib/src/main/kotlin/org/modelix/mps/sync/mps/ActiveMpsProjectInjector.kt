@@ -22,6 +22,7 @@ import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.MPSProject
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.mps.util.runReadAction
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -65,10 +66,7 @@ object ActiveMpsProjectInjector {
         if (activeMpsProject == null) {
             throw IllegalStateException("Active MPS project is null.")
         } else {
-            val repository = activeMpsProject!!.repository
-            repository.modelAccess.runReadAction {
-                action(repository)
-            }
+            activeMpsProject!!.repository.runReadAction(action)
         }
     }
 }
