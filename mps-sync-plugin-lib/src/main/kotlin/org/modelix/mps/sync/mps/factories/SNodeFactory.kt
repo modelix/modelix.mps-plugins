@@ -29,7 +29,6 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
-import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSProperty
@@ -116,8 +115,7 @@ class SNodeFactory(
         }
 
     private fun getMpsNodeId(iNode: INode): SNodeId {
-        // TODO replace me with iNode.getOriginalReference() if https://github.com/modelix/modelix.core/pull/800 is released
-        val mpsNodeIdAsString = iNode.getPropertyValue(PropertyFromName("#mpsNodeId#"))
+        val mpsNodeIdAsString = iNode.getOriginalReference()
         val mpsId = mpsNodeIdAsString?.let { PersistenceFacade.getInstance().createNodeId(it) }
         return if (mpsId != null) {
             mpsId
