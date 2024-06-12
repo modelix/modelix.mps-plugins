@@ -1,10 +1,9 @@
 package org.modelix.mps.sync.modelix
 
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
@@ -20,92 +19,133 @@ import org.modelix.mps.sync.modelix.util.nodeIdAsLong
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-internal fun IBranch.visit(visitor: ITreeVisitor, coroutineScope: CoroutineScope) =
-    runRead { runBlocking(coroutineScope.coroutineContext) { getRootNode().visit(visitor) } }
+class ITreeTraversal(val branch: IBranch) {
 
-@UnstableModelixFeature(
-    reason = "The new modelix MPS plugin is under construction",
-    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
-)
-internal suspend fun INode.visit(visitor: ITreeVisitor) {
-    val visitedNode = this
-
-    if (isModule()) {
-        visitor.visitModule(this)
-
-        val dependenciesJobs = coroutineScope {
-            getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies).map {
-                launch {
-                    visitor.visitModuleDependency(visitedNode, it)
-                }
-            }
-        }
-        dependenciesJobs.joinAll()
-
-        val modelsJobs = coroutineScope {
-            getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models).map {
-                launch {
-                    it.visit(visitor)
-                }
-            }
-        }
-        modelsJobs.joinAll()
-    } else if (isModel()) {
-        visitor.visitModel(this)
-
-        val modelImportJobs = coroutineScope {
-            getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports).map {
-                launch {
-                    visitor.visitModelImport(visitedNode, it)
-                }
-            }
-        }
-        modelImportJobs.joinAll()
-
-        val usedLanguagesJobs = coroutineScope {
-            getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages).map {
-                launch {
-                    if (it.isDevKitDependency()) {
-                        // visit devkit dependency
-                        visitor.visitDevKitDependency(visitedNode, it)
-                    } else if (it.isSingleLanguageDependency()) {
-                        // visit language dependency
-                        visitor.visitLanguageDependency(visitedNode, it)
-                    } else {
-                        val nodeId = visitedNode.nodeIdAsLong()
-                        val message =
-                            "Node ($nodeId) is not transformed, because it is neither DevKit nor SingleLanguageDependency."
-                        throw IllegalStateException(message)
-                    }
-                }
-            }
-        }
-        usedLanguagesJobs.joinAll()
-
-        val rootNodesJobs = coroutineScope {
-            getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes).map {
-                launch {
-                    it.visit(visitor)
-                }
-            }
-        }
-        rootNodesJobs.joinAll()
-    } else {
-        visitor.visitNode(this)
-
-        val childrenJobs = coroutineScope {
-            allChildren.map {
-                launch {
-                    it.visit(visitor)
-                }
+    suspend fun visit(visitor: ITreeVisitor) {
+        val childrenJobs = mutableListOf<Job>()
+        coroutineScope {
+            branch.runRead {
+                childrenJobs.addAll(
+                    branch.getRootNode().allChildren.map {
+                        launch {
+                            visit(it, visitor)
+                        }
+                    },
+                )
             }
         }
         childrenJobs.joinAll()
+    }
+
+    private suspend fun visit(node: INode, visitor: ITreeVisitor) {
+        if (node.isModule()) {
+            visitor.visitModule(node)
+
+            val dependenciesJobs = mutableListOf<Job>()
+            coroutineScope {
+                branch.runRead {
+                    dependenciesJobs.addAll(
+                        node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies).map {
+                            launch {
+                                visitor.visitModuleDependency(node, it)
+                            }
+                        },
+                    )
+                }
+            }
+            dependenciesJobs.joinAll()
+
+            val modelsJobs = mutableListOf<Job>()
+            coroutineScope {
+                branch.runRead {
+                    modelsJobs.addAll(
+                        node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models).map {
+                            launch {
+                                visit(it, visitor)
+                            }
+                        },
+                    )
+                }
+            }
+            modelsJobs.joinAll()
+        } else if (node.isModel()) {
+            visitor.visitModel(node)
+
+            val modelImportJobs = mutableListOf<Job>()
+            coroutineScope {
+                branch.runRead {
+                    modelImportJobs.addAll(
+                        node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports).map {
+                            launch {
+                                visitor.visitModelImport(node, it)
+                            }
+                        },
+                    )
+                }
+            }
+            modelImportJobs.joinAll()
+
+            val usedLanguagesJobs = mutableListOf<Job>()
+            coroutineScope {
+                branch.runRead {
+                    usedLanguagesJobs.addAll(
+                        node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages).map {
+                            launch {
+                                if (it.isDevKitDependency()) {
+                                    // visit devkit dependency
+                                    visitor.visitDevKitDependency(node, it)
+                                } else if (it.isSingleLanguageDependency()) {
+                                    // visit language dependency
+                                    visitor.visitLanguageDependency(node, it)
+                                } else {
+                                    val nodeId = node.nodeIdAsLong()
+                                    val message =
+                                        "Node ($nodeId) is not transformed, because it is neither DevKit nor SingleLanguageDependency."
+                                    throw IllegalStateException(message)
+                                }
+                            }
+                        },
+                    )
+                }
+            }
+            usedLanguagesJobs.joinAll()
+
+            val rootNodesJobs = mutableListOf<Job>()
+            coroutineScope {
+                branch.runRead {
+                    rootNodesJobs.addAll(
+                        node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes).map {
+                            launch {
+                                visit(it, visitor)
+                            }
+                        },
+                    )
+                }
+            }
+            rootNodesJobs.joinAll()
+        } else {
+            visitor.visitNode(node)
+
+            val childrenJobs = mutableListOf<Job>()
+            coroutineScope {
+                branch.runRead {
+                    childrenJobs.addAll(
+                        node.allChildren.map {
+                            launch {
+                                visit(it, visitor)
+                            }
+                        },
+                    )
+                }
+            }
+            childrenJobs.joinAll()
+        }
     }
 }
 
 /**
  * The visited nodes are always in a read transaction, so we can read any data from modelix.
+ * TODO document the interface and its methods...
  */
 interface ITreeVisitor {
     suspend fun visitModule(node: INode)

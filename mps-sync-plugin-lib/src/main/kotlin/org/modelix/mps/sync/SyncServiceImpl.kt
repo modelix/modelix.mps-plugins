@@ -22,8 +22,8 @@ import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.modelix.BranchRegistry
+import org.modelix.mps.sync.modelix.ITreeTraversal
 import org.modelix.mps.sync.modelix.ReplicatedModelInitContext
-import org.modelix.mps.sync.modelix.visit
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.INotifier
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
@@ -175,8 +175,9 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         runBlocking(dispatcher) {
             val repository = ActiveMpsProjectInjector.activeMpsProject?.repository
             requireNotNull(repository) { "SRepository must exist, otherwise we cannot restore the Modules." }
-            val mappingRecreator = MpsToModelixMapInitializerVisitor(MpsToModelixMap, repository)
-            branch.visit(mappingRecreator, CoroutineScope(coroutineContext))
+            val mappingRecreator = MpsToModelixMapInitializerVisitor(MpsToModelixMap, repository, branch)
+            val treeTraversal = ITreeTraversal(branch)
+            treeTraversal.visit(mappingRecreator)
         }
 
         // register the bindings

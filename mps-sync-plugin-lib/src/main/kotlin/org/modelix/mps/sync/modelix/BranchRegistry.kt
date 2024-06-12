@@ -18,6 +18,7 @@ package org.modelix.mps.sync.modelix
 
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.runBlocking
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.client2.ModelClientV2
@@ -66,12 +67,16 @@ object BranchRegistry : AutoCloseable {
 
         close()
 
-        model = ReplicatedModel(
-            client,
-            branchReference,
-            replicatedModelContext.coroutineScope,
-            replicatedModelContext.initialVersion,
-        )
+        val coroutineScope = replicatedModelContext.coroutineScope
+        val initialVersion = replicatedModelContext.initialVersion
+        model = ReplicatedModel(client, branchReference, coroutineScope, initialVersion)
+        if (initialVersion == null) {
+            // we must start the replicated model, otherwise getBranch will throw an exception
+            runBlocking(coroutineScope.coroutineContext) {
+                model!!.start()
+            }
+        }
+
         branch = model!!.getBranch()
         registerBranchListener(branch!!, languageRepository)
 

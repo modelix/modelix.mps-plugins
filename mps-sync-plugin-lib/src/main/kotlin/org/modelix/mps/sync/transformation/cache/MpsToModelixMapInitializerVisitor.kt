@@ -7,6 +7,7 @@ import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.mps.sync.modelix.ITreeVisitor
 import org.modelix.mps.sync.modelix.util.getModel
@@ -21,21 +22,22 @@ import org.modelix.mps.sync.mps.util.runReadAction
 class MpsToModelixMapInitializerVisitor(
     private val cache: MpsToModelixMap,
     private val repository: SRepository,
+    private val branch: IBranch,
 ) : ITreeVisitor {
 
-    override suspend fun visitModule(node: INode) = repository.runReadAction {
+    override suspend fun visitModule(node: INode) = runWithReadLocks {
         val module = getMpsModule(node)
         val nodeId = node.nodeIdAsLong()
         cache.put(module, nodeId)
     }
 
-    override suspend fun visitModel(node: INode) = repository.runReadAction {
+    override suspend fun visitModel(node: INode) = runWithReadLocks {
         val model = getMpsModel(node)
         val nodeId = node.nodeIdAsLong()
         cache.put(model, nodeId)
     }
 
-    override suspend fun visitNode(node: INode) = repository.runReadAction {
+    override suspend fun visitNode(node: INode) = runWithReadLocks {
         val nodeId = node.nodeIdAsLong()
         val modelNode = node.getModel()
         requireNotNull(modelNode) { "Model parent of Modelix Node '$nodeId' is not found." }
@@ -48,28 +50,27 @@ class MpsToModelixMapInitializerVisitor(
         cache.put(mpsNode, nodeId)
     }
 
-    override suspend fun visitModuleDependency(sourceModule: INode, moduleDependency: INode) =
-        repository.runReadAction {
-            val module = getMpsModule(sourceModule)
-            val nodeId = moduleDependency.nodeIdAsLong()
+    override suspend fun visitModuleDependency(sourceModule: INode, moduleDependency: INode) = runWithReadLocks {
+        val module = getMpsModule(sourceModule)
+        val nodeId = moduleDependency.nodeIdAsLong()
 
-            val targetModuleId =
-                moduleDependency.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid)
-            requireNotNull(targetModuleId) { "UUID of Modelix Module Dependency node '$nodeId' is null." }
-            val moduleId = PersistenceFacade.getInstance().createModuleId(targetModuleId)
+        val targetModuleId =
+            moduleDependency.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid)
+        requireNotNull(targetModuleId) { "UUID of Modelix Module Dependency node '$nodeId' is null." }
+        val moduleId = PersistenceFacade.getInstance().createModuleId(targetModuleId)
 
-            val targetModuleDependency =
-                module.declaredDependencies.firstOrNull { it.targetModule.moduleId == moduleId }
-            requireNotNull(targetModuleDependency) {
-                val targetModuleName =
-                    moduleDependency.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
-                "Module '${module.moduleName}' has no Module Dependency with ID '$targetModuleId' and name '$targetModuleName'."
-            }
-
-            cache.put(module, targetModuleDependency.targetModule, nodeId)
+        val targetModuleDependency =
+            module.declaredDependencies.firstOrNull { it.targetModule.moduleId == moduleId }
+        requireNotNull(targetModuleDependency) {
+            val targetModuleName =
+                moduleDependency.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
+            "Module '${module.moduleName}' has no Module Dependency with ID '$targetModuleId' and name '$targetModuleName'."
         }
 
-    override suspend fun visitDevKitDependency(sourceModel: INode, devKitDependency: INode) = repository.runReadAction {
+        cache.put(module, targetModuleDependency.targetModule, nodeId)
+    }
+
+    override suspend fun visitDevKitDependency(sourceModel: INode, devKitDependency: INode) = runWithReadLocks {
         val model = getMpsModel(sourceModel)
         require(model is SModelBase) { "Model '${model.name}' (parent Module: ${model.module?.moduleName}) is not an SModelBase." }
 
@@ -89,30 +90,29 @@ class MpsToModelixMapInitializerVisitor(
         cache.put(model, targetDevKitDependency, nodeId)
     }
 
-    override suspend fun visitLanguageDependency(sourceModel: INode, languageDependency: INode) =
-        repository.runReadAction {
-            val model = getMpsModel(sourceModel)
-            require(model is SModelBase) { "Model '${model.name}' (parent Module: ${model.module?.moduleName}) is not an SModelBase." }
+    override suspend fun visitLanguageDependency(sourceModel: INode, languageDependency: INode) = runWithReadLocks {
+        val model = getMpsModel(sourceModel)
+        require(model is SModelBase) { "Model '${model.name}' (parent Module: ${model.module?.moduleName}) is not an SModelBase." }
 
-            val nodeId = languageDependency.nodeIdAsLong()
-            val targetModuleId =
-                languageDependency.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
-            requireNotNull(targetModuleId) { "UUID of Modelix DevKit Dependency node '$nodeId' is null." }
-            val moduleId = PersistenceFacade.getInstance().createModuleId(targetModuleId)
+        val nodeId = languageDependency.nodeIdAsLong()
+        val targetModuleId =
+            languageDependency.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)
+        requireNotNull(targetModuleId) { "UUID of Modelix DevKit Dependency node '$nodeId' is null." }
+        val moduleId = PersistenceFacade.getInstance().createModuleId(targetModuleId)
 
-            val targetLanguageDependency =
-                model.importedLanguageIds()
-                    .firstOrNull { it.sourceModuleReference.moduleId == moduleId }?.sourceModuleReference
-            requireNotNull(targetLanguageDependency) {
-                val targetDevKitName =
-                    languageDependency.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name)
-                "Model '${model.name}' (parent Module: ${model.module?.moduleName}) has no Language Dependency with ID '$targetModuleId' and name '$targetDevKitName'."
-            }
-
-            cache.put(model, targetLanguageDependency, nodeId)
+        val targetLanguageDependency =
+            model.importedLanguageIds()
+                .firstOrNull { it.sourceModuleReference.moduleId == moduleId }?.sourceModuleReference
+        requireNotNull(targetLanguageDependency) {
+            val targetDevKitName =
+                languageDependency.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name)
+            "Model '${model.name}' (parent Module: ${model.module?.moduleName}) has no Language Dependency with ID '$targetModuleId' and name '$targetDevKitName'."
         }
 
-    override suspend fun visitModelImport(sourceModel: INode, modelImport: INode) = repository.runReadAction {
+        cache.put(model, targetLanguageDependency, nodeId)
+    }
+
+    override suspend fun visitModelImport(sourceModel: INode, modelImport: INode) = runWithReadLocks {
         val model = getMpsModel(sourceModel)
         require(model is SModelBase) { "Model '${model.name}' (parent Module: ${model.module?.moduleName}) is not an SModelBase." }
 
@@ -155,4 +155,6 @@ class MpsToModelixMapInitializerVisitor(
         requireNotNull(module) { "Module with ID '$moduleId' is not found." }
         return module
     }
+
+    private fun runWithReadLocks(action: () -> Unit) = repository.runReadAction { branch.runRead { action() } }
 }
