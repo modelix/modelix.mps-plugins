@@ -19,7 +19,6 @@ package org.modelix.mps.sync.transformation.modelixToMps.initial
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
-import org.modelix.model.api.INode
 import org.modelix.model.api.getRootNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.IBinding
@@ -48,8 +47,7 @@ class ITreeToSTreeTransformer(private val branch: IBranch, mpsLanguageRepository
             }
             requireNotNull(moduleNode) { "Module node with ID '$moduleId' is not found on the root level." }
             require(moduleNode.isModule()) { "Transformation entry point (Node $moduleNode) must be a Module." }
-        }.continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.NONE) {
-            val entryNodeId = (it as INode).nodeIdAsLong()
+            val entryNodeId = moduleNode.nodeIdAsLong()
             moduleTransformer.transformToModuleCompletely(entryNodeId, true).getResult()
         }
 
