@@ -155,6 +155,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             val iNode = branch.getNode(nodeId)
             val targetModuleId = getTargetModuleIdFromModuleDependency(iNode)
 
+            // decide, if we have to transform the target Module first, before transforming the Module Dependency
             val future = CompletableFuture<Any?>()
             val targetModuleIsNotMapped = nodeMap.getModule(targetModuleId) == null
             if (targetModuleIsNotMapped && fetchTargetModule) {

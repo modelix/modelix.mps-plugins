@@ -60,7 +60,10 @@ import org.modelix.mps.sync.transformation.cache.ModelWithModuleReference
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLanguageRepository) {
 
     private val logger = KotlinLogging.logger {}
@@ -156,6 +159,8 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
 
     fun resolveModelImports(repository: SRepository) {
         resolvableModelImports.forEach {
+            val sourceModel = it.source
+
             val id = PersistenceFacade.getInstance().createModelId(it.targetModelId)
             val targetModel = (nodeMap.getModel(it.targetModelModelixId) ?: repository.getModel(id))
             if (targetModel == null) {
@@ -176,16 +181,18 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
                     "ModelImport from Model ${it.source.modelId}(${it.source.name}) to Model $id cannot be resolved, because target model is not found."
                 notifyAndLogError(message)
                 throw NoSuchElementException(message)
+            } else if (targetModel.modelId == sourceModel.modelId) {
+                logger.warn { "Ignoring Model Import from Model ${sourceModel.name} (parent Module: ${sourceModel.module.moduleName}) to itself." }
+            } else {
+                nodeMap.put(targetModel, it.targetModelModelixId)
+
+                val targetModule = targetModel.module
+                val moduleReference = ModuleReference(targetModule.moduleName, targetModule.moduleId)
+                val modelImport = SModelReference(moduleReference, id, targetModel.name)
+
+                ModelImports(sourceModel).addModelImport(modelImport)
+                nodeMap.put(it.source, modelImport, it.modelReferenceNodeId)
             }
-            nodeMap.put(targetModel, it.targetModelModelixId)
-
-            val targetModule = targetModel.module
-            val moduleReference = ModuleReference(targetModule.moduleName, targetModule.moduleId)
-            val modelImport = SModelReference(moduleReference, id, targetModel.name)
-
-            val sourceModel = it.source
-            ModelImports(sourceModel).addModelImport(modelImport)
-            nodeMap.put(it.source, modelImport, it.modelReferenceNodeId)
         }
         resolvableModelImports.clear()
     }
@@ -343,7 +350,10 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
     }
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class ResolvableModelImport(
     val source: SModel,
     val targetModelId: String,

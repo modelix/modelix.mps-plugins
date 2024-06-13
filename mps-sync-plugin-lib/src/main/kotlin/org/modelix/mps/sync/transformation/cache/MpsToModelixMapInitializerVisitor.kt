@@ -1,6 +1,7 @@
 package org.modelix.mps.sync.transformation.cache
 
 import jetbrains.mps.extapi.model.SModelBase
+import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
@@ -24,6 +25,8 @@ class MpsToModelixMapInitializerVisitor(
     private val repository: SRepository,
     private val branch: IBranch,
 ) : ITreeVisitor {
+
+    private val logger = KotlinLogging.logger {}
 
     override suspend fun visitModule(node: INode) = runWithReadLocks {
         val module = getMpsModule(node)
@@ -58,6 +61,11 @@ class MpsToModelixMapInitializerVisitor(
             moduleDependency.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid)
         requireNotNull(targetModuleId) { "UUID of Modelix Module Dependency node '$nodeId' is null." }
         val moduleId = PersistenceFacade.getInstance().createModuleId(targetModuleId)
+
+        if (module.moduleId == moduleId) {
+            logger.warn { "Self-dependency of Module ($module) is ignored." }
+            return@runWithReadLocks
+        }
 
         val targetModuleDependency =
             module.declaredDependencies.firstOrNull { it.targetModule.moduleId == moduleId }
@@ -121,6 +129,11 @@ class MpsToModelixMapInitializerVisitor(
         val targetModelId = targetModel?.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)
         requireNotNull(targetModelId) { "ID of Modelix Model referred by Modelix Model Import Node '$nodeId' is null." }
         val modelId = PersistenceFacade.getInstance().createModelId(targetModelId)
+
+        if (model.modelId == modelId) {
+            logger.warn { "Ignoring Model Import from Model ${model.name} (parent Module: ${model.module?.moduleName}) to itself." }
+            return@runWithReadLocks
+        }
 
         val targetModelImport = model.modelImports.firstOrNull { it.modelId == modelId }
         requireNotNull(targetModelImport) {
