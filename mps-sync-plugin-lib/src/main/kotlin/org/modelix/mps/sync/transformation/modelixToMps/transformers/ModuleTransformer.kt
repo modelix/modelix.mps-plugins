@@ -38,6 +38,7 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
+import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.factories.SolutionProducer
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
@@ -51,7 +52,6 @@ import org.modelix.mps.sync.transformation.cache.ModuleWithModuleReference
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.BooleanUtil
 import org.modelix.mps.sync.util.bindTo
-import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.text.ParseException
 import java.util.concurrent.CompletableFuture
@@ -124,7 +124,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             val iNode = branch.getNode(nodeId)
             val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
             check(serializedId.isNotEmpty()) {
-                val message = "Node ($iNode) cannot be transformed to Module, because it's ID is empty."
+                val message = "Node ($iNode) cannot be transformed to Module, because its ID is empty."
                 notifyAndLogError(message)
                 message
             }
@@ -155,6 +155,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             val iNode = branch.getNode(nodeId)
             val targetModuleId = getTargetModuleIdFromModuleDependency(iNode)
 
+            // decide, if we have to transform the target Module first, before transforming the Module Dependency
             val future = CompletableFuture<Any?>()
             val targetModuleIsNotMapped = nodeMap.getModule(targetModuleId) == null
             if (targetModuleIsNotMapped && fetchTargetModule) {
@@ -199,15 +200,20 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             val iNode = branch.getNode(nodeId)
             val targetModuleId = getTargetModuleIdFromModuleDependency(iNode)
 
-            val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
-            val moduleReference = ModuleReference(moduleName, targetModuleId)
-            val reexport = (
-                iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
-                    ?: "false"
-                ).toBoolean()
-            parentModule.addDependency(moduleReference, reexport)
+            if (parentModule.moduleId != targetModuleId) {
+                val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
+                val moduleReference = ModuleReference(moduleName, targetModuleId)
+                val reexport = (
+                    iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
+                        ?: "false"
+                    ).toBoolean()
+                parentModule.addDependency(moduleReference, reexport)
 
-            nodeMap.put(parentModule, moduleReference, iNode.nodeIdAsLong())
+                nodeMap.put(parentModule, moduleReference, iNode.nodeIdAsLong())
+            } else {
+                // do not transform self-dependencies
+                logger.warn { "Self-dependency of Module ($parentModule) is ignored." }
+            }
 
             dependencyBinding
         }

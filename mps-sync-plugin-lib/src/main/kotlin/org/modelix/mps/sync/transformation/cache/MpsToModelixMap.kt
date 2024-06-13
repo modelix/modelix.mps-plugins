@@ -24,15 +24,26 @@ import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.clear
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.isEmpty
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.isMappedToModelix
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.isMappedToMps
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.remove
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.synchronizedMap
 
 /**
  * WARNING:
  * - use with caution, otherwise this cache may cause memory leaks
- * - if you add a new Map as a field in the class, then please also add it to the `remove`, `isMappedToMps`, and `isMappedToModelix` methods below
+ * - if you add a new Map as a field in the class, then please also add it to the [remove], [isMappedToMps],
+ * [isMappedToModelix], [isEmpty], [clear] methods below.
+ * - if you want to persist the new field into a file, then add it to the [MpsToModelixMap.Serializer.serialize] and
+ * [MpsToModelixMap.Serializer.deserialize] methods below.
  */
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 object MpsToModelixMap {
 
     private val nodeToModelixId = synchronizedMap<SNode, Long>()
@@ -227,13 +238,41 @@ object MpsToModelixMap {
     fun isMappedToModelix(module: SModule) = this[module] != null
 
     fun isMappedToModelix(node: SNode) = this[node] != null
+
+    fun isEmpty() = objectsRelatedToAModel.isEmpty() && objectsRelatedToAModule.isEmpty()
+
+    fun clear() {
+        nodeToModelixId.clear()
+        modelixIdToNode.clear()
+        modelToModelixId.clear()
+        modelixIdToModel.clear()
+        moduleToModelixId.clear()
+        modelixIdToModule.clear()
+        moduleWithOutgoingModuleReferenceToModelixId.clear()
+        modelixIdToModuleWithOutgoingModuleReference.clear()
+        modelWithOutgoingModuleReferenceToModelixId.clear()
+        modelixIdToModelWithOutgoingModuleReference.clear()
+        modelWithOutgoingModelReferenceToModelixId.clear()
+        modelixIdToModelWithOutgoingModelReference.clear()
+        objectsRelatedToAModel.clear()
+        objectsRelatedToAModule.clear()
+    }
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class ModelWithModelReference(val source: SModel, val modelReference: SModelReference)
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class ModelWithModuleReference(val source: SModel, val moduleReference: SModuleReference)
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class ModuleWithModuleReference(val source: SModule, val moduleReference: SModuleReference)

@@ -20,18 +20,16 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.ITree
-import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.transformation.modelixToMps.incremental.ModelixTreeChangeVisitor
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 class ModelixBranchListener(
-    replicatedModel: ReplicatedModel,
-    languageRepository: MPSLanguageRepository,
     branch: IBranch,
+    languageRepository: MPSLanguageRepository,
 ) : IBranchListener {
 
-    private val visitor = ModelixTreeChangeVisitor(replicatedModel, branch, languageRepository)
+    private val visitor = ModelixTreeChangeVisitor(branch, languageRepository)
 
     override fun treeChanged(oldTree: ITree?, newTree: ITree) {
         oldTree?.let { newTree.visitChanges(it, visitor) }

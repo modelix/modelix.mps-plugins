@@ -16,27 +16,25 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.initial
 
-import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
-import org.modelix.model.api.INode
 import org.modelix.model.api.getRootNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.modelix.util.isModule
+import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
-import org.modelix.mps.sync.util.isModule
-import org.modelix.mps.sync.util.nodeIdAsLong
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicReference
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class ITreeToSTreeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLanguageRepository) {
-
-    private val logger = KotlinLogging.logger {}
 
     private val moduleTransformer = ModuleTransformer(branch, mpsLanguageRepository)
 
@@ -44,18 +42,12 @@ class ITreeToSTreeTransformer(private val branch: IBranch, mpsLanguageRepository
 
     fun transform(moduleId: String): Iterable<IBinding> {
         val result = syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.NONE) {
-            val result = AtomicReference<INode>()
-            branch.runRead {
-                val moduleNode = branch.getRootNode().allChildren.firstOrNull {
-                    it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) == moduleId
-                }
-                requireNotNull(moduleNode) { "Module node with ID '$moduleId' is not found on the root level." }
-                require(moduleNode.isModule()) { "Transformation entry point (Node $moduleNode) must be a Module." }
-                result.set(moduleNode)
+            val moduleNode = branch.getRootNode().allChildren.firstOrNull {
+                it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) == moduleId
             }
-            result.get()
-        }.continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.NONE) {
-            val entryNodeId = (it as INode).nodeIdAsLong()
+            requireNotNull(moduleNode) { "Module node with ID '$moduleId' is not found on the root level." }
+            require(moduleNode.isModule()) { "Transformation entry point (Node $moduleNode) must be a Module." }
+            val entryNodeId = moduleNode.nodeIdAsLong()
             moduleTransformer.transformToModuleCompletely(entryNodeId, true).getResult()
         }
 

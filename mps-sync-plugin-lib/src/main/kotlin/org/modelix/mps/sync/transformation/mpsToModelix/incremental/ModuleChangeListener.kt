@@ -31,8 +31,10 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.getNode
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.util.descriptorSuffix
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -45,7 +47,6 @@ import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchroniz
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 import org.modelix.mps.sync.transformation.pleaseCheckLogs
 import org.modelix.mps.sync.util.completeWithDefault
-import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.waitForCompletionOfEach
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
@@ -66,10 +67,18 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
 
     private val moduleChangeSyncInProgress = synchronizedLinkedHashSet<SModule>()
 
-    override fun modelAdded(module: SModule, model: SModel) = modelSynchronizer.addModelAndActivate(model as SModelBase)
+    override fun modelAdded(module: SModule, model: SModel) {
+        modelSynchronizer.addModelAndActivate(model as SModelBase)
+    }
 
     override fun modelRemoved(module: SModule, reference: SModelReference) {
         if (ApplicationLifecycleTracker.applicationClosing) {
+            return
+        }
+
+        // We do not track changes in descriptor models. See ModelTransformer.isDescriptorModel()
+        val isDescriptorModel = reference.modelName.endsWith(descriptorSuffix)
+        if (isDescriptorModel) {
             return
         }
 

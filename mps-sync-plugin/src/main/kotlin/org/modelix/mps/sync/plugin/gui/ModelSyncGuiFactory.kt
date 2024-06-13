@@ -29,10 +29,12 @@ import com.intellij.ui.content.ContentFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.IBranch
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
@@ -40,15 +42,17 @@ import org.modelix.modelql.core.toList
 import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.ofConcept
 import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.AlertNotifier
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
 import org.modelix.mps.sync.mps.notifications.UserResponse
+import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.plugin.ModelSyncService
+import org.modelix.mps.sync.plugin.configuration.SyncPluginState
 import org.modelix.mps.sync.plugin.icons.CloudIcons
 import java.awt.Component
 import java.awt.FlowLayout
-import java.awt.event.ActionEvent
 import java.awt.event.ItemEvent
 import javax.swing.Box
 import javax.swing.DefaultComboBoxModel
@@ -59,7 +63,10 @@ import javax.swing.JList
 import javax.swing.JPanel
 import javax.swing.JSeparator
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
     private lateinit var toolWindowContent: ModelSyncGui
@@ -78,11 +85,17 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         content.dispose()
     }
 
+    @UnstableModelixFeature(
+        reason = "The new modelix MPS plugin is under construction",
+        intendedFinalization = "2024.1",
+    )
     class ModelSyncGui(toolWindow: ToolWindow) {
 
         companion object {
             private const val COMBOBOX_CHANGED_COMMAND = "comboBoxChanged"
             private const val TEXTFIELD_WIDTH = 20
+            private const val DISCONNECT_REMOVES_LOCAL_COPIES =
+                "By disconnecting, the synchronized modules and models will be removed locally."
         }
 
         private val logger = KotlinLogging.logger {}
@@ -110,6 +123,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val disconnectButton = JButton("Disconnect")
         private val bindButton = JButton("Bind Selected")
         private val connectBranchButton = JButton("Connect to Branch without downloading Modules")
+        private val disconnectBranchButton = JButton("Disconnect from Branch")
 
         private val connectionsModel = DefaultComboBoxModel<ModelClientV2>()
         private val projectsModel = DefaultComboBoxModel<Project>()
@@ -119,6 +133,9 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val bindingsModel = DefaultComboBoxModel<IBinding>()
 
         private lateinit var activeProject: Project
+        private var activeBranch: ActiveBranch? = null
+
+        private var selectedBranch: BranchReference? = null
 
         init {
             toolWindow.setIcon(CloudIcons.ROOT_ICON)
@@ -133,6 +150,21 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             branchName.text = "master"
             moduleName.text = "University.Schedule.modelserver.backend.sandbox"
             jwt.text = ""
+
+            // trigger state reload
+            val loadedState = activeProject.service<SyncPluginState>()
+            loadedState.latestRestoredContext?.let { context ->
+                val branch = context.branchReference
+                setActiveConnection(context.modelClient, branch.repositoryId, branch)
+            }
+        }
+
+        fun populateBindingCB(bindings: List<IBinding>) {
+            bindingsModel.removeAllElements()
+            bindingsModel.addAll(bindings)
+            if (bindingsModel.size > 0) {
+                bindingsModel.selectedItem = bindingsModel.getElementAt(0)
+            }
         }
 
         private fun createInputBox(): Box {
@@ -151,7 +183,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             jwtPanel.add(JLabel("JWT:           "))
             jwtPanel.add(jwt)
 
-            connectButton.addActionListener { _: ActionEvent ->
+            connectButton.addActionListener {
                 if (connectionsModel.size != 0) {
                     val message =
                         "<html>Only one client connection is allowed. <a href=\"disconnect\">Disconnect</a> the existing client.</html>"
@@ -174,7 +206,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             connectionsPanel.add(JLabel("Existing Connection:"))
             connectionsPanel.add(connectionsCB)
 
-            disconnectButton.addActionListener { _: ActionEvent? -> disconnectClient() }
+            disconnectButton.addActionListener { disconnectClient() }
             connectionsPanel.add(disconnectButton)
             inputBox.add(connectionsPanel)
 
@@ -210,29 +242,71 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             branchesCB.model = branchesModel
             branchesCB.renderer = CustomCellRenderer()
             branchesCB.addActionListener {
-                if (it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
+                val selectedItem = branchesModel.selectedItem
+                if (selectedItem != null && it.actionCommand == COMBOBOX_CHANGED_COMMAND) {
+                    if (activeBranch != null) {
+                        // reset value to the previous one
+                        branchesModel.selectedItem = selectedBranch
+
+                        val message =
+                            "<a href=\"disconnect\">Disconnect</a> from the active branch before switching to another one.</html>"
+                        BalloonNotifier(activeProject).error(message) { disconnectBranch() }
+                        return@addActionListener
+                    }
+
+                    selectedBranch = selectedItem as BranchReference
                     callDisablingUiControls(::populateModuleCB)
                 }
             }
+
             branchPanel.add(JLabel("Remote Branch: "))
             branchPanel.add(branchesCB)
             inputBox.add(branchPanel)
             connectBranchButton.addActionListener {
-                val selectedConnection = connectionsModel.selectedItem
-                val selectedBranch = branchesModel.selectedItem
+                if (bindingsModel.size != 0) {
+                    val message =
+                        "<html>Bindings exists to remote models and modules. <a href=\"unbind\">Unbind</a> them before connecting to a branch.</html>"
+                    BalloonNotifier(activeProject).error(message) {
+                        val unbindConfirmation =
+                            "Remote models and modules will be unbound and their local copies will be removed from the project."
+                        AlertNotifier(activeProject).warning(unbindConfirmation) { response ->
+                            if (UserResponse.USER_ACCEPTED == response) {
+                                for (i in 0 until bindingsModel.size) {
+                                    bindingsModel.getElementAt(i).deactivate(removeFromServer = false)
+                                }
+                            }
+                        }
+                    }
+                    return@addActionListener
+                }
 
+                if (activeBranch != null) {
+                    val message =
+                        "<html>Already connected to a branch. <a href=\"disconnect\">Disconnect</a> from it before connecting to a new branch.</html>"
+                    BalloonNotifier(activeProject).error(message) { disconnectBranch() }
+                    return@addActionListener
+                }
+
+                val selectedConnection = connectionsModel.selectedItem
                 if (selectedConnection != null && selectedBranch != null) {
                     callDisablingUiControls(
                         suspend {
-                            modelSyncService.connectToBranch(
+                            val branchReference = selectedBranch as BranchReference
+                            val branch = modelSyncService.connectToBranch(
                                 selectedConnection as ModelClientV2,
-                                selectedBranch as BranchReference,
+                                branchReference,
                             )
+                            if (branch != null) {
+                                activeBranch = ActiveBranch(branch, branchReference)
+                            }
                         },
                     )
                 }
             }
             branchPanel.add(connectBranchButton)
+
+            disconnectBranchButton.addActionListener { disconnectBranch() }
+            branchPanel.add(disconnectBranchButton)
 
             val modulePanel = JPanel()
             modulesCB.model = modulesModel
@@ -240,7 +314,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             modulePanel.add(JLabel("Remote Module:  "))
             modulePanel.add(modulesCB)
 
-            bindButton.addActionListener { _: ActionEvent? ->
+            bindButton.addActionListener {
                 val selectedConnection = connectionsModel.selectedItem
                 val selectedBranch = branchesModel.selectedItem
                 val selectedModule = modulesModel.selectedItem
@@ -249,15 +323,34 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
                     listOf(selectedConnection, selectedBranch, selectedModule, selectedRepo).all { it != null }
 
                 if (inputsExist) {
+                    val selectedModuleWithName = selectedModule as ModuleIdWithName
+                    var bindingExists = false
+                    if (bindingsModel.size != 0) {
+                        for (i in 0 until bindingsModel.size) {
+                            val binding = bindingsModel.getElementAt(i)
+                            if (binding is ModuleBinding && selectedModuleWithName.name == binding.module.moduleName) {
+                                bindingExists = true
+                                break
+                            }
+                        }
+                    }
+                    if (bindingExists) {
+                        return@addActionListener
+                    }
+
                     logger.info { "Binding Module ${moduleName.text} to project: ${ActiveMpsProjectInjector.activeMpsProject?.name}" }
                     callDisablingUiControls(
                         suspend {
+                            val branchName = (selectedBranch as BranchReference).branchName
                             modelSyncService.bindModuleFromServer(
                                 selectedConnection as ModelClientV2,
-                                (selectedBranch as BranchReference).branchName,
-                                selectedModule as ModuleIdWithName,
+                                branchName,
+                                selectedModuleWithName,
                                 (selectedRepo as RepositoryId).id,
                             )
+                            val branch = modelSyncService.getActiveBranch()
+                            requireNotNull(branch) { "Active branch cannot be null after connection. " }
+                            activeBranch = ActiveBranch(branch, branchName)
                         },
                     )
                 }
@@ -288,15 +381,50 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         }
 
         private fun disconnectClient() {
+            val disconnectAction = {
+                val originalClient = connectionsModel.selectedItem as ModelClientV2
+                val clientAfterDisconnect = modelSyncService.disconnectServer(originalClient)
+                if (clientAfterDisconnect == null) {
+                    triggerRefresh(null)
+                }
+            }
+
             if (connectionsModel.size > 0) {
-                val message = "By disconnecting, the synchronized modules and models will be removed locally."
-                AlertNotifier(activeProject).warning(message) { response ->
+                if (bindingsModel.size == 0) {
+                    disconnectAction()
+                    return
+                }
+
+                AlertNotifier(activeProject).warning(DISCONNECT_REMOVES_LOCAL_COPIES) { response ->
                     if (UserResponse.USER_ACCEPTED == response) {
-                        val originalClient = connectionsModel.selectedItem as ModelClientV2
-                        val clientAfterDisconnect = modelSyncService.disconnectServer(originalClient)
-                        if (clientAfterDisconnect == null) {
-                            triggerRefresh(null)
+                        disconnectAction()
+                    }
+                }
+            }
+        }
+
+        private fun disconnectBranch() {
+            val disconnectAction = {
+                callDisablingUiControls(
+                    suspend {
+                        activeBranch?.let {
+                            val branchName = it.branchName
+                            modelSyncService.disconnectFromBranch(it.branch, branchName)
+                            activeBranch = null
                         }
+                    },
+                )
+            }
+
+            if (activeBranch != null) {
+                if (bindingsModel.size == 0) {
+                    disconnectAction()
+                    return
+                }
+
+                AlertNotifier(activeProject).warning(DISCONNECT_REMOVES_LOCAL_COPIES) { response ->
+                    if (UserResponse.USER_ACCEPTED == response) {
+                        disconnectAction()
                     }
                 }
             }
@@ -384,7 +512,7 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             }
         }
 
-        private fun callDisablingUiControls(action: suspend () -> Unit) {
+        private fun callDisablingUiControls(action: suspend () -> Unit?) {
             CoroutineScope(dispatcher).launch {
                 if (mutex.tryLock()) {
                     try {
@@ -410,37 +538,53 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             disconnectButton.isEnabled = isEnabled
             bindButton.isEnabled = isEnabled
             connectBranchButton.isEnabled = isEnabled
+            disconnectBranchButton.isEnabled = isEnabled
         }
 
-        fun populateBindingCB(bindings: List<IBinding>) {
-            bindingsModel.removeAllElements()
-            bindingsModel.addAll(bindings)
-            if (bindingsModel.size > 0) {
-                bindingsModel.selectedItem = bindingsModel.getElementAt(0)
+        private fun setActiveConnection(
+            client: ModelClientV2,
+            repositoryId: RepositoryId,
+            branchReference: BranchReference,
+        ) {
+            runBlocking(dispatcher) {
+                populateConnectionsCB(client)
+                populateRepoCB()
+
+                reposModel.removeAllElements()
+                reposModel.addElement(repositoryId)
+
+                branchesModel.removeAllElements()
+                branchesModel.addElement(branchReference)
+
+                val branch = modelSyncService.getActiveBranch()
+                requireNotNull(branch) { "Active branch cannot be null after connection. " }
+                activeBranch = ActiveBranch(branch, branchReference.branchName)
             }
         }
-    }
 
-    class CustomCellRenderer : DefaultListCellRenderer() {
-        override fun getListCellRendererComponent(
-            list: JList<*>?,
-            value: Any?,
-            index: Int,
-            isSelected: Boolean,
-            cellHasFocus: Boolean,
-        ): Component {
-            val formatted = when (value) {
-                is Project -> value.name
-                is IBinding -> value.toString()
-                is ModelClientV2 -> value.baseUrl
-                is RepositoryId -> value.toString()
-                is BranchReference -> value.branchName
-                is ModuleIdWithName -> value.name
-                else -> return super.getListCellRendererComponent(list, null, index, isSelected, cellHasFocus)
+        private class CustomCellRenderer : DefaultListCellRenderer() {
+            override fun getListCellRendererComponent(
+                list: JList<*>?,
+                value: Any?,
+                index: Int,
+                isSelected: Boolean,
+                cellHasFocus: Boolean,
+            ): Component {
+                val formatted = when (value) {
+                    is Project -> value.name
+                    is IBinding -> value.toString()
+                    is ModelClientV2 -> value.baseUrl
+                    is RepositoryId -> value.toString()
+                    is BranchReference -> value.branchName
+                    is ModuleIdWithName -> value.name
+                    else -> return super.getListCellRendererComponent(list, null, index, isSelected, cellHasFocus)
+                }
+                return super.getListCellRendererComponent(list, formatted, index, isSelected, cellHasFocus)
             }
-            return super.getListCellRendererComponent(list, formatted, index, isSelected, cellHasFocus)
+        }
+
+        private data class ActiveBranch(val branch: IBranch, val branchName: String) {
+            constructor(branch: IBranch, branchReference: BranchReference) : this(branch, branchReference.branchName)
         }
     }
 }
-
-data class ModuleIdWithName(val id: String, val name: String)

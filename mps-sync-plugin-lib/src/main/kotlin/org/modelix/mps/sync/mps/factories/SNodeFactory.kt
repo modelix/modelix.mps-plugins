@@ -23,7 +23,6 @@ import org.jetbrains.mps.openapi.language.SInterfaceConcept
 import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
-import org.jetbrains.mps.openapi.model.SNodeId
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
@@ -33,15 +32,19 @@ import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
+import org.modelix.mps.sync.modelix.util.getMpsNodeId
+import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
-import org.modelix.mps.sync.util.nodeIdAsLong
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class SNodeFactory(
     private val conceptRepository: MPSLanguageRepository,
     private val nodeMap: MpsToModelixMap,
@@ -77,7 +80,7 @@ class SNodeFactory(
             }
 
             // 1. create node
-            val mpsNodeId = getMpsNodeId(iNode)
+            val mpsNodeId = iNode.getMpsNodeId()
             val sNode = jetbrains.mps.smodel.SNode(concept, mpsNodeId)
 
             // 2. add to parent
@@ -110,17 +113,6 @@ class SNodeFactory(
             // 4. set references
             prepareLinkReferences(iNode)
         }
-
-    private fun getMpsNodeId(iNode: INode): SNodeId {
-        val mpsNodeIdAsString = iNode.getOriginalReference()
-        val mpsId = mpsNodeIdAsString?.let { PersistenceFacade.getInstance().createNodeId(it) }
-        return if (mpsId != null) {
-            mpsId
-        } else {
-            val id = iNode.nodeIdAsLong()
-            jetbrains.mps.smodel.SNodeId.Regular(id)
-        }
-    }
 
     private fun setProperties(source: INode, target: SNode) {
         target.concept.properties.forEach { sProperty ->
@@ -157,7 +149,10 @@ class SNodeFactory(
     fun clearResolvableReferences() = resolvableReferences.clear()
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class ResolvableReference(
     val source: SNode,
     val reference: SReferenceLink,

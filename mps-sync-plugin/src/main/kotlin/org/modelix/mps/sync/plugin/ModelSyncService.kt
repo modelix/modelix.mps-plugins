@@ -43,18 +43,21 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.IRebindModulesSyncService
 import org.modelix.mps.sync.ISyncService
 import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.plugin.action.ModelixActionGroup
-import org.modelix.mps.sync.plugin.gui.ModuleIdWithName
 import java.net.URL
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 @Service(Service.Level.APP)
-class ModelSyncService : Disposable {
+class ModelSyncService : Disposable, IRebindModulesSyncService {
 
     private val logger = KotlinLogging.logger { }
     private val notifierInjector = InjectableNotifierWrapper
@@ -67,26 +70,39 @@ class ModelSyncService : Disposable {
         logger.debug { "ModelixSyncPlugin: Registration finished" }
     }
 
-    fun connectModelServer(url: String, jwt: String): ModelClientV2? {
+    override fun connectModelServer(serverURL: String, jwt: String?): ModelClientV2? {
         var client: ModelClientV2? = null
         try {
-            logger.info { "Connection to server: $url" }
-            client = syncService.connectModelServer(URL(url), jwt)
-            logger.info { "Connected to server: $url" }
+            client = syncService.connectModelServer(URL(serverURL), jwt)
+            notifierInjector.notifyAndLogInfo("Connected to server: $serverURL", logger)
         } catch (t: Throwable) {
-            val message = "Unable to connect to $url. Cause: ${t.message}"
+            val message = "Unable to connect to $serverURL. Cause: ${t.message}"
             notifierInjector.notifyAndLogError(message, t, logger)
         }
         return client
+    }
+
+    override fun rebindModules(
+        client: ModelClientV2,
+        branchReference: BranchReference,
+        initialVersion: CLVersion,
+        modules: Iterable<AbstractModule>,
+    ): Iterable<IBinding>? {
+        try {
+            return syncService.rebindModules(client, branchReference, initialVersion, modules)
+        } catch (t: Throwable) {
+            val message = "Error while binding modules to Branch '$branchReference'. Cause: ${t.message}"
+            notifierInjector.notifyAndLogError(message, t, logger)
+            return null
+        }
     }
 
     fun disconnectServer(modelClient: ModelClientV2): ModelClientV2? {
         var client: ModelClientV2? = modelClient
         val baseUrl = modelClient.baseUrl
         try {
-            logger.info { "Disconnecting from  server: $baseUrl" }
             syncService.disconnectModelServer(modelClient)
-            logger.info { "Disconnected from server: $baseUrl" }
+            notifierInjector.notifyAndLogInfo("Disconnected from server: $baseUrl", logger)
             client = null
         } catch (t: Throwable) {
             val message = "Unable to disconnect from $baseUrl. Cause: ${t.message}"
@@ -95,16 +111,29 @@ class ModelSyncService : Disposable {
         return client
     }
 
-    fun connectToBranch(client: ModelClientV2, branchReference: BranchReference) {
+    fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch? {
         try {
-            logger.info { "Connecting to branch $branchReference" }
-            syncService.connectToBranch(client, branchReference)
-            logger.info { "Connection to branch $branchReference is established" }
+            val branch = syncService.connectToBranch(client, branchReference)
+            notifierInjector.notifyAndLogInfo("Connected to branch: $branchReference", logger)
+            return branch
         } catch (t: Throwable) {
             val message = "Unable to connect to branch ${branchReference.branchName}. Cause: ${t.message}"
             notifierInjector.notifyAndLogError(message, t, logger)
+            return null
         }
     }
+
+    fun disconnectFromBranch(branch: IBranch, branchName: String) {
+        try {
+            syncService.disconnectFromBranch(branch, branchName)
+            notifierInjector.notifyAndLogInfo("Disconnected from branch: $branchName", logger)
+        } catch (t: Throwable) {
+            val message = "Unable to disconnect from branch $branchName. Cause: ${t.message}"
+            notifierInjector.notifyAndLogError(message, t, logger)
+        }
+    }
+
+    fun getActiveBranch() = syncService.getActiveBranch()
 
     fun bindModuleFromServer(
         client: ModelClientV2,
@@ -116,7 +145,7 @@ class ModelSyncService : Disposable {
             syncService.bindModuleFromServer(
                 client,
                 BranchReference(RepositoryId(repositoryID), branchName),
-                module.id,
+                module,
             ).forEach { it.activate() }
         } catch (t: Throwable) {
             val message =
@@ -146,6 +175,7 @@ class ModelSyncService : Disposable {
     override fun dispose() {
         logger.debug { "ModelixSyncPlugin: Dispose" }
         syncService.close()
+        logger.debug { "ModelixSyncPlugin: Disposed" }
     }
 
     private fun registerSyncActions() {

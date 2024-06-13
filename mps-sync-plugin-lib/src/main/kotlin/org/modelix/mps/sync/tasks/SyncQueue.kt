@@ -31,7 +31,10 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 object SyncQueue : AutoCloseable {
 
     private val logger = KotlinLogging.logger {}
@@ -162,7 +165,7 @@ object SyncQueue : AutoCloseable {
     private fun runWithLock(lock: SyncLock, runnable: () -> Unit) {
         when (lock) {
             SyncLock.MPS_WRITE -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.executeCommandInEDT(runnable)
-            SyncLock.MPS_READ -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.runReadAction(runnable)
+            SyncLock.MPS_READ -> ActiveMpsProjectInjector.runMpsReadAction { runnable() }
             SyncLock.MODELIX_READ -> BranchRegistry.branch!!.runRead(runnable)
             SyncLock.MODELIX_WRITE -> BranchRegistry.branch!!.runWrite(runnable)
             SyncLock.NONE -> runnable.invoke()
