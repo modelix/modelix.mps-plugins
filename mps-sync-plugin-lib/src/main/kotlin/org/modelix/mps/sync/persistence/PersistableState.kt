@@ -2,18 +2,6 @@ package org.modelix.mps.sync.persistence
 
 import jetbrains.mps.project.AbstractModule
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.descriptors.buildClassSerialDescriptor
-import kotlinx.serialization.descriptors.element
-import kotlinx.serialization.encoding.CompositeDecoder.Companion.DECODE_DONE
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.encoding.decodeStructure
-import kotlinx.serialization.encoding.encodeStructure
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -52,7 +40,6 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
  * @property branchName the name of the branch in the modelix branch
  * @property localVersion the latest version hash we know from the branch
  * @property moduleIds the IDs of the Modules that were synchronized
- * @property synchronizationCache the [MpsToModelixMap] serialized into a string
  */
 data class PersistableState(
     // modelix connection
@@ -97,13 +84,12 @@ data class PersistableState(
     }
 
     /**
-     * Restores the internal state of the modelix sync lib via the @param syncService, in the following order:
-
-     * 1. deserializes [PersistableState.synchronizationCache] into a [MpsToModelixMap],
-     * 2. connects to the model server denoted by [PersistableState.clientUrl],
-     * 3. loads the specific version ([PersistableState.localVersion]) of the [PersistableState.repositoryId],
-     * 4. connects to the branch ([PersistableState.branchName])
-     * 5. creates bindings for the synchronized modules ([PersistableState.moduleIds])
+     * Restores the internal state of the modelix sync lib via [syncService], in the following order:
+     *
+     * 1. connects to the model server denoted by [PersistableState.clientUrl],
+     * 2. loads the specific version ([PersistableState.localVersion]) of the [PersistableState.repositoryId],
+     * 3. connects to the branch ([PersistableState.branchName])
+     * 4. creates bindings for the synchronized modules ([PersistableState.moduleIds])
      *
      * @param syncService the interface to the modelix sync lib to restore its state
      *
@@ -196,51 +182,3 @@ data class RestoredStateContext(
     val branchReference: BranchReference,
     val modules: List<AbstractModule>,
 )
-
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-internal class PersistableStateSerializer : KSerializer<PersistableState> {
-
-    private val moduleIdsSerializer = ListSerializer(String.serializer())
-
-    @OptIn(ExperimentalSerializationApi::class)
-    override val descriptor = buildClassSerialDescriptor(PersistableState::class.simpleName!!) {
-        element<String>("clientUrl")
-        element<String>("repositoryId")
-        element<String>("branchName")
-        element<String>("localVersion")
-        element("moduleIds", moduleIdsSerializer.descriptor)
-        element<String>("synchronizationCache")
-    }
-
-    override fun serialize(encoder: Encoder, value: PersistableState) = encoder.encodeStructure(descriptor) {
-        val updatedState = value.fetchState()
-
-        encodeStringElement(descriptor, 0, updatedState.clientUrl)
-        encodeStringElement(descriptor, 1, updatedState.repositoryId)
-        encodeStringElement(descriptor, 2, updatedState.branchName)
-        encodeStringElement(descriptor, 3, updatedState.localVersion)
-        encodeSerializableElement(descriptor, 4, moduleIdsSerializer, updatedState.moduleIds)
-    }
-
-    override fun deserialize(decoder: Decoder) = decoder.decodeStructure(descriptor) {
-        var clientUrl = ""
-        var repositoryId = ""
-        var branchName = ""
-        var localVersion = ""
-        var moduleIds: List<String> = listOf()
-
-        loop@ while (true) {
-            when (val index = decodeElementIndex(descriptor)) {
-                DECODE_DONE -> break@loop
-                0 -> clientUrl = decodeStringElement(descriptor, 0)
-                1 -> repositoryId = decodeStringElement(descriptor, 1)
-                2 -> branchName = decodeStringElement(descriptor, 2)
-                3 -> localVersion = decodeStringElement(descriptor, 3)
-                4 -> moduleIds = decodeSerializableElement(descriptor, 4, moduleIdsSerializer)
-                else -> throw SerializationException("Unexpected index $index")
-            }
-        }
-
-        PersistableState(clientUrl, repositoryId, branchName, localVersion, moduleIds)
-    }
-}
