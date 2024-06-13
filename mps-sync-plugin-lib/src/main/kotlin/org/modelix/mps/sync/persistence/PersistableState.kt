@@ -41,6 +41,7 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
  * @property localVersion the latest version hash we know from the branch
  * @property moduleIds the IDs of the Modules that were synchronized
  */
+@Serializable
 data class PersistableState(
     // modelix connection
     var clientUrl: String = "",
