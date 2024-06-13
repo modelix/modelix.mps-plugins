@@ -9,16 +9,20 @@ import java.io.File
 /**
  * This is a utility class that saves, loads and restores a [PersistableState] to and from an XML file.
  *
- * @param providedFile the File in which the class will be saved. If it's a directory, then a fill will be created in it with name [defaultFileName].
- * @param defaultFileName the file name to be used if [providedFile] is a directory
+ * @param providedFile the File in which the class will be saved. If it's a directory, then a fill will be created in it with name defaultFileName.
+ * @param defaultFileName (optional) the file name to be used if providedFile is a directory. Defaults to [PluginStatePersister.DEFAULT_FILE_NAME].
  */
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
-class PluginStatePersister(providedFile: File, defaultFileName: String = "syncState.xml") {
+class PluginStatePersister(providedFile: File, defaultFileName: String? = null) {
+
+    companion object {
+        const val DEFAULT_FILE_NAME = "modelixSyncPluginState.xml"
+    }
 
     private val logger = KotlinLogging.logger {}
 
     private val targetFile: File = if (providedFile.isDirectory) {
-        providedFile.resolve(defaultFileName)
+        providedFile.resolve(defaultFileName ?: DEFAULT_FILE_NAME)
     } else {
         providedFile
     }
@@ -39,11 +43,9 @@ class PluginStatePersister(providedFile: File, defaultFileName: String = "syncSt
     /**
      * Loads the state from the XML file.
      *
-     * @param baseDirectory the folder from which we will load the serialized [PersistableState]
-     *
      * @return the deserialized [PersistableState]
      */
-    fun load(baseDirectory: File): PersistableState? {
+    fun load(): PersistableState? {
         return try {
             XmlMapper().readValue(targetFile, PersistableState::class.java)
         } catch (t: Throwable) {
@@ -56,13 +58,12 @@ class PluginStatePersister(providedFile: File, defaultFileName: String = "syncSt
      * Loads the state from the XML file and then initializes the internal state of the modelix sync lib via
      * [PersistableState.restoreState].
      *
-     * @param baseDirectory the folder from which we will load the serialized [PersistableState]
      * @param syncService see [PersistableState.restoreState]
      *
      * @return see [PersistableState.restoreState]
      */
-    fun restore(baseDirectory: File, syncService: IRebindModulesSyncService): RestoredStateContext? {
-        val state = load(baseDirectory) ?: return null
+    fun restore(syncService: IRebindModulesSyncService): RestoredStateContext? {
+        val state = load() ?: return null
         return state.restoreState(syncService)
     }
 }
