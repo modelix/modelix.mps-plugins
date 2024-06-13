@@ -15,7 +15,6 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(libs.kotlin.logging.microutils)
     implementation(libs.kotlin.serialization.json)
-    implementation(libs.jackson.dataformat.xml)
 
     implementation(libs.modelix.model.api)
     implementation(libs.modelix.model.api.gen.runtime)
