@@ -10,7 +10,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
-import org.modelix.mps.sync.modelix.ITreeVisitor
+import org.modelix.mps.sync.modelix.IBranchVisitor
 import org.modelix.mps.sync.modelix.util.getModel
 import org.modelix.mps.sync.modelix.util.getMpsNodeId
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
@@ -24,7 +24,7 @@ class MpsToModelixMapInitializerVisitor(
     private val cache: MpsToModelixMap,
     private val repository: SRepository,
     private val branch: IBranch,
-) : ITreeVisitor {
+) : IBranchVisitor {
 
     private val logger = KotlinLogging.logger {}
 
