@@ -24,15 +24,19 @@ import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.persistence.PersistableState
+import org.modelix.mps.sync.persistence.PluginStatePersister
 import org.modelix.mps.sync.persistence.RestoredStateContext
 import org.modelix.mps.sync.plugin.ModelSyncService
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 @Service(Service.Level.PROJECT)
 @State(
     name = "ModelixSyncPluginState",
     reloadable = true,
-    storages = [Storage("modelixSyncPluginState.xml", roamingType = RoamingType.DISABLED)],
+    storages = [Storage(PluginStatePersister.DEFAULT_FILE_NAME, roamingType = RoamingType.DISABLED)],
 )
 class SyncPluginState : PersistentStateComponent<PersistableState> {
 
