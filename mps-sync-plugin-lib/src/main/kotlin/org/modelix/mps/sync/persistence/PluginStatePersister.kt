@@ -1,5 +1,6 @@
 package org.modelix.mps.sync.persistence
 
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -15,8 +16,6 @@ class PluginStatePersister {
 
     private val logger = KotlinLogging.logger {}
 
-    private val serializer = PersistableStateSerializer()
-
     /**
      * Saves the state into a JSON file. The full path of the file is defined by [PluginStatePersister.getFilePath].
      *
@@ -25,7 +24,7 @@ class PluginStatePersister {
      */
     fun save(baseDirectory: File, state: PersistableState) {
         try {
-            val serialized = Json.encodeToString(serializer, state)
+            val serialized = Json.encodeToString(state)
             val targetFile = getFilePath(baseDirectory)
             Files.writeString(targetFile, serialized)
         } catch (t: Throwable) {
@@ -44,7 +43,7 @@ class PluginStatePersister {
         try {
             val sourceFile = getFilePath(baseDirectory)
             val serialized = Files.readString(sourceFile)
-            return Json.decodeFromString(serializer, serialized)
+            return Json.decodeFromString(serialized)
         } catch (t: Throwable) {
             logger.error(t) { "Loading the plugin state failed. Cause: ${t.message}" }
             return null
