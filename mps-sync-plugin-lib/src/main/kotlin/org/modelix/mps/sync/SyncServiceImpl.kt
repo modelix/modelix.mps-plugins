@@ -49,7 +49,8 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
     private val mpsProjectInjector = ActiveMpsProjectInjector
     private val notifierInjector = InjectableNotifierWrapper
 
-    private val dispatcher = Dispatchers.IO // rather IO-intensive tasks
+    private val networkDispatcher = Dispatchers.IO // rather IO-intensive tasks
+    private val cpuDispatcher = Dispatchers.Default // rather CPU-intensive tasks
 
     init {
         notifierInjector.notifier = userNotifier
@@ -63,7 +64,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
     override fun connectModelServer(serverURL: URL, jwt: String?): ModelClientV2 {
         logger.info { "Connecting to $serverURL" }
         val modelClientV2 = ModelClientV2.builder().url(serverURL.toString()).authToken { jwt }.build()
-        runBlocking(dispatcher) {
+        runBlocking(networkDispatcher) {
             modelClientV2.init()
         }
         logger.info { "Connection to $serverURL is successful." }
@@ -95,7 +96,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
      * WARNING: this is a long-running blocking call.
      */
     override fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch =
-        runBlocking(dispatcher) {
+        runBlocking(networkDispatcher) {
             val model = setReplicatedModel(client, branchReference)
             try {
                 model.start()
@@ -118,7 +119,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
             branchReference,
             languageRepository,
             targetProject,
-            ReplicatedModelInitContext(CoroutineScope(dispatcher), initialVersion),
+            ReplicatedModelInitContext(CoroutineScope(networkDispatcher), initialVersion),
         )
         logger.info { "Connected to branch $branchReference with initial version $initialVersion" }
         return model
@@ -172,7 +173,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
 
         // recreate the mapping between the local MPS elements and the modelix Nodes
         val branch = replicatedModel.getBranch()
-        runBlocking(dispatcher) {
+        runBlocking(cpuDispatcher) {
             val repository = ActiveMpsProjectInjector.activeMpsProject?.repository
             requireNotNull(repository) { "SRepository must exist, otherwise we cannot restore the Modules." }
             val mappingRecreator = MpsToModelixMapInitializerVisitor(MpsToModelixMap, repository, branch)
@@ -204,7 +205,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         }
 
         // let modelix get the changes from model server
-        CoroutineScope(dispatcher).launch { replicatedModel.start() }
+        CoroutineScope(networkDispatcher).launch { replicatedModel.start() }
 
         return bindings
     }
