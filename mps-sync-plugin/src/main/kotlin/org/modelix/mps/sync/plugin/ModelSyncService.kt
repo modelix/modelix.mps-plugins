@@ -35,6 +35,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
@@ -48,7 +49,6 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.IRebindModulesSyncService
 import org.modelix.mps.sync.ISyncService
-import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.mps.util.ModuleIdWithName
@@ -60,10 +60,10 @@ import java.net.URL
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
 @Service(Service.Level.PROJECT)
-class ModelSyncService : Disposable, IRebindModulesSyncService {
+class ModelSyncService(project: Project) : Disposable, IRebindModulesSyncService {
 
     private val logger = KotlinLogging.logger { }
-    private val notifierInjector = InjectableNotifierWrapper
+    private val notifierInjector: InjectableNotifierWrapper
 
     private lateinit var syncService: ISyncService
 
@@ -71,6 +71,11 @@ class ModelSyncService : Disposable, IRebindModulesSyncService {
         logger.debug { "ModelixSyncPlugin: Registering sync actions" }
         registerSyncActions()
         logger.debug { "ModelixSyncPlugin: Registration finished" }
+
+        logger.debug { "ModelixSyncPlugin: Initializing the InjectableNotifierWrapper" }
+        notifierInjector = project.service()
+        notifierInjector.setNotifier(BalloonNotifier(project))
+        logger.debug { "ModelixSyncPlugin: InjectableNotifierWrapper is initialized" }
     }
 
     override fun connectModelServer(serverURL: String, jwt: String?): ModelClientV2? {
@@ -160,16 +165,6 @@ class ModelSyncService : Disposable, IRebindModulesSyncService {
     fun bindModuleFromMps(module: AbstractModule, branch: IBranch) = syncService.bindModuleFromMps(module, branch)
 
     fun bindModelFromMps(model: SModelBase, branch: IBranch) = syncService.bindModelFromMps(model, branch)
-
-    fun setActiveProject(project: Project) {
-        // TODO FIXME ModelSyncService MUST BE Project scoped instead of APP scoped, otherwise this workaround here is fragile
-        logger.debug { "ModelixSyncPlugin: Initializing Sync Service" }
-        val notifier = BalloonNotifier(project)
-        syncService = SyncServiceImpl(notifier)
-        logger.debug { "ModelixSyncPlugin: Sync Service is initialized" }
-
-        syncService.setActiveProject(project)
-    }
 
     override fun dispose() {
         logger.debug { "ModelixSyncPlugin: Dispose" }

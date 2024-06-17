@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.bindings
 
+import com.intellij.openapi.components.Service
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import org.jetbrains.mps.openapi.model.SModelId
@@ -30,7 +31,8 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.function.BiConsumer
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-object BindingsRegistry {
+@Service(Service.Level.PROJECT)
+class BindingsRegistry {
 
     private val modelBindingsByModule = synchronizedMap<SModule, MutableSet<ModelBinding>>()
     private val moduleBindings = synchronizedLinkedHashSet<ModuleBinding>()

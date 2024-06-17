@@ -20,6 +20,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.workbench.MPSDataKeys
 import mu.KotlinLogging
@@ -42,7 +43,6 @@ class ModelSyncAction : AnAction {
     }
 
     private val logger = KotlinLogging.logger {}
-    private val notifierInjector = InjectableNotifierWrapper
 
     constructor() : super()
 
@@ -50,23 +50,32 @@ class ModelSyncAction : AnAction {
 
     override fun actionPerformed(event: AnActionEvent) {
         var modelName = ""
+        var project: Project? = null
+
         try {
             val model = event.getData(CONTEXT_MODEL) as? SModelBase
             checkNotNull(model) { "Synchronization is not possible, because Model is not an SModelBase." }
             modelName = model.name.simpleName
 
-            val branch = BranchRegistry.branch
-            checkNotNull(branch) { "Connect to a server and branch before synchronizing a model." }
+            project = event.getData(MPSDataKeys.PROJECT)
+            checkNotNull(project) { "Synchronization is not possible, because Project is null." }
 
-            val project = event.getData(MPSDataKeys.PROJECT)
-            val syncService = project?.service<ModelSyncService>()
-            checkNotNull(syncService) { "Synchronization is not possible, because SyncService is null." }
+            val branchRegistry = project.service<BranchRegistry>()
+            val branch = branchRegistry.branch
+            checkNotNull(branch) { "Connect to a server and branch before synchronizing a Model." }
 
+            val syncService = project.service<ModelSyncService>()
             val binding = syncService.bindModelFromMps(model, branch)
             binding.activate()
         } catch (t: Throwable) {
             val message = "Model '$modelName' synchronization error occurred. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
+
+            val notifier = project?.service<InjectableNotifierWrapper>()
+            if (notifier == null) {
+                logger.error(t) { message }
+            } else {
+                notifier.notifyAndLogError(message, t, logger)
+            }
         }
     }
 }

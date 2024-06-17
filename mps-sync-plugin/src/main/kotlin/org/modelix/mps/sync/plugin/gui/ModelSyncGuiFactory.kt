@@ -16,7 +16,6 @@
 
 package org.modelix.mps.sync.plugin.gui
 
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -77,7 +76,7 @@ class ModelSyncGuiFactory : ToolWindowFactory {
         intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
     )
     @Service(Service.Level.PROJECT)
-    class ModelSyncGui(private val activeProject: Project) : Disposable {
+    class ModelSyncGui(private val activeProject: Project) {
 
         companion object {
             private const val COMBOBOX_CHANGED_COMMAND = "comboBoxChanged"
@@ -89,8 +88,6 @@ class ModelSyncGuiFactory : ToolWindowFactory {
         private val logger = KotlinLogging.logger {}
         private val mutex = Mutex()
         private val dispatcher = Dispatchers.Default
-
-        private lateinit var bindingsRefresher: BindingsComboBoxRefresher
 
         private val modelSyncService: ModelSyncService = activeProject.service()
 
@@ -121,20 +118,14 @@ class ModelSyncGuiFactory : ToolWindowFactory {
         private var activeBranch: ActiveBranch? = null
         private var selectedBranch: BranchReference? = null
 
-        init {
-            modelSyncService.setActiveProject(activeProject)
-        }
-
         fun init(toolWindow: ToolWindow) {
             // create GUI
             initializeToolWindowContent(toolWindow)
-            bindingsRefresher = BindingsComboBoxRefresher(this)
-            bindingsRefresher.start()
 
             // restore persisted state
             val loadedState: SyncPluginState = activeProject.service()
             loadedState.latestState?.let {
-                val restoredStateContext = it.restoreState(modelSyncService)
+                val restoredStateContext = it.restoreState(modelSyncService, activeProject)
                 restoredStateContext?.let { context ->
                     val branch = context.branchReference
                     setActiveConnection(context.modelClient, branch.repositoryId, branch)
@@ -558,10 +549,6 @@ class ModelSyncGuiFactory : ToolWindowFactory {
 
         private data class ActiveBranch(val branch: IBranch, val branchName: String) {
             constructor(branch: IBranch, branchReference: BranchReference) : this(branch, branchReference.branchName)
-        }
-
-        override fun dispose() {
-            bindingsRefresher.interrupt()
         }
     }
 }

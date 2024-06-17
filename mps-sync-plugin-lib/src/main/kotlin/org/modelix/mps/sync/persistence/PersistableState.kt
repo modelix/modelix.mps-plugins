@@ -1,5 +1,7 @@
 package org.modelix.mps.sync.persistence
 
+import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
 import jetbrains.mps.project.AbstractModule
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
@@ -56,16 +58,18 @@ data class PersistableState(
 ) {
 
     private val logger = KotlinLogging.logger {}
-    private val notifier = InjectableNotifierWrapper
 
     /**
      * Initializes the [PersistableState]'s fields with values fetched from the internal state of the modelix sync lib.
      * The method overrides the values of the [this]' fields.
      *
+     * @param project the opened [Project]
+     *
      * @return this with initialized fields, or the original state if [BranchRegistry.model] is null
      */
-    fun fetchState(): PersistableState {
-        val replicatedModel = BranchRegistry.model
+    fun fetchState(project: Project): PersistableState {
+        val branchRegistry = project.service<BranchRegistry>()
+        val replicatedModel = branchRegistry.model
         if (replicatedModel == null) {
             logger.warn { "Replicated Model is null, therefore an empty PersistableState will be saved." }
             return this
@@ -79,7 +83,8 @@ data class PersistableState(
             localVersion = replicatedModel.getCurrentVersion().getContentHash()
         }
 
-        BindingsRegistry.getModuleBindings().forEach {
+        val bindingsRegistry = project.service<BindingsRegistry>()
+        bindingsRegistry.getModuleBindings().forEach {
             moduleIds += it.module.moduleId.toString()
         }
 
@@ -95,10 +100,11 @@ data class PersistableState(
      * 4. creates bindings for the synchronized modules ([PersistableState.moduleIds])
      *
      * @param syncService the interface to the modelix sync lib to restore its state
+     * @param project the opened [Project]
      *
      * @return some context statistics about the restored state
      */
-    fun restoreState(syncService: IRebindModulesSyncService): RestoredStateContext? {
+    fun restoreState(syncService: IRebindModulesSyncService, project: Project): RestoredStateContext? {
         var client: ModelClientV2? = null
 
         try {
@@ -150,25 +156,22 @@ data class PersistableState(
             logger.debug { "Bindings are recreated, now activating them." }
             bindings!!.forEach(IBinding::activate)
             logger.debug { "Bindings are activated." }
+
             return RestoredStateContext(client, branchReference, modules)
         } catch (t: Throwable) {
             val message =
                 "Error occurred, while restoring persisted state. Connection to model server, bindings and synchronization cache might not be established and activated. Please check logs for details."
+            val notifier = project.service<InjectableNotifierWrapper>()
             notifier.notifyAndLogError(message, t, logger)
 
-            close(client, MpsToModelixMap)
+            client?.let {
+                it.close()
+                notifier.notifyAndLogInfo("Disconnected from server: ${it.baseUrl}", logger)
+            }
+            MpsToModelixMap.clear()
 
             return null
         }
-    }
-
-    private fun close(client: ModelClientV2?, cache: MpsToModelixMap) {
-        client?.let {
-            it.close()
-            val message = "Disconnected from server: ${it.baseUrl}"
-            notifier.notifyAndLogInfo(message, logger)
-        }
-        cache.clear()
     }
 }
 

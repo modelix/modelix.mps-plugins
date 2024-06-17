@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.modelix
 
+import com.intellij.openapi.components.Service
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
@@ -32,7 +33,8 @@ import org.modelix.mps.sync.mps.RepositoryChangeListener
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-object BranchRegistry : AutoCloseable {
+@Service(Service.Level.PROJECT)
+class BranchRegistry : AutoCloseable {
 
     val branch: IBranch?
         get() = model?.getBranch()

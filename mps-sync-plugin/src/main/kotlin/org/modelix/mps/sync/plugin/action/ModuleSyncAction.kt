@@ -20,6 +20,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.workbench.MPSDataKeys
 import mu.KotlinLogging
@@ -42,7 +43,6 @@ class ModuleSyncAction : AnAction {
     }
 
     private val logger = KotlinLogging.logger {}
-    private val notifierInjector = InjectableNotifierWrapper
 
     constructor() : super()
 
@@ -50,23 +50,32 @@ class ModuleSyncAction : AnAction {
 
     override fun actionPerformed(event: AnActionEvent) {
         var moduleName = ""
+        var project: Project? = null
+
         try {
             val module = event.getData(CONTEXT_MODULE) as? AbstractModule
             checkNotNull(module) { "Synchronization is not possible, because Module is not an AbstractModule." }
             moduleName = module.moduleName ?: ""
 
-            val branch = BranchRegistry.branch
-            check(branch != null) { "Connect to a server and branch before synchronizing a module." }
+            project = event.getData(MPSDataKeys.PROJECT)
+            checkNotNull(project) { "Synchronization is not possible, because Project is null." }
 
-            val project = event.getData(MPSDataKeys.PROJECT)
-            val syncService = project?.service<ModelSyncService>()
-            checkNotNull(syncService) { "Synchronization is not possible, because SyncService is null." }
+            val branchRegistry = project.service<BranchRegistry>()
+            val branch = branchRegistry.branch
+            checkNotNull(branch) { "Connect to a server and branch before synchronizing a Module." }
 
+            val syncService = project.service<ModelSyncService>()
             val bindings = syncService.bindModuleFromMps(module, branch)
             bindings.forEach { it.activate() }
         } catch (t: Throwable) {
             val message = "Module '$moduleName' synchronization error occurred. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
+
+            val notifier = project?.service<InjectableNotifierWrapper>()
+            if (notifier == null) {
+                logger.error(t) { message }
+            } else {
+                notifier.notifyAndLogError(message, t, logger)
+            }
         }
     }
 }

@@ -1,5 +1,7 @@
 package org.modelix.mps.sync
 
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
@@ -25,7 +27,6 @@ import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.modelix.ITreeTraversal
 import org.modelix.mps.sync.modelix.ReplicatedModelInitContext
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
-import org.modelix.mps.sync.mps.notifications.INotifier
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.mps.util.isDescriptorModel
@@ -43,18 +44,20 @@ import java.net.URL
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
+@Service(Service.Level.PROJECT)
+class SyncServiceImpl(private val project: Project) : ISyncService {
 
     private val logger = KotlinLogging.logger {}
     private val mpsProjectInjector = ActiveMpsProjectInjector
-    private val notifierInjector = InjectableNotifierWrapper
+
+    private val notifierInjector: InjectableNotifierWrapper = project.service()
+    private val bindingsRegistry: BindingsRegistry = project.service()
+    private val branchRegistry: BranchRegistry = project.service()
 
     private val networkDispatcher = Dispatchers.IO // rather IO-intensive tasks
     private val cpuDispatcher = Dispatchers.Default // rather CPU-intensive tasks
 
     init {
-        notifierInjector.notifier = userNotifier
-
         logger.debug { "ModelixSyncPlugin: Registering built-in languages" }
         // just a dummy call, the initializer of ILanguageRegistry takes care of the rest...
         ILanguageRepository.default.javaClass
@@ -78,19 +81,19 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         logger.info { "Disconnected from ${client.baseUrl}" }
 
         logger.info { "Deactivating bindings and disposing cloned branch." }
-        BindingsRegistry.deactivateBindings(waitForCompletion = true)
-        BranchRegistry.close()
+        bindingsRegistry.deactivateBindings(waitForCompletion = true)
+        branchRegistry.close()
         logger.info { "Bindings are deactivated and branch is disposed." }
     }
 
     override fun disconnectFromBranch(branch: IBranch, branchName: String) {
         logger.info { "Deactivating bindings and disposing cloned branch $branchName." }
-        BindingsRegistry.deactivateBindings(waitForCompletion = true)
-        BranchRegistry.unsetBranch(branch)
+        bindingsRegistry.deactivateBindings(waitForCompletion = true)
+        branchRegistry.unsetBranch(branch)
         logger.info { "Bindings are deactivated and branch ($branchName) is disposed." }
     }
 
-    override fun getActiveBranch(): IBranch? = BranchRegistry.branch
+    override fun getActiveBranch(): IBranch? = branchRegistry.branch
 
     /**
      * WARNING: this is a long-running blocking call.
@@ -114,7 +117,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         logger.info { "Connecting to branch $branchReference with initial version $initialVersion (null = latest version)." }
         val targetProject = mpsProjectInjector.activeMpsProject!!
         val languageRepository = registerLanguages(targetProject)
-        val model = BranchRegistry.setReplicatedModel(
+        val model = branchRegistry.setReplicatedModel(
             client,
             branchReference,
             languageRepository,
@@ -185,7 +188,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         val bindings = mutableListOf<IBinding>()
         modules.forEach { module ->
             val moduleBinding = ModuleBinding(module, branch)
-            BindingsRegistry.addModuleBinding(moduleBinding)
+            bindingsRegistry.addModuleBinding(moduleBinding)
 
             module.models.forEach { model ->
                 require(model is SModelBase) { "Model ($model) is not an SModelBase." }
@@ -194,7 +197,7 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
                     EmptyBinding()
                 } else {
                     val modelBinding = ModelBinding(model, branch)
-                    BindingsRegistry.addModelBinding(modelBinding)
+                    bindingsRegistry.addModelBinding(modelBinding)
                     modelBinding
                 }
                 bindings.add(binding)
@@ -270,9 +273,9 @@ class SyncServiceImpl(userNotifier: INotifier) : ISyncService {
         SyncQueue.close()
         FuturesWaitQueue.close()
         // dispose replicated model
-        BranchRegistry.close()
+        branchRegistry.close()
         // dispose all bindings
-        BindingsRegistry.deactivateBindings()
+        bindingsRegistry.deactivateBindings()
         logger.debug { "SyncServiceImpl is closed." }
     }
 

@@ -21,6 +21,7 @@ import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.project.Project
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.persistence.PersistableState
 import org.modelix.mps.sync.persistence.PluginStatePersister
@@ -35,13 +36,13 @@ import org.modelix.mps.sync.persistence.PluginStatePersister
     reloadable = true,
     storages = [Storage(PluginStatePersister.DEFAULT_FILE_NAME, roamingType = RoamingType.DISABLED)],
 )
-class SyncPluginState : PersistentStateComponent<PersistableState> {
+class SyncPluginState(private val project: Project) : PersistentStateComponent<PersistableState> {
 
     var latestState: PersistableState? = null
         private set
 
     override fun getState(): PersistableState {
-        return PersistableState().fetchState()
+        return PersistableState().fetchState(project)
     }
 
     override fun loadState(newState: PersistableState) {

@@ -16,6 +16,10 @@
 
 package org.modelix.mps.sync.plugin.gui
 
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
@@ -27,17 +31,25 @@ import org.modelix.mps.sync.bindings.BindingsRegistry
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-class BindingsComboBoxRefresher(private val gui: ModelSyncGuiFactory.ModelSyncGui) : Thread() {
+@Service(Service.Level.PROJECT)
+class BindingsComboBoxRefresher(project: Project) : Thread(), Disposable {
 
     private val logger = KotlinLogging.logger {}
+
+    private val bindingsRegistry = project.service<BindingsRegistry>()
+    private val pluginGui = project.service<ModelSyncGuiFactory.ModelSyncGui>()
 
     private val bindingsComparator = BindingSortComparator()
     private var existingBindings = LinkedHashSet<IBinding>()
 
+    init {
+        start()
+    }
+
     override fun run() {
         try {
             while (!isInterrupted) {
-                val bindingState = BindingsRegistry.changedBindings.take()
+                val bindingState = bindingsRegistry.changedBindings.take()
                 val binding = bindingState.binding
 
                 when (bindingState.state) {
@@ -47,10 +59,14 @@ class BindingsComboBoxRefresher(private val gui: ModelSyncGuiFactory.ModelSyncGu
                 }
 
                 val sorted = existingBindings.sortedWith(bindingsComparator)
-                gui.populateBindingCB(sorted)
+                pluginGui.populateBindingCB(sorted)
             }
         } catch (ignored: InterruptedException) {
             logger.warn { "BindingsComboBoxRefresher is shutting down. If the corresponding project is closing, then it's a normal behavior." }
         }
+    }
+
+    override fun dispose() {
+        interrupt()
     }
 }
