@@ -21,6 +21,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.components.service
 import jetbrains.mps.extapi.model.SModelBase
+import jetbrains.mps.workbench.MPSDataKeys
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -28,7 +29,10 @@ import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.plugin.ModelSyncService
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class ModelSyncAction : AnAction {
 
     companion object {
@@ -47,12 +51,18 @@ class ModelSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         var modelName = ""
         try {
-            val model = event.getData(CONTEXT_MODEL)!! as SModelBase
+            val model = event.getData(CONTEXT_MODEL) as? SModelBase
+            checkNotNull(model) { "Synchronization is not possible, because Model is not an SModelBase." }
             modelName = model.name.simpleName
-            val branch = BranchRegistry.branch
-            check(branch != null) { "Connect to a server and branch before synchronizing a model." }
 
-            val binding = service<ModelSyncService>().bindModelFromMps(model, branch)
+            val branch = BranchRegistry.branch
+            checkNotNull(branch) { "Connect to a server and branch before synchronizing a model." }
+
+            val project = event.getData(MPSDataKeys.PROJECT)
+            val syncService = project?.service<ModelSyncService>()
+            checkNotNull(syncService) { "Synchronization is not possible, because SyncService is null." }
+
+            val binding = syncService.bindModelFromMps(model, branch)
             binding.activate()
         } catch (t: Throwable) {
             val message = "Model '$modelName' synchronization error occurred. Cause: ${t.message}"

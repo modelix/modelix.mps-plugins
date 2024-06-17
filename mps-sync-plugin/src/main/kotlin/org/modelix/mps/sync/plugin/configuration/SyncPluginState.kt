@@ -21,12 +21,9 @@ import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
-import com.intellij.openapi.components.service
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.persistence.PersistableState
 import org.modelix.mps.sync.persistence.PluginStatePersister
-import org.modelix.mps.sync.persistence.RestoredStateContext
-import org.modelix.mps.sync.plugin.ModelSyncService
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -40,7 +37,7 @@ import org.modelix.mps.sync.plugin.ModelSyncService
 )
 class SyncPluginState : PersistentStateComponent<PersistableState> {
 
-    var latestRestoredContext: RestoredStateContext? = null
+    var latestState: PersistableState? = null
         private set
 
     override fun getState(): PersistableState {
@@ -48,7 +45,6 @@ class SyncPluginState : PersistentStateComponent<PersistableState> {
     }
 
     override fun loadState(newState: PersistableState) {
-        val syncService = service<ModelSyncService>()
-        latestRestoredContext = newState.restoreState(syncService)
+        latestState = newState
     }
 }

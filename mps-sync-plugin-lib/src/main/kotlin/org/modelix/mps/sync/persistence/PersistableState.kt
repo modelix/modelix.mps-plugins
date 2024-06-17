@@ -17,7 +17,10 @@ import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 /**
  * States are capable of taking a snapshot of the current bindings to modelix servers with getCurrentState(),
  * and recreating that state by calling load(). Note that currently the bindings of the state will be added during
@@ -176,7 +179,10 @@ data class PersistableState(
  * @property branchReference the branch in the repository to which we are connected
  * @property modules the MPS modules for which we established the bindings
  */
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class RestoredStateContext(
     val modelClient: ModelClientV2,
     val branchReference: BranchReference,

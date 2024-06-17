@@ -55,8 +55,11 @@ import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.plugin.action.ModelixActionGroup
 import java.net.URL
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-@Service(Service.Level.APP)
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+@Service(Service.Level.PROJECT)
 class ModelSyncService : Disposable, IRebindModulesSyncService {
 
     private val logger = KotlinLogging.logger { }

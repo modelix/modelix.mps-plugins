@@ -21,6 +21,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.components.service
 import jetbrains.mps.project.AbstractModule
+import jetbrains.mps.workbench.MPSDataKeys
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -28,7 +29,10 @@ import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.plugin.ModelSyncService
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class ModuleSyncAction : AnAction {
 
     companion object {
@@ -47,12 +51,19 @@ class ModuleSyncAction : AnAction {
     override fun actionPerformed(event: AnActionEvent) {
         var moduleName = ""
         try {
-            val module = event.getData(CONTEXT_MODULE)!! as AbstractModule
+            val module = event.getData(CONTEXT_MODULE) as? AbstractModule
+            checkNotNull(module) { "Synchronization is not possible, because Module is not an AbstractModule." }
             moduleName = module.moduleName ?: ""
+
             val branch = BranchRegistry.branch
             check(branch != null) { "Connect to a server and branch before synchronizing a module." }
 
-            val bindings = service<ModelSyncService>().bindModuleFromMps(module, branch)
+            // TODO testme
+            val project = event.getData(MPSDataKeys.PROJECT)
+            val syncService = project?.service<ModelSyncService>()
+            checkNotNull(syncService) { "Synchronization is not possible, because SyncService is null." }
+
+            val bindings = syncService.bindModuleFromMps(module, branch)
             bindings.forEach { it.activate() }
         } catch (t: Throwable) {
             val message = "Module '$moduleName' synchronization error occurred. Cause: ${t.message}"

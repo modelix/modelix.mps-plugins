@@ -16,16 +16,16 @@
 
 package org.modelix.mps.sync.plugin.gui
 
+import com.intellij.ide.DataManager
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.JBTextField
-import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
+import jetbrains.mps.workbench.MPSDataKeys
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -53,7 +53,6 @@ import org.modelix.mps.sync.plugin.configuration.SyncPluginState
 import org.modelix.mps.sync.plugin.icons.CloudIcons
 import java.awt.Component
 import java.awt.FlowLayout
-import java.awt.event.ItemEvent
 import javax.swing.Box
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListCellRenderer
@@ -70,26 +69,20 @@ import javax.swing.JSeparator
 class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
     private lateinit var toolWindowContent: ModelSyncGui
-    private lateinit var content: Content
-    private lateinit var bindingsRefresher: BindingsComboBoxRefresher
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         toolWindowContent = ModelSyncGui(toolWindow)
-        content = ContentFactory.SERVICE.getInstance().createContent(toolWindowContent.contentPanel, "", false)
-        toolWindow.contentManager.addContent(content)
-        bindingsRefresher = toolWindowContent.bindingsRefresher
     }
 
     override fun dispose() {
-        bindingsRefresher.interrupt()
-        content.dispose()
+        toolWindowContent.dispose()
     }
 
     @UnstableModelixFeature(
         reason = "The new modelix MPS plugin is under construction",
-        intendedFinalization = "2024.1",
+        intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
     )
-    class ModelSyncGui(toolWindow: ToolWindow) {
+    class ModelSyncGui(toolWindow: ToolWindow) : Disposable {
 
         companion object {
             private const val COMBOBOX_CHANGED_COMMAND = "comboBoxChanged"
@@ -102,11 +95,11 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val mutex = Mutex()
         private val dispatcher = Dispatchers.Default
 
-        val contentPanel = JPanel()
-        val bindingsRefresher: BindingsComboBoxRefresher
+        private val bindingsRefresher: BindingsComboBoxRefresher
 
-        // the actual intelliJ service handling the synchronization
-        private val modelSyncService = service<ModelSyncService>()
+        private val activeProject: Project
+        private val modelSyncService: ModelSyncService
+
         private val serverURL = JBTextField(TEXTFIELD_WIDTH)
         private val repositoryName = JBTextField(TEXTFIELD_WIDTH)
         private val branchName = JBTextField(TEXTFIELD_WIDTH)
@@ -126,36 +119,33 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val disconnectBranchButton = JButton("Disconnect from Branch")
 
         private val connectionsModel = DefaultComboBoxModel<ModelClientV2>()
-        private val projectsModel = DefaultComboBoxModel<Project>()
         private val reposModel = DefaultComboBoxModel<RepositoryId>()
         private val branchesModel = DefaultComboBoxModel<BranchReference>()
         private val modulesModel = DefaultComboBoxModel<ModuleIdWithName>()
         private val bindingsModel = DefaultComboBoxModel<IBinding>()
 
-        private lateinit var activeProject: Project
         private var activeBranch: ActiveBranch? = null
-
         private var selectedBranch: BranchReference? = null
 
         init {
-            toolWindow.setIcon(CloudIcons.ROOT_ICON)
+            // TODO testme: is it going to work if we open MPS with two projects? Is the tool window going to be recreated in that case with the correct project?
+            val project = MPSDataKeys.PROJECT.getData(DataManager.getInstance().getDataContext(toolWindow.component))
+            checkNotNull(project) { "Modelix Plugin GUI cannot be initialized, because Project is null." }
+            activeProject = project
+            modelSyncService = activeProject.service<ModelSyncService>()
+
+            // create GUI
+            initializeToolWindowContent(toolWindow)
             bindingsRefresher = BindingsComboBoxRefresher(this)
-            contentPanel.layout = FlowLayout()
-            contentPanel.add(createInputBox())
-            populateProjectsCB()
 
-            // TODO fixme: hardcoded values
-            serverURL.text = "http://127.0.0.1:28101/v2"
-            repositoryName.text = "courses"
-            branchName.text = "master"
-            moduleName.text = "University.Schedule.modelserver.backend.sandbox"
-            jwt.text = ""
-
-            // trigger state reload
+            // restore persisted state
             val loadedState = activeProject.service<SyncPluginState>()
-            loadedState.latestRestoredContext?.let { context ->
-                val branch = context.branchReference
-                setActiveConnection(context.modelClient, branch.repositoryId, branch)
+            loadedState.latestState?.let {
+                val restoredStateContext = it.restoreState(modelSyncService)
+                restoredStateContext?.let { context ->
+                    val branch = context.branchReference
+                    setActiveConnection(context.modelClient, branch.repositoryId, branch)
+                }
             }
         }
 
@@ -167,16 +157,29 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             }
         }
 
-        private fun createInputBox(): Box {
+        private fun initializeToolWindowContent(toolWindow: ToolWindow) {
+            // TODO fixme: hardcoded values
+            serverURL.text = "http://127.0.0.1:28101/v2"
+            repositoryName.text = "courses"
+            branchName.text = "master"
+            moduleName.text = "University.Schedule.modelserver.backend.sandbox"
+            jwt.text = ""
+
+            val contentPanel = JPanel()
+            contentPanel.layout = FlowLayout()
+            contentPanel.add(createContentBox())
+            val content = ContentFactory.SERVICE.getInstance().createContent(contentPanel, "", false)
+            toolWindow.contentManager.addContent(content)
+
+            toolWindow.setIcon(CloudIcons.ROOT_ICON)
+        }
+
+        private fun createContentBox(): Box {
             val inputBox = Box.createVerticalBox()
 
             val urlPanel = JPanel()
             urlPanel.add(JLabel("Server URL:    "))
             urlPanel.add(serverURL)
-
-            val refreshButton = JButton("Refresh All")
-            refreshButton.addActionListener { populateProjectsCB() }
-            urlPanel.add(refreshButton)
             inputBox.add(urlPanel)
 
             val jwtPanel = JPanel()
@@ -211,20 +214,6 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             inputBox.add(connectionsPanel)
 
             inputBox.add(JSeparator())
-
-            val targetPanel = JPanel()
-            projectsCB.model = projectsModel
-            projectsCB.renderer = CustomCellRenderer()
-            projectsCB.addItemListener {
-                if (it.stateChange == ItemEvent.SELECTED) {
-                    activeProject = it.item as Project
-                    modelSyncService.setActiveProject(activeProject)
-                }
-            }
-
-            targetPanel.add(JLabel("Target Project:"))
-            targetPanel.add(projectsCB)
-            inputBox.add(targetPanel)
 
             val repoPanel = JPanel()
             reposCB.model = reposModel
@@ -439,14 +428,6 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             )
         }
 
-        private fun populateProjectsCB() {
-            projectsModel.removeAllElements()
-            projectsModel.addAll(ProjectManager.getInstance().openProjects.toMutableList())
-            if (projectsModel.size > 0) {
-                projectsModel.selectedItem = projectsModel.getElementAt(0)
-            }
-        }
-
         private fun populateConnectionsCB(client: ModelClientV2?) {
             connectionsModel.removeAllElements()
             if (client != null) {
@@ -585,6 +566,10 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
 
         private data class ActiveBranch(val branch: IBranch, val branchName: String) {
             constructor(branch: IBranch, branchReference: BranchReference) : this(branch, branchReference.branchName)
+        }
+
+        override fun dispose() {
+            bindingsRefresher.interrupt()
         }
     }
 }

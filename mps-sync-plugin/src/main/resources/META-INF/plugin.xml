@@ -39,15 +39,13 @@
                     factoryClass="org.modelix.mps.sync.plugin.gui.ModelSyncGuiFactory"/>
 
         <!-- service to handle storage of cloud details via project settings, aka .mps/modelixSyncPluginState.xml -->
-        <projectService
-                serviceImplementation="org.modelix.mps.sync.plugin.configuration.SyncPluginState"/>
+        <projectService serviceImplementation="org.modelix.mps.sync.plugin.configuration.SyncPluginState"/>
 
         <!-- the actual service in charge of connecting and binding -->
-        <applicationService serviceImplementation="org.modelix.mps.sync.plugin.ModelSyncService"/>
+        <projectService serviceImplementation="org.modelix.mps.sync.plugin.ModelSyncService"/>
 
         <!-- shows an indicator in the status bar to know the current connection state -->
-        <statusBarWidgetFactory id="CloudStatus"
-                                implementation="org.modelix.mps.sync.plugin.indicator.CloudIndicator"/>
+        <statusBarWidgetFactory id="CloudStatus" implementation="org.modelix.mps.sync.plugin.indicator.CloudIndicator"/>
 
     </extensions>
     <actions>
