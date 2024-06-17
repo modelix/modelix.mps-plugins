@@ -12,7 +12,10 @@ import java.io.File
  * @param providedFile the File in which the class will be saved. If it's a directory, then a fill will be created in it with name defaultFileName.
  * @param defaultFileName (optional) the file name to be used if providedFile is a directory. Defaults to [PluginStatePersister.DEFAULT_FILE_NAME].
  */
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class PluginStatePersister(providedFile: File, defaultFileName: String? = null) {
 
     companion object {

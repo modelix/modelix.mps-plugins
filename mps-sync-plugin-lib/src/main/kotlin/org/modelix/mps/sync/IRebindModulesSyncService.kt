@@ -11,7 +11,10 @@ import java.io.IOException
  * A sub-interface of [ISyncService] that can be implemented by all users of the modelix sync lib, so that they can
  * extend the default implementation in [SyncServiceImpl], e.g. adding extra logging or informing the users by errors.
  */
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 interface IRebindModulesSyncService {
 
     /**
