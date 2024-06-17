@@ -31,7 +31,6 @@ package org.modelix.mps.sync.plugin
  * limitations under the License.
  */
 
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.components.Service
@@ -39,6 +38,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
+import mu.KLogger
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
@@ -60,12 +60,12 @@ import java.net.URL
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
 @Service(Service.Level.PROJECT)
-class ModelSyncService(project: Project) : Disposable, IRebindModulesSyncService {
+class ModelSyncService(project: Project) : IRebindModulesSyncService {
 
-    private val logger = KotlinLogging.logger { }
-    private val notifierInjector: InjectableNotifierWrapper
+    private val logger: KLogger = KotlinLogging.logger { }
 
-    private lateinit var syncService: ISyncService
+    private val notifierInjector: InjectableNotifierWrapper = project.service()
+    private val syncService: ISyncService = project.service()
 
     init {
         logger.debug { "ModelixSyncPlugin: Registering sync actions" }
@@ -73,7 +73,6 @@ class ModelSyncService(project: Project) : Disposable, IRebindModulesSyncService
         logger.debug { "ModelixSyncPlugin: Registration finished" }
 
         logger.debug { "ModelixSyncPlugin: Initializing the InjectableNotifierWrapper" }
-        notifierInjector = project.service()
         notifierInjector.setNotifier(BalloonNotifier(project))
         logger.debug { "ModelixSyncPlugin: InjectableNotifierWrapper is initialized" }
     }
@@ -165,12 +164,6 @@ class ModelSyncService(project: Project) : Disposable, IRebindModulesSyncService
     fun bindModuleFromMps(module: AbstractModule, branch: IBranch) = syncService.bindModuleFromMps(module, branch)
 
     fun bindModelFromMps(model: SModelBase, branch: IBranch) = syncService.bindModelFromMps(model, branch)
-
-    override fun dispose() {
-        logger.debug { "ModelixSyncPlugin: Dispose" }
-        syncService.close()
-        logger.debug { "ModelixSyncPlugin: Disposed" }
-    }
 
     private fun registerSyncActions() {
         listOf(

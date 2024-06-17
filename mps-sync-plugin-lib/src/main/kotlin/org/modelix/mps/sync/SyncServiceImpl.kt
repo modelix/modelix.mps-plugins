@@ -1,11 +1,11 @@
 package org.modelix.mps.sync
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
-import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,12 +26,11 @@ import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.modelix.ITreeTraversal
 import org.modelix.mps.sync.modelix.ReplicatedModelInitContext
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.mps.util.isDescriptorModel
+import org.modelix.mps.sync.mps.util.toMpsProject
 import org.modelix.mps.sync.tasks.FuturesWaitQueue
-import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMapInitializerVisitor
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
@@ -45,22 +44,23 @@ import java.net.URL
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
 @Service(Service.Level.PROJECT)
-class SyncServiceImpl(private val project: Project) : ISyncService {
+class SyncServiceImpl(project: Project) : ISyncService, Disposable {
 
     private val logger = KotlinLogging.logger {}
-    private val mpsProjectInjector = ActiveMpsProjectInjector
 
     private val notifierInjector: InjectableNotifierWrapper = project.service()
     private val bindingsRegistry: BindingsRegistry = project.service()
     private val branchRegistry: BranchRegistry = project.service()
+    private val mpsProject = project.toMpsProject()
 
     private val networkDispatcher = Dispatchers.IO // rather IO-intensive tasks
     private val cpuDispatcher = Dispatchers.Default // rather CPU-intensive tasks
 
     init {
-        logger.debug { "ModelixSyncPlugin: Registering built-in languages" }
+        logger.debug { "SyncServiceImpl: Registering built-in languages" }
         // just a dummy call, the initializer of ILanguageRegistry takes care of the rest...
         ILanguageRepository.default.javaClass
+        logger.debug { "SyncServiceImpl: Built-in languages are registered" }
     }
 
     @Throws(IOException::class)
@@ -82,7 +82,7 @@ class SyncServiceImpl(private val project: Project) : ISyncService {
 
         logger.info { "Deactivating bindings and disposing cloned branch." }
         bindingsRegistry.deactivateBindings(waitForCompletion = true)
-        branchRegistry.close()
+        branchRegistry.dispose()
         logger.info { "Bindings are deactivated and branch is disposed." }
     }
 
@@ -93,7 +93,7 @@ class SyncServiceImpl(private val project: Project) : ISyncService {
         logger.info { "Bindings are deactivated and branch ($branchName) is disposed." }
     }
 
-    override fun getActiveBranch(): IBranch? = branchRegistry.branch
+    override fun getActiveBranch(): IBranch? = branchRegistry.getBranch()
 
     /**
      * WARNING: this is a long-running blocking call.
@@ -115,13 +115,11 @@ class SyncServiceImpl(private val project: Project) : ISyncService {
         initialVersion: CLVersion? = null,
     ): ReplicatedModel {
         logger.info { "Connecting to branch $branchReference with initial version $initialVersion (null = latest version)." }
-        val targetProject = mpsProjectInjector.activeMpsProject!!
-        val languageRepository = registerLanguages(targetProject)
+        val languageRepository = registerLanguages()
         val model = branchRegistry.setReplicatedModel(
             client,
             branchReference,
             languageRepository,
-            targetProject,
             ReplicatedModelInitContext(CoroutineScope(networkDispatcher), initialVersion),
         )
         logger.info { "Connected to branch $branchReference with initial version $initialVersion" }
@@ -140,9 +138,7 @@ class SyncServiceImpl(private val project: Project) : ISyncService {
     ): Iterable<IBinding> {
         val moduleName = module.name
         logger.info { "Binding Module '$moduleName' from the server ($branchReference)." }
-
-        val targetProject = mpsProjectInjector.activeMpsProject!!
-        val languageRepository = registerLanguages(targetProject)
+        val languageRepository = registerLanguages()
 
         // fetch replicated model and branch content
         val branch = connectToBranch(client, branchReference)
@@ -177,8 +173,7 @@ class SyncServiceImpl(private val project: Project) : ISyncService {
         // recreate the mapping between the local MPS elements and the modelix Nodes
         val branch = replicatedModel.getBranch()
         runBlocking(cpuDispatcher) {
-            val repository = ActiveMpsProjectInjector.activeMpsProject?.repository
-            requireNotNull(repository) { "SRepository must exist, otherwise we cannot restore the Modules." }
+            val repository = mpsProject.repository
             val mappingRecreator = MpsToModelixMapInitializerVisitor(MpsToModelixMap, repository, branch)
             val treeTraversal = ITreeTraversal(branch)
             treeTraversal.visit(mappingRecreator)
@@ -263,24 +258,15 @@ class SyncServiceImpl(private val project: Project) : ISyncService {
         return binding
     }
 
-    override fun setActiveProject(project: Project) {
-        mpsProjectInjector.setActiveProject(project)
-    }
-
-    override fun close() {
+    override fun dispose() {
         logger.debug { "Closing SyncServiceImpl." }
         // dispose task and wait queues
-        SyncQueue.close()
         FuturesWaitQueue.close()
-        // dispose replicated model
-        branchRegistry.close()
-        // dispose all bindings
-        bindingsRegistry.deactivateBindings()
         logger.debug { "SyncServiceImpl is closed." }
     }
 
-    private fun registerLanguages(project: MPSProject): MPSLanguageRepository {
-        val repository = project.repository
+    private fun registerLanguages(): MPSLanguageRepository {
+        val repository = mpsProject.repository
         val mpsLanguageRepo = MPSLanguageRepository(repository)
         ILanguageRepository.register(mpsLanguageRepo)
         return mpsLanguageRepo

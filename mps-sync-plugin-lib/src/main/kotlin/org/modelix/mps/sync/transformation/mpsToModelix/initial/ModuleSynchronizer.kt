@@ -38,7 +38,6 @@ import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.modelix.ModuleAlreadySynchronized
 import org.modelix.mps.sync.modelix.ModuleAlreadySynchronizedException
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.ContinuableSyncTask

@@ -15,8 +15,9 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.IRebindModulesSyncService
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.modelix.BranchRegistry
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.util.runReadAction
+import org.modelix.mps.sync.mps.util.toMpsProject
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 
 @UnstableModelixFeature(
@@ -134,7 +135,7 @@ data class PersistableState(
             val branchReference = BranchReference(repositoryId, branchName)
             var modules = listOf<AbstractModule>()
             var bindings: Iterable<IBinding>? = null
-            ActiveMpsProjectInjector.runMpsReadAction { repository ->
+            project.toMpsProject().runReadAction { repository ->
                 logger.debug { "Restoring SModules." }
                 modules = moduleIds.map {
                     val id = PersistenceFacade.getInstance().createModuleId(it)

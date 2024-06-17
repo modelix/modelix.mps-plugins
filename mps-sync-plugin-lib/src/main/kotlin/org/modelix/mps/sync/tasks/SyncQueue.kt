@@ -23,8 +23,9 @@ import com.intellij.openapi.project.Project
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.modelix.BranchRegistry
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.util.runReadAction
+import org.modelix.mps.sync.mps.util.toMpsProject
 import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.transformation.SynchronizationException
@@ -47,6 +48,7 @@ class SyncQueue(project: Project) {
 
     private val notifierInjector: InjectableNotifierWrapper = project.service()
     private val branchRegistry: BranchRegistry = project.service()
+    private val mpsProject = project.toMpsProject()
 
     private val activeSyncThreadsWithSyncDirection = ConcurrentHashMap<Thread, SyncDirection>()
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
@@ -167,10 +169,10 @@ class SyncQueue(project: Project) {
 
     private fun runWithLock(lock: SyncLock, runnable: () -> Unit) {
         when (lock) {
-            SyncLock.MPS_WRITE -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.executeCommandInEDT(runnable)
-            SyncLock.MPS_READ -> ActiveMpsProjectInjector.runMpsReadAction { runnable() }
-            SyncLock.MODELIX_READ -> branchRegistry.branch!!.runRead(runnable)
-            SyncLock.MODELIX_WRITE -> branchRegistry.branch!!.runWrite(runnable)
+            SyncLock.MPS_WRITE -> mpsProject.modelAccess.executeCommandInEDT(runnable)
+            SyncLock.MPS_READ -> mpsProject.runReadAction { runnable() }
+            SyncLock.MODELIX_READ -> getModelixBranch().runRead(runnable)
+            SyncLock.MODELIX_WRITE -> getModelixBranch().runWrite(runnable)
             SyncLock.NONE -> runnable.invoke()
         }
     }
@@ -190,6 +192,8 @@ class SyncQueue(project: Project) {
             null
         }
     }
+
+    private fun getModelixBranch() = branchRegistry.getBranch() ?: throw IllegalStateException("Branch is null.")
 }
 
 // List.headTail does not work in some MPS versions (e.g. 2020.3.6), therefore we reimplemented the method

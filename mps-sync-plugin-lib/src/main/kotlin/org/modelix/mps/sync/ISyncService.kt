@@ -1,6 +1,5 @@
 package org.modelix.mps.sync
 
-import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -13,7 +12,7 @@ import java.net.URL
 import java.util.concurrent.CompletableFuture
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-interface ISyncService : AutoCloseable, IRebindModulesSyncService {
+interface ISyncService : IRebindModulesSyncService {
 
     override fun connectModelServer(serverURL: String, jwt: String?) = connectModelServer(URL(serverURL), jwt)
 
@@ -37,8 +36,6 @@ interface ISyncService : AutoCloseable, IRebindModulesSyncService {
     fun bindModuleFromMps(module: AbstractModule, branch: IBranch): Iterable<IBinding>
 
     fun bindModelFromMps(model: SModelBase, branch: IBranch): IBinding
-
-    fun setActiveProject(project: Project)
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")

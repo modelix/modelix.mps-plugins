@@ -16,8 +16,9 @@
 
 package org.modelix.mps.sync.modelix
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
-import jetbrains.mps.project.MPSProject
+import com.intellij.openapi.project.Project
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -28,33 +29,31 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.RepositoryChangeListener
+import org.modelix.mps.sync.mps.util.toMpsProject
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
 @Service(Service.Level.PROJECT)
-class BranchRegistry : AutoCloseable {
+class BranchRegistry(project: Project) : Disposable {
 
-    val branch: IBranch?
-        get() = model?.getBranch()
+    private val mpsProject = project.toMpsProject()
 
     var model: ReplicatedModel? = null
         private set
 
-    // TODO refactor it so we can get as many replicated models from as many clients and branches as we wish...
     private var client: ModelClientV2? = null
     private var branchReference: BranchReference? = null
 
     private lateinit var branchListener: ModelixBranchListener
-
-    // the MPS Project and its registered change listener
-    private lateinit var project: MPSProject
     private lateinit var repoChangeListener: RepositoryChangeListener
 
+    fun getBranch() = model?.getBranch()
+
     fun unsetBranch(branch: IBranch) {
-        if (branch == this.branch) {
-            close()
+        if (branch == getBranch()) {
+            dispose()
         }
     }
 
@@ -62,14 +61,13 @@ class BranchRegistry : AutoCloseable {
         client: ModelClientV2,
         branchReference: BranchReference,
         languageRepository: MPSLanguageRepository,
-        targetProject: MPSProject,
         replicatedModelContext: ReplicatedModelInitContext,
     ): ReplicatedModel {
         if (this.client == client && this.branchReference == branchReference) {
             return model!!
         }
 
-        close()
+        dispose()
 
         val coroutineScope = replicatedModelContext.coroutineScope
         val initialVersion = replicatedModelContext.initialVersion
@@ -88,21 +86,16 @@ class BranchRegistry : AutoCloseable {
         this.client = client
 
         val repositoryChangeListener = RepositoryChangeListener(branch)
-        targetProject.repository.addRepositoryListener(repositoryChangeListener)
-        project = targetProject
+        mpsProject.repository.addRepositoryListener(repositoryChangeListener)
         repoChangeListener = repositoryChangeListener
 
         return model!!
     }
 
-    override fun close() {
-        if (branch == null) {
-            return
-        }
-
-        // remove listeners
-        branch!!.removeListener(branchListener)
-        project.repository.removeRepositoryListener(repoChangeListener)
+    override fun dispose() {
+        val branch = getBranch() ?: return
+        branch.removeListener(branchListener)
+        mpsProject.repository.removeRepositoryListener(repoChangeListener)
 
         model?.dispose()
 

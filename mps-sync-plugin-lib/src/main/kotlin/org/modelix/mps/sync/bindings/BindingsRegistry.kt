@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.bindings
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
@@ -32,7 +33,7 @@ import java.util.function.BiConsumer
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 @Service(Service.Level.PROJECT)
-class BindingsRegistry {
+class BindingsRegistry : Disposable {
 
     private val modelBindingsByModule = synchronizedMap<SModule, MutableSet<ModelBinding>>()
     private val moduleBindings = synchronizedLinkedHashSet<ModuleBinding>()
@@ -121,6 +122,10 @@ class BindingsRegistry {
 
     private fun bindingRemoved(binding: IBinding) =
         changedBindings.put(BindingState(binding, BindingLifecycleState.REMOVE))
+
+    override fun dispose() {
+        deactivateBindings()
+    }
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")

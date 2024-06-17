@@ -38,7 +38,6 @@ import org.modelix.mps.sync.modelix.util.isModel
 import org.modelix.mps.sync.modelix.util.isModule
 import org.modelix.mps.sync.modelix.util.isSingleLanguageDependency
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.factories.SNodeFactory
 import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
 import org.modelix.mps.sync.mps.util.addDevKit

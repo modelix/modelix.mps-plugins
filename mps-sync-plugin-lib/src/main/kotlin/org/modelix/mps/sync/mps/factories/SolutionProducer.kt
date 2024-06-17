@@ -30,7 +30,6 @@ import jetbrains.mps.smodel.GeneralModuleFactory
 import jetbrains.mps.vfs.IFile
 import jetbrains.mps.vfs.VFSManager
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import java.io.File
 
 // TODO hacky solution. A nicer one could be: https://github.com/JetBrains/MPS/blob/master/workbench/mps-platform/jetbrains.mps.ide.platform/source_gen/jetbrains/mps/project/modules/SolutionProducer.java

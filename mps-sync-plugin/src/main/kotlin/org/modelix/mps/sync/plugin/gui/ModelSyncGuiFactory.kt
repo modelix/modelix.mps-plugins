@@ -41,7 +41,6 @@ import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.ofConcept
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.notifications.AlertNotifier
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
 import org.modelix.mps.sync.mps.notifications.UserResponse
@@ -311,7 +310,7 @@ class ModelSyncGuiFactory : ToolWindowFactory {
                         return@addActionListener
                     }
 
-                    logger.info { "Binding Module ${moduleName.text} to project: ${ActiveMpsProjectInjector.activeMpsProject?.name}" }
+                    logger.info { "Binding Module ${moduleName.text} to project: ${activeProject.name}" }
                     callDisablingUiControls(
                         suspend {
                             val branchName = (selectedBranch as BranchReference).branchName
