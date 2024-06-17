@@ -16,6 +16,10 @@
 
 package org.modelix.mps.sync.tasks
 
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.modelix.BranchRegistry
@@ -29,24 +33,23 @@ import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.Executors
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-object SyncQueue : AutoCloseable {
+@Service(Service.Level.PROJECT)
+class SyncQueue(project: Project) {
 
     private val logger = KotlinLogging.logger {}
-    private val threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
-    private val notifierInjector = InjectableNotifierWrapper
+
+    private val threadPool = ApplicationManager.getApplication().getService(SharedThreadPool::class.java).threadPool
+
+    private val notifierInjector: InjectableNotifierWrapper = project.service()
+    private val branchRegistry: BranchRegistry = project.service()
 
     private val activeSyncThreadsWithSyncDirection = ConcurrentHashMap<Thread, SyncDirection>()
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
-
-    override fun close() {
-        threadPool.shutdownNow()
-    }
 
     fun enqueue(
         requiredLocks: LinkedHashSet<SyncLock>,
@@ -166,8 +169,8 @@ object SyncQueue : AutoCloseable {
         when (lock) {
             SyncLock.MPS_WRITE -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.executeCommandInEDT(runnable)
             SyncLock.MPS_READ -> ActiveMpsProjectInjector.runMpsReadAction { runnable() }
-            SyncLock.MODELIX_READ -> BranchRegistry.branch!!.runRead(runnable)
-            SyncLock.MODELIX_WRITE -> BranchRegistry.branch!!.runWrite(runnable)
+            SyncLock.MODELIX_READ -> branchRegistry.branch!!.runRead(runnable)
+            SyncLock.MODELIX_WRITE -> branchRegistry.branch!!.runWrite(runnable)
             SyncLock.NONE -> runnable.invoke()
         }
     }
