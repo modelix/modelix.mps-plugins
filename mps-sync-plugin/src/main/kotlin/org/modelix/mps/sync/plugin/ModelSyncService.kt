@@ -171,10 +171,6 @@ class ModelSyncService : Disposable, IRebindModulesSyncService {
         syncService.setActiveProject(project)
     }
 
-    fun ensureStarted() {
-        logger.debug { "ModelixSyncPlugin: EnsureStarted" }
-    }
-
     override fun dispose() {
         logger.debug { "ModelixSyncPlugin: Dispose" }
         syncService.close()

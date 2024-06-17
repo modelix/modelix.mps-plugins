@@ -16,31 +16,41 @@
 
 package org.modelix.mps.sync.plugin.gui
 
+import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingLifecycleState
 import org.modelix.mps.sync.bindings.BindingSortComparator
 import org.modelix.mps.sync.bindings.BindingsRegistry
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class BindingsComboBoxRefresher(private val gui: ModelSyncGuiFactory.ModelSyncGui) : Thread() {
+
+    private val logger = KotlinLogging.logger {}
 
     private val bindingsComparator = BindingSortComparator()
     private var existingBindings = LinkedHashSet<IBinding>()
 
     override fun run() {
-        while (!isInterrupted) {
-            val bindingState = BindingsRegistry.changedBindings.take()
-            val binding = bindingState.binding
+        try {
+            while (!isInterrupted) {
+                val bindingState = BindingsRegistry.changedBindings.take()
+                val binding = bindingState.binding
 
-            when (bindingState.state) {
-                BindingLifecycleState.ACTIVATE -> existingBindings.add(binding)
-                BindingLifecycleState.REMOVE -> existingBindings.remove(binding)
-                else -> {}
+                when (bindingState.state) {
+                    BindingLifecycleState.ACTIVATE -> existingBindings.add(binding)
+                    BindingLifecycleState.REMOVE -> existingBindings.remove(binding)
+                    else -> {}
+                }
+
+                val sorted = existingBindings.sortedWith(bindingsComparator)
+                gui.populateBindingCB(sorted)
             }
-
-            val sorted = existingBindings.sortedWith(bindingsComparator)
-            gui.populateBindingCB(sorted)
+        } catch (ignored: InterruptedException) {
+            logger.warn { "BindingsComboBoxRefresher is shutting down. If the corresponding project is closing, then it's a normal behavior." }
         }
     }
 }

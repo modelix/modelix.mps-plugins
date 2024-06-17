@@ -58,7 +58,6 @@ class ModuleSyncAction : AnAction {
             val branch = BranchRegistry.branch
             check(branch != null) { "Connect to a server and branch before synchronizing a module." }
 
-            // TODO testme
             val project = event.getData(MPSDataKeys.PROJECT)
             val syncService = project?.service<ModelSyncService>()
             checkNotNull(syncService) { "Synchronization is not possible, because SyncService is null." }

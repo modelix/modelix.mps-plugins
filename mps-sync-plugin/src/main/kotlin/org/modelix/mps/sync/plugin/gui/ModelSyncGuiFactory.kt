@@ -16,8 +16,8 @@
 
 package org.modelix.mps.sync.plugin.gui
 
-import com.intellij.ide.DataManager
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
@@ -25,7 +25,6 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.content.ContentFactory
-import jetbrains.mps.workbench.MPSDataKeys
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -66,23 +65,19 @@ import javax.swing.JSeparator
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
-
-    private lateinit var toolWindowContent: ModelSyncGui
+class ModelSyncGuiFactory : ToolWindowFactory {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        toolWindowContent = ModelSyncGui(toolWindow)
-    }
-
-    override fun dispose() {
-        toolWindowContent.dispose()
+        val gui = project.service<ModelSyncGui>()
+        gui.init(toolWindow)
     }
 
     @UnstableModelixFeature(
         reason = "The new modelix MPS plugin is under construction",
         intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
     )
-    class ModelSyncGui(toolWindow: ToolWindow) : Disposable {
+    @Service(Service.Level.PROJECT)
+    class ModelSyncGui(private val activeProject: Project) : Disposable {
 
         companion object {
             private const val COMBOBOX_CHANGED_COMMAND = "comboBoxChanged"
@@ -95,10 +90,9 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private val mutex = Mutex()
         private val dispatcher = Dispatchers.Default
 
-        private val bindingsRefresher: BindingsComboBoxRefresher
+        private lateinit var bindingsRefresher: BindingsComboBoxRefresher
 
-        private val activeProject: Project
-        private val modelSyncService: ModelSyncService
+        private val modelSyncService: ModelSyncService = activeProject.service()
 
         private val serverURL = JBTextField(TEXTFIELD_WIDTH)
         private val repositoryName = JBTextField(TEXTFIELD_WIDTH)
@@ -128,18 +122,17 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
         private var selectedBranch: BranchReference? = null
 
         init {
-            // TODO testme: is it going to work if we open MPS with two projects? Is the tool window going to be recreated in that case with the correct project?
-            val project = MPSDataKeys.PROJECT.getData(DataManager.getInstance().getDataContext(toolWindow.component))
-            checkNotNull(project) { "Modelix Plugin GUI cannot be initialized, because Project is null." }
-            activeProject = project
-            modelSyncService = activeProject.service<ModelSyncService>()
+            modelSyncService.setActiveProject(activeProject)
+        }
 
+        fun init(toolWindow: ToolWindow) {
             // create GUI
             initializeToolWindowContent(toolWindow)
             bindingsRefresher = BindingsComboBoxRefresher(this)
+            bindingsRefresher.start()
 
             // restore persisted state
-            val loadedState = activeProject.service<SyncPluginState>()
+            val loadedState: SyncPluginState = activeProject.service()
             loadedState.latestState?.let {
                 val restoredStateContext = it.restoreState(modelSyncService)
                 restoredStateContext?.let { context ->
@@ -355,7 +348,6 @@ class ModelSyncGuiFactory : ToolWindowFactory, Disposable {
             existingBindingCB.renderer = CustomCellRenderer()
             bindingsPanel.add(JLabel("Bindings:      "))
             bindingsPanel.add(existingBindingCB)
-            bindingsRefresher.start()
 
             val unbindButton = JButton("Unbind Selected")
             unbindButton.addActionListener {
