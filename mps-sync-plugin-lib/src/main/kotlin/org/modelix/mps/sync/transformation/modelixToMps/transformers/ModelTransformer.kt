@@ -45,8 +45,8 @@ import org.modelix.mps.sync.modelix.util.getModel
 import org.modelix.mps.sync.modelix.util.getModule
 import org.modelix.mps.sync.modelix.util.isModel
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
+import org.modelix.mps.sync.mps.ModelRenameHelper
 import org.modelix.mps.sync.mps.notifications.WrappedNotifier
-import org.modelix.mps.sync.mps.util.ModelRenameHelper
 import org.modelix.mps.sync.mps.util.createModel
 import org.modelix.mps.sync.mps.util.deleteDevKit
 import org.modelix.mps.sync.mps.util.deleteLanguage
@@ -54,10 +54,10 @@ import org.modelix.mps.sync.mps.util.descriptorSuffix
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.cache.ModelWithModelReference
 import org.modelix.mps.sync.transformation.cache.ModelWithModuleReference
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.transformation.exceptions.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
 @UnstableModelixFeature(

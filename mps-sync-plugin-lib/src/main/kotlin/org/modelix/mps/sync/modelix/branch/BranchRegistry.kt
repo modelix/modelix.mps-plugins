@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.modelix
+package org.modelix.mps.sync.modelix.branch
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service

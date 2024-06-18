@@ -31,7 +31,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.bindings.ModelBinding
-import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
+import org.modelix.mps.sync.mps.services.ApplicationLifecycleTracker
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 

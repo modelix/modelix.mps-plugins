@@ -46,9 +46,9 @@ import org.modelix.mps.sync.tasks.FuturesWaitQueue
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.cache.ModuleWithModuleReference
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.transformation.exceptions.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.util.BooleanUtil
 import org.modelix.mps.sync.util.bindTo
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask

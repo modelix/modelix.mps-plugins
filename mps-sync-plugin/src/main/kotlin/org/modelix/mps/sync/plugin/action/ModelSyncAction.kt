@@ -26,7 +26,7 @@ import jetbrains.mps.workbench.MPSDataKeys
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.modelix.BranchRegistry
+import org.modelix.mps.sync.modelix.branch.BranchRegistry
 import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.plugin.ModelSyncService
 

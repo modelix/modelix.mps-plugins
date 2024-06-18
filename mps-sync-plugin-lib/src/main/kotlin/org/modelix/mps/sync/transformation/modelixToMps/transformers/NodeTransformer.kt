@@ -46,8 +46,8 @@ import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.transformation.exceptions.ModelixToMpsSynchronizationException
 import java.util.UUID
 import kotlin.reflect.KFunction2
 

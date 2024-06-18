@@ -14,7 +14,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.IRebindModulesSyncService
 import org.modelix.mps.sync.bindings.BindingsRegistry
-import org.modelix.mps.sync.modelix.BranchRegistry
+import org.modelix.mps.sync.modelix.branch.BranchRegistry
 import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.util.runReadAction
 import org.modelix.mps.sync.mps.util.toMpsProject

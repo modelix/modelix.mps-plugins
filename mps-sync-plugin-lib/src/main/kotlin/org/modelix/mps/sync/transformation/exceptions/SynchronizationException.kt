@@ -1,4 +1,4 @@
-package org.modelix.mps.sync.transformation
+package org.modelix.mps.sync.transformation.exceptions
 
 import org.modelix.kotlin.utils.UnstableModelixFeature
 

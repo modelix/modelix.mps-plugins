@@ -23,9 +23,9 @@ import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
-import org.modelix.mps.sync.modelix.BranchRegistry
-import org.modelix.mps.sync.modelix.ITreeTraversal
-import org.modelix.mps.sync.modelix.ReplicatedModelInitContext
+import org.modelix.mps.sync.modelix.branch.BranchRegistry
+import org.modelix.mps.sync.modelix.branch.ReplicatedModelInitContext
+import org.modelix.mps.sync.modelix.tree.ITreeTraversal
 import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.mps.util.isDescriptorModel

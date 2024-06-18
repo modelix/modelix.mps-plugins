@@ -22,6 +22,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITree
 import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.mps.services.ApplicationLifecycleTracker
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")

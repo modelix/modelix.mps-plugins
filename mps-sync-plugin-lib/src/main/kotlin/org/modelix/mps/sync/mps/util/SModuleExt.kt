@@ -24,7 +24,7 @@ import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelName
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.mps.ModelPersistenceWithFixedId
+import org.modelix.mps.sync.mps.factories.ModelPersistenceWithFixedId
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 internal fun SModule.createModel(name: String, id: SModelId): SModel? {

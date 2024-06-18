@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.mps.util
+package org.modelix.mps.sync.mps
 
 import jetbrains.mps.extapi.model.EditableSModelBase
 import jetbrains.mps.extapi.persistence.FileDataSource

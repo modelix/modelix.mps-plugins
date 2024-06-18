@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.mps
+package org.modelix.mps.sync.mps.services
 
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.components.Service

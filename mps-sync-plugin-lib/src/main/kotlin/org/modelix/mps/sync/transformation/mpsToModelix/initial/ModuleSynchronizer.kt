@@ -35,8 +35,6 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
-import org.modelix.mps.sync.modelix.ModuleAlreadySynchronized
-import org.modelix.mps.sync.modelix.ModuleAlreadySynchronizedException
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.util.getModelixId
@@ -44,8 +42,10 @@ import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.transformation.exceptions.ModuleAlreadySynchronized
+import org.modelix.mps.sync.transformation.exceptions.ModuleAlreadySynchronizedException
+import org.modelix.mps.sync.transformation.exceptions.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.Collections
 import java.util.concurrent.CompletableFuture

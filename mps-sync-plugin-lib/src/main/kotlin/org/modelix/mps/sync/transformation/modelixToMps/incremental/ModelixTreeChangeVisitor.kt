@@ -37,8 +37,8 @@ import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.transformation.exceptions.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.NodeTransformer
