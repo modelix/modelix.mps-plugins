@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.plugin.gui
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -75,7 +76,7 @@ class ModelSyncGuiFactory : ToolWindowFactory {
         intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
     )
     @Service(Service.Level.PROJECT)
-    class ModelSyncGui(private val activeProject: Project) {
+    class ModelSyncGui(private val activeProject: Project) : Disposable {
 
         companion object {
             private const val COMBOBOX_CHANGED_COMMAND = "comboBoxChanged"
@@ -89,6 +90,7 @@ class ModelSyncGuiFactory : ToolWindowFactory {
         private val dispatcher = Dispatchers.Default
 
         private val modelSyncService: ModelSyncService = activeProject.service()
+        private val bindingsComboBoxRefresher = BindingsComboBoxRefresher(this, activeProject)
 
         private val serverURL = JBTextField(TEXTFIELD_WIDTH)
         private val repositoryName = JBTextField(TEXTFIELD_WIDTH)
@@ -139,6 +141,8 @@ class ModelSyncGuiFactory : ToolWindowFactory {
                 bindingsModel.selectedItem = bindingsModel.getElementAt(0)
             }
         }
+
+        override fun dispose() = bindingsComboBoxRefresher.dispose()
 
         private fun initializeToolWindowContent(toolWindow: ToolWindow) {
             // TODO fixme: hardcoded values

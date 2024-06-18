@@ -17,7 +17,6 @@
 package org.modelix.mps.sync.plugin.gui
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import mu.KotlinLogging
@@ -31,13 +30,14 @@ import org.modelix.mps.sync.mps.services.ServiceLocator
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-@Service(Service.Level.PROJECT)
-class BindingsComboBoxRefresher(project: Project) : Thread(), Disposable {
+class BindingsComboBoxRefresher(
+    private val pluginGui: ModelSyncGuiFactory.ModelSyncGui,
+    project: Project,
+) : Thread(), Disposable {
 
     private val logger = KotlinLogging.logger {}
 
-    private val bindingsRegistry = project.service<ServiceLocator>().bindingsRegistry
-    private val pluginGui = project.service<ModelSyncGuiFactory.ModelSyncGui>()
+    private var bindingsRegistry = project.service<ServiceLocator>().bindingsRegistry
 
     private val bindingsComparator = BindingSortComparator()
     private var existingBindings = LinkedHashSet<IBinding>()
