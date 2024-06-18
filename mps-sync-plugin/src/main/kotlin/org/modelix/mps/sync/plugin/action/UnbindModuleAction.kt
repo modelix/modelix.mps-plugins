@@ -27,7 +27,7 @@ import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.bindings.BindingsRegistry
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -67,7 +67,7 @@ class UnbindModuleAction : AnAction {
         } catch (t: Throwable) {
             val message = "Module '$moduleName' unbind error occurred. Cause: ${t.message}"
 
-            val notifier = project?.service<InjectableNotifierWrapper>()
+            val notifier = project?.service<WrappedNotifier>()
             if (notifier == null) {
                 logger.error(t) { message }
             } else {

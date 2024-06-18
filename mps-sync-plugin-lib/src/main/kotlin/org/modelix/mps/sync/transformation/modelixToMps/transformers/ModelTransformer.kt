@@ -45,7 +45,7 @@ import org.modelix.mps.sync.modelix.util.getModel
 import org.modelix.mps.sync.modelix.util.getModule
 import org.modelix.mps.sync.modelix.util.isModel
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.util.ModelRenameHelper
 import org.modelix.mps.sync.mps.util.createModel
 import org.modelix.mps.sync.mps.util.deleteDevKit
@@ -69,7 +69,7 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
     private val logger = KotlinLogging.logger {}
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
-    private val notifierInjector = InjectableNotifierWrapper
+    private val notifierInjector = WrappedNotifier
 
     private val nodeTransformer = NodeTransformer(branch, mpsLanguageRepository)
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()

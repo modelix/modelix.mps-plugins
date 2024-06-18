@@ -50,7 +50,7 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.IRebindModulesSyncService
 import org.modelix.mps.sync.ISyncService
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.plugin.action.ModelixActionGroup
 import java.net.URL
@@ -64,7 +64,7 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
 
     private val logger: KLogger = KotlinLogging.logger { }
 
-    private val notifierInjector: InjectableNotifierWrapper = project.service()
+    private val notifierInjector: WrappedNotifier = project.service()
     private val syncService: ISyncService = project.service()
 
     init {

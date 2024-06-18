@@ -15,7 +15,7 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.IRebindModulesSyncService
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.modelix.BranchRegistry
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.util.runReadAction
 import org.modelix.mps.sync.mps.util.toMpsProject
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
@@ -162,7 +162,7 @@ data class PersistableState(
         } catch (t: Throwable) {
             val message =
                 "Error occurred, while restoring persisted state. Connection to model server, bindings and synchronization cache might not be established and activated. Please check logs for details."
-            val notifier = project.service<InjectableNotifierWrapper>()
+            val notifier = project.service<WrappedNotifier>()
             notifier.notifyAndLogError(message, t, logger)
 
             client?.let {

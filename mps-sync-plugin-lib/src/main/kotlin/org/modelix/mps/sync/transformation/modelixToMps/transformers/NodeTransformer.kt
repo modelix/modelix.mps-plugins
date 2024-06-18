@@ -39,7 +39,7 @@ import org.modelix.mps.sync.modelix.util.isModule
 import org.modelix.mps.sync.modelix.util.isSingleLanguageDependency
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.factories.SNodeFactory
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.util.addDevKit
 import org.modelix.mps.sync.mps.util.addLanguageImport
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
@@ -57,7 +57,7 @@ class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLan
     private val logger = KotlinLogging.logger {}
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
-    private val notifierInjector = InjectableNotifierWrapper
+    private val notifierInjector = WrappedNotifier
 
     private val nodeFactory = SNodeFactory(mpsLanguageRepository, nodeMap, syncQueue, branch)
 

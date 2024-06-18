@@ -27,7 +27,7 @@ import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.modelix.BranchRegistry
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.plugin.ModelSyncService
 
 @UnstableModelixFeature(
@@ -70,7 +70,7 @@ class ModelSyncAction : AnAction {
         } catch (t: Throwable) {
             val message = "Model '$modelName' synchronization error occurred. Cause: ${t.message}"
 
-            val notifier = project?.service<InjectableNotifierWrapper>()
+            val notifier = project?.service<WrappedNotifier>()
             if (notifier == null) {
                 logger.error(t) { message }
             } else {

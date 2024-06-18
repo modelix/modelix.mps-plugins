@@ -9,7 +9,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
 @Service(Service.Level.PROJECT)
-class InjectableNotifierWrapper {
+class WrappedNotifier {
 
     private var notifier: INotifier = DefaultLoggerNotifier()
 

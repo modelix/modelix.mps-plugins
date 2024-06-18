@@ -33,7 +33,7 @@ import org.modelix.mps.sync.modelix.util.isModuleDependency
 import org.modelix.mps.sync.modelix.util.isSingleLanguageDependency
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncQueue
@@ -52,7 +52,7 @@ class ModelixTreeChangeVisitor(
     private val logger = KotlinLogging.logger {}
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
-    private val notifierInjector = InjectableNotifierWrapper
+    private val notifierInjector = WrappedNotifier
 
     private val nodeTransformer = NodeTransformer(branch, languageRepository)
     private val modelTransformer = ModelTransformer(branch, languageRepository)

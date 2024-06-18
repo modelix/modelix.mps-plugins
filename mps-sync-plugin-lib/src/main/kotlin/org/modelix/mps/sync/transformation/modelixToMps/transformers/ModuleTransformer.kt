@@ -40,7 +40,7 @@ import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.factories.SolutionProducer
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.FuturesWaitQueue
 import org.modelix.mps.sync.tasks.SyncDirection
@@ -69,7 +69,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
-    private val notifierInjector = InjectableNotifierWrapper
+    private val notifierInjector = WrappedNotifier
 
     private val solutionProducer = SolutionProducer()
 

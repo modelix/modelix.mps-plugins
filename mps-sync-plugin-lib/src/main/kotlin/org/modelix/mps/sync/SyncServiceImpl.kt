@@ -26,7 +26,7 @@ import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.modelix.BranchRegistry
 import org.modelix.mps.sync.modelix.ITreeTraversal
 import org.modelix.mps.sync.modelix.ReplicatedModelInitContext
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.mps.util.isDescriptorModel
 import org.modelix.mps.sync.mps.util.toMpsProject
@@ -48,7 +48,7 @@ class SyncServiceImpl(project: Project) : ISyncService, Disposable {
 
     private val logger = KotlinLogging.logger {}
 
-    private val notifierInjector: InjectableNotifierWrapper = project.service()
+    private val notifierInjector: WrappedNotifier = project.service()
     private val bindingsRegistry: BindingsRegistry = project.service()
     private val branchRegistry: BranchRegistry = project.service()
     private val mpsProject = project.toMpsProject()

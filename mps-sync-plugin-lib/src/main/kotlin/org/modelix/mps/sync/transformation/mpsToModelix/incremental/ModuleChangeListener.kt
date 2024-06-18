@@ -33,7 +33,7 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.util.descriptorSuffix
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
@@ -59,7 +59,7 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
-    private val notifierInjector = InjectableNotifierWrapper
+    private val notifierInjector = WrappedNotifier
 
     private val moduleSynchronizer = ModuleSynchronizer(branch)
     private val modelSynchronizer = ModelSynchronizer(branch)

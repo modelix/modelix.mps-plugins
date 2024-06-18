@@ -38,7 +38,7 @@ import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.modelix.ModuleAlreadySynchronized
 import org.modelix.mps.sync.modelix.ModuleAlreadySynchronizedException
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
@@ -57,7 +57,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
     private val nodeMap = MpsToModelixMap
     private val syncQueue = SyncQueue
     private val bindingsRegistry = BindingsRegistry
-    private val notifierInjector = InjectableNotifierWrapper
+    private val notifierInjector = WrappedNotifier
 
     private val modelSynchronizer = ModelSynchronizer(branch, postponeReferenceResolution = true)
 

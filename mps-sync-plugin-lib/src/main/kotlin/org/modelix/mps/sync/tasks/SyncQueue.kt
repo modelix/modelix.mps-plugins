@@ -23,7 +23,7 @@ import com.intellij.openapi.project.Project
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.modelix.BranchRegistry
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.util.runReadAction
 import org.modelix.mps.sync.mps.util.toMpsProject
 import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
@@ -46,7 +46,7 @@ class SyncQueue(project: Project) {
 
     private val threadPool = ApplicationManager.getApplication().getService(SharedThreadPool::class.java).threadPool
 
-    private val notifierInjector: InjectableNotifierWrapper = project.service()
+    private val notifierInjector: WrappedNotifier = project.service()
     private val branchRegistry: BranchRegistry = project.service()
     private val mpsProject = project.toMpsProject()
 
