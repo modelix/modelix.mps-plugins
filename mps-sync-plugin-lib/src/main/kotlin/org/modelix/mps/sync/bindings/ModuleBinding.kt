@@ -22,26 +22,31 @@ import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.IBinding
-import org.modelix.mps.sync.mps.notifications.WrappedNotifier
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
-import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModuleChangeListener
 import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.waitForCompletionOfEach
 import java.util.concurrent.CompletableFuture
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+class ModuleBinding(val module: AbstractModule, branch: IBranch, serviceLocator: ServiceLocator) : IBinding {
 
     private val logger = KotlinLogging.logger {}
-    private val nodeMap = MpsToModelixMap
-    private val syncQueue = SyncQueue
-    private val bindingsRegistry = BindingsRegistry
-    private val notifierInjector = WrappedNotifier
 
-    private val changeListener = ModuleChangeListener(branch)
+    private val nodeMap = serviceLocator.nodeMap
+    private val syncQueue = serviceLocator.syncQueue
+    private val futuresWaitQueue = serviceLocator.futuresWaitQueue
+
+    private val bindingsRegistry = serviceLocator.bindingsRegistry
+    private val notifier = serviceLocator.wrappedNotifier
+    private val mpsProject = serviceLocator.mpsProject
+
+    private val changeListener = ModuleChangeListener(branch, serviceLocator)
 
     @Volatile
     private var isDisposed = false
@@ -69,7 +74,7 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
         bindingsRegistry.bindingActivated(this)
 
         val message = "${name()} is activated."
-        notifierInjector.notifyAndLogInfo(message, logger)
+        notifier.notifyAndLogInfo(message, logger)
 
         callback?.run()
     }
@@ -92,7 +97,9 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
                      * deactivate child models' bindings and wait for their successful completion
                      * throws ExecutionException if any deactivation failed
                      */
-                    return@enqueue modelBindings?.waitForCompletionOfEach { it.deactivate(removeFromServer) }
+                    return@enqueue modelBindings?.waitForCompletionOfEach(futuresWaitQueue) {
+                        it.deactivate(removeFromServer)
+                    }
                 }
             }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
@@ -115,8 +122,7 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
                          * ModuleDeleteHelper.deleteModules --> RepositoryChangeListener -->
                          * moduleListener.deactivate(removeFromServer = true)
                          */
-                        ModuleDeleteHelper(ActiveMpsProjectInjector.activeMpsProject!!)
-                            .deleteModules(listOf(module), false, true)
+                        ModuleDeleteHelper(mpsProject).deleteModules(listOf(module), false, true)
                         moduleDeletedLocally = true
                     }
                 } catch (ex: Exception) {
@@ -142,7 +148,7 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch) : IBinding {
                     ""
                 }
             }."
-            notifierInjector.notifyAndLogInfo(message, logger)
+            notifier.notifyAndLogInfo(message, logger)
 
             callback?.run()
         }.getResult()

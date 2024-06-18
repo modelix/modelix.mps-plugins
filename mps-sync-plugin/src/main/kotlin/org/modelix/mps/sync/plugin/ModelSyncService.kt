@@ -51,6 +51,7 @@ import org.modelix.mps.sync.IRebindModulesSyncService
 import org.modelix.mps.sync.ISyncService
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
 import org.modelix.mps.sync.mps.notifications.WrappedNotifier
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.plugin.action.ModelixActionGroup
 import java.net.URL
@@ -64,16 +65,20 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
 
     private val logger: KLogger = KotlinLogging.logger { }
 
-    private val notifierInjector: WrappedNotifier = project.service()
-    private val syncService: ISyncService = project.service()
+    private val notifier: WrappedNotifier
+    private val syncService: ISyncService
 
     init {
+        val serviceLocator = project.service<ServiceLocator>()
+        notifier = serviceLocator.wrappedNotifier
+        syncService = serviceLocator.syncService
+
         logger.debug { "ModelixSyncPlugin: Registering sync actions" }
         registerSyncActions()
         logger.debug { "ModelixSyncPlugin: Registration finished" }
 
         logger.debug { "ModelixSyncPlugin: Initializing the InjectableNotifierWrapper" }
-        notifierInjector.setNotifier(BalloonNotifier(project))
+        notifier.setNotifier(BalloonNotifier(project))
         logger.debug { "ModelixSyncPlugin: InjectableNotifierWrapper is initialized" }
     }
 
@@ -81,10 +86,10 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
         var client: ModelClientV2? = null
         try {
             client = syncService.connectModelServer(URL(serverURL), jwt)
-            notifierInjector.notifyAndLogInfo("Connected to server: $serverURL", logger)
+            notifier.notifyAndLogInfo("Connected to server: $serverURL", logger)
         } catch (t: Throwable) {
             val message = "Unable to connect to $serverURL. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
+            notifier.notifyAndLogError(message, t, logger)
         }
         return client
     }
@@ -99,7 +104,7 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
             return syncService.rebindModules(client, branchReference, initialVersion, modules)
         } catch (t: Throwable) {
             val message = "Error while binding modules to Branch '$branchReference'. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
+            notifier.notifyAndLogError(message, t, logger)
             return null
         }
     }
@@ -109,11 +114,11 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
         val baseUrl = modelClient.baseUrl
         try {
             syncService.disconnectModelServer(modelClient)
-            notifierInjector.notifyAndLogInfo("Disconnected from server: $baseUrl", logger)
+            notifier.notifyAndLogInfo("Disconnected from server: $baseUrl", logger)
             client = null
         } catch (t: Throwable) {
             val message = "Unable to disconnect from $baseUrl. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
+            notifier.notifyAndLogError(message, t, logger)
         }
         return client
     }
@@ -121,11 +126,11 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
     fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch? {
         try {
             val branch = syncService.connectToBranch(client, branchReference)
-            notifierInjector.notifyAndLogInfo("Connected to branch: $branchReference", logger)
+            notifier.notifyAndLogInfo("Connected to branch: $branchReference", logger)
             return branch
         } catch (t: Throwable) {
             val message = "Unable to connect to branch ${branchReference.branchName}. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
+            notifier.notifyAndLogError(message, t, logger)
             return null
         }
     }
@@ -133,10 +138,10 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
     fun disconnectFromBranch(branch: IBranch, branchName: String) {
         try {
             syncService.disconnectFromBranch(branch, branchName)
-            notifierInjector.notifyAndLogInfo("Disconnected from branch: $branchName", logger)
+            notifier.notifyAndLogInfo("Disconnected from branch: $branchName", logger)
         } catch (t: Throwable) {
             val message = "Unable to disconnect from branch $branchName. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
+            notifier.notifyAndLogError(message, t, logger)
         }
     }
 
@@ -157,7 +162,7 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
         } catch (t: Throwable) {
             val message =
                 "Error while binding Module '${module.name}' from Repository '$repositoryID' and Branch '$branchName'. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
+            notifier.notifyAndLogError(message, t, logger)
         }
     }
 

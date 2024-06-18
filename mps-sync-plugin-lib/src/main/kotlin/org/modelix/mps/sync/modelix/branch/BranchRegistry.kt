@@ -16,9 +16,7 @@
 
 package org.modelix.mps.sync.modelix.branch
 
-import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.Service
-import com.intellij.openapi.project.Project
+import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -29,16 +27,19 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.RepositoryChangeListener
-import org.modelix.mps.sync.mps.util.toMpsProject
+import org.modelix.mps.sync.mps.services.InjectableService
+import org.modelix.mps.sync.mps.services.ServiceLocator
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-@Service(Service.Level.PROJECT)
-class BranchRegistry(project: Project) : Disposable {
+class BranchRegistry : InjectableService {
 
-    private val mpsProject = project.toMpsProject()
+    private lateinit var serviceLocator: ServiceLocator
+
+    private val mpsProject: MPSProject
+        get() = serviceLocator.mpsProject
 
     var model: ReplicatedModel? = null
         private set
@@ -48,6 +49,10 @@ class BranchRegistry(project: Project) : Disposable {
 
     private lateinit var branchListener: ModelixBranchListener
     private lateinit var repoChangeListener: RepositoryChangeListener
+
+    override fun initService(serviceLocator: ServiceLocator) {
+        this.serviceLocator = serviceLocator
+    }
 
     fun getBranch() = model?.getBranch()
 
@@ -85,7 +90,7 @@ class BranchRegistry(project: Project) : Disposable {
         this.branchReference = branchReference
         this.client = client
 
-        val repositoryChangeListener = RepositoryChangeListener(branch)
+        val repositoryChangeListener = RepositoryChangeListener(branch, serviceLocator)
         mpsProject.repository.addRepositoryListener(repositoryChangeListener)
         repoChangeListener = repositoryChangeListener
 
@@ -105,7 +110,7 @@ class BranchRegistry(project: Project) : Disposable {
     }
 
     private fun registerBranchListener(branch: IBranch, languageRepository: MPSLanguageRepository) {
-        branchListener = ModelixBranchListener(branch, languageRepository)
+        branchListener = ModelixBranchListener(branch, serviceLocator, languageRepository)
         branch.addListener(branchListener)
     }
 }

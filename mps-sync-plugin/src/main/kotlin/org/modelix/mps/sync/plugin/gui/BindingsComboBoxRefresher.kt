@@ -25,7 +25,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingLifecycleState
 import org.modelix.mps.sync.bindings.BindingSortComparator
-import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.mps.services.ServiceLocator
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -36,7 +36,7 @@ class BindingsComboBoxRefresher(project: Project) : Thread(), Disposable {
 
     private val logger = KotlinLogging.logger {}
 
-    private val bindingsRegistry = project.service<BindingsRegistry>()
+    private val bindingsRegistry = project.service<ServiceLocator>().bindingsRegistry
     private val pluginGui = project.service<ModelSyncGuiFactory.ModelSyncGui>()
 
     private val bindingsComparator = BindingSortComparator()

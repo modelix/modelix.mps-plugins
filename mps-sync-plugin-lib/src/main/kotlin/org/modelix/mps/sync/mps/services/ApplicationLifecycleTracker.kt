@@ -17,22 +17,19 @@
 package org.modelix.mps.sync.mps.services
 
 import com.intellij.ide.AppLifecycleListener
-import com.intellij.openapi.components.Service
-import com.intellij.openapi.project.Project
 import org.modelix.kotlin.utils.UnstableModelixFeature
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-@Service(Service.Level.PROJECT)
-class ApplicationLifecycleTracker(project: Project) {
+class ApplicationLifecycleTracker : InjectableService {
 
     // TODO testme if it gets called at the right point in time (especially when we deactivating the bindings upon MPS close)
     var applicationClosing = false
         private set
 
-    init {
+    override fun initService(serviceLocator: ServiceLocator) {
         /**
          * Subscribe for application closing event and do not delete the modules and models in that case.
          * Explanation: when closing MPS, MPS unregisters all modules from the repository then it calls the
@@ -40,7 +37,7 @@ class ApplicationLifecycleTracker(project: Project) {
          * it might happen that the binding is still living, but we do not want to remove the module/model from
          * the server.
          */
-        project.messageBus.connect().subscribe(
+        serviceLocator.project.messageBus.connect().subscribe(
             AppLifecycleListener.TOPIC,
             object : AppLifecycleListener {
                 override fun appWillBeClosed(isRestart: Boolean) {

@@ -19,17 +19,15 @@ package org.modelix.mps.sync.plugin.action
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
-import com.intellij.openapi.components.service
-import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
-import jetbrains.mps.workbench.MPSDataKeys
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.bindings.BindingsRegistry
-import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class UnbindModelAction : AnAction {
 
     companion object {
@@ -44,32 +42,15 @@ class UnbindModelAction : AnAction {
 
     constructor(text: String) : super(text)
 
-    override fun actionPerformed(event: AnActionEvent) {
-        var modelName = ""
-        var project: Project? = null
-
-        try {
+    override fun actionPerformed(event: AnActionEvent) =
+        actionPerformedSafely(event, logger, "Model unbind error occurred.") { serviceLocator ->
             val model = event.getData(CONTEXT_MODEL) as? SModelBase
-            checkNotNull(model) { "Synchronization is not possible, because Model is not an SModelBase." }
-            modelName = model.name.simpleName
+            checkNotNull(model) { "Unbinding is not possible, because Model (${model?.name}) is not an SModelBase." }
 
-            project = event.getData(MPSDataKeys.PROJECT)
-            checkNotNull(project) { "Synchronization is not possible, because Project is null." }
-
-            val bindingsRegistry = project.service<BindingsRegistry>()
+            val bindingsRegistry = serviceLocator.bindingsRegistry
             val binding = bindingsRegistry.getModelBinding(model)
             require(binding != null) { "Model is not synchronized to the server yet." }
 
             binding.deactivate(removeFromServer = false)
-        } catch (t: Throwable) {
-            val message = "Model '$modelName' unbind error occurred. Cause: ${t.message}"
-
-            val notifier = project?.service<WrappedNotifier>()
-            if (notifier == null) {
-                logger.error(t) { message }
-            } else {
-                notifier.notifyAndLogError(message, t, logger)
-            }
         }
-    }
 }

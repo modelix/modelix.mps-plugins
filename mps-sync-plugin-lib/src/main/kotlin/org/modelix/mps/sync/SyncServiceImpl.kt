@@ -1,9 +1,5 @@
 package org.modelix.mps.sync
 
-import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
-import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import kotlinx.coroutines.CoroutineScope
@@ -11,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
+import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ILanguageRepository
@@ -27,11 +24,10 @@ import org.modelix.mps.sync.modelix.branch.BranchRegistry
 import org.modelix.mps.sync.modelix.branch.ReplicatedModelInitContext
 import org.modelix.mps.sync.modelix.tree.ITreeTraversal
 import org.modelix.mps.sync.mps.notifications.WrappedNotifier
+import org.modelix.mps.sync.mps.services.InjectableService
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.mps.util.isDescriptorModel
-import org.modelix.mps.sync.mps.util.toMpsProject
-import org.modelix.mps.sync.tasks.FuturesWaitQueue
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.cache.MpsToModelixMapInitializerVisitor
 import org.modelix.mps.sync.transformation.modelixToMps.initial.ITreeToSTreeTransformer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
@@ -43,24 +39,36 @@ import java.net.URL
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-@Service(Service.Level.PROJECT)
-class SyncServiceImpl(project: Project) : ISyncService, Disposable {
+class SyncServiceImpl : ISyncService, InjectableService {
 
     private val logger = KotlinLogging.logger {}
 
-    private val notifierInjector: WrappedNotifier = project.service()
-    private val bindingsRegistry: BindingsRegistry = project.service()
-    private val branchRegistry: BranchRegistry = project.service()
-    private val mpsProject = project.toMpsProject()
-
     private val networkDispatcher = Dispatchers.IO // rather IO-intensive tasks
     private val cpuDispatcher = Dispatchers.Default // rather CPU-intensive tasks
+
+    private val notifier: WrappedNotifier
+        get() = serviceLocator.wrappedNotifier
+
+    private val bindingsRegistry: BindingsRegistry
+        get() = serviceLocator.bindingsRegistry
+
+    private val branchRegistry: BranchRegistry
+        get() = serviceLocator.branchRegistry
+
+    private val mpsRepository: SRepository
+        get() = serviceLocator.mpsProject.repository
+
+    private lateinit var serviceLocator: ServiceLocator
 
     init {
         logger.debug { "SyncServiceImpl: Registering built-in languages" }
         // just a dummy call, the initializer of ILanguageRegistry takes care of the rest...
         ILanguageRepository.default.javaClass
         logger.debug { "SyncServiceImpl: Built-in languages are registered" }
+    }
+
+    override fun initService(serviceLocator: ServiceLocator) {
+        this.serviceLocator = serviceLocator
     }
 
     @Throws(IOException::class)
@@ -144,7 +152,7 @@ class SyncServiceImpl(project: Project) : ISyncService, Disposable {
         val branch = connectToBranch(client, branchReference)
 
         // transform the modules and models
-        val bindings = ITreeToSTreeTransformer(branch, languageRepository).transform(module.id)
+        val bindings = ITreeToSTreeTransformer(branch, languageRepository, serviceLocator).transform(module.id)
 
         notifyUserAboutBindings(bindings, moduleName)
 
@@ -163,7 +171,7 @@ class SyncServiceImpl(project: Project) : ISyncService, Disposable {
         if (!modules.iterator().hasNext()) {
             val message =
                 "The list is restorable Modules is empty, therefore no Module- or Model Binding is restored for them."
-            notifierInjector.notifyAndLogWarning(message, logger)
+            notifier.notifyAndLogWarning(message, logger)
             return null
         }
 
@@ -173,8 +181,7 @@ class SyncServiceImpl(project: Project) : ISyncService, Disposable {
         // recreate the mapping between the local MPS elements and the modelix Nodes
         val branch = replicatedModel.getBranch()
         runBlocking(cpuDispatcher) {
-            val repository = mpsProject.repository
-            val mappingRecreator = MpsToModelixMapInitializerVisitor(MpsToModelixMap, repository, branch)
+            val mappingRecreator = MpsToModelixMapInitializerVisitor(serviceLocator.nodeMap, mpsRepository, branch)
             val treeTraversal = ITreeTraversal(branch)
             treeTraversal.visit(mappingRecreator)
         }
@@ -182,7 +189,7 @@ class SyncServiceImpl(project: Project) : ISyncService, Disposable {
         // register the bindings
         val bindings = mutableListOf<IBinding>()
         modules.forEach { module ->
-            val moduleBinding = ModuleBinding(module, branch)
+            val moduleBinding = ModuleBinding(module, branch, serviceLocator)
             bindingsRegistry.addModuleBinding(moduleBinding)
 
             module.models.forEach { model ->
@@ -191,7 +198,7 @@ class SyncServiceImpl(project: Project) : ISyncService, Disposable {
                     // We do not track changes in descriptor models. See ModelTransformer.isDescriptorModel()
                     EmptyBinding()
                 } else {
-                    val modelBinding = ModelBinding(model, branch)
+                    val modelBinding = ModelBinding(model, branch, serviceLocator)
                     bindingsRegistry.addModelBinding(modelBinding)
                     modelBinding
                 }
@@ -216,7 +223,9 @@ class SyncServiceImpl(project: Project) : ISyncService, Disposable {
 
         // warning: blocking call
         @Suppress("UNCHECKED_CAST")
-        val bindings = ModuleSynchronizer(branch).addModule(module, true).getResult().get() as Iterable<IBinding>
+        val bindings = ModuleSynchronizer(branch, serviceLocator)
+            .addModule(module, true)
+            .getResult().get() as Iterable<IBinding>
 
         notifyUserAboutBindings(bindings, module.moduleName)
 
@@ -227,11 +236,11 @@ class SyncServiceImpl(project: Project) : ISyncService, Disposable {
         val hasAnyBinding = bindings.iterator().hasNext()
         if (hasAnyBinding) {
             val message = "Module- and Model Bindings for Module '$moduleName' are created."
-            notifierInjector.notifyAndLogInfo(message, logger)
+            notifier.notifyAndLogInfo(message, logger)
         } else {
             val message =
                 "No Module- or Model Binding is created for Module '$moduleName'. This might be due to an error."
-            notifierInjector.notifyAndLogWarning(message, logger)
+            notifier.notifyAndLogWarning(message, logger)
         }
     }
 
@@ -241,7 +250,7 @@ class SyncServiceImpl(project: Project) : ISyncService, Disposable {
     override fun bindModelFromMps(model: SModelBase, branch: IBranch): IBinding {
         logger.info { "Binding Model '${model.name}' to the server." }
 
-        val synchronizer = ModelSynchronizer(branch)
+        val synchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)
         // synchronize model. Warning: blocking call
         val binding = synchronizer.addModel(model).getResult().get() as IBinding
         // wait until the model imports are synced. Warning: blocking call
@@ -249,25 +258,17 @@ class SyncServiceImpl(project: Project) : ISyncService, Disposable {
 
         if (binding !is EmptyBinding) {
             val message = "Model Binding for '${model.name}' is created."
-            notifierInjector.notifyAndLogInfo(message, logger)
+            notifier.notifyAndLogInfo(message, logger)
         } else {
             val message = "No Model Binding is created for '${model.name}'. This might be due to an error."
-            notifierInjector.notifyAndLogWarning(message, logger)
+            notifier.notifyAndLogWarning(message, logger)
         }
 
         return binding
     }
 
-    override fun dispose() {
-        logger.debug { "Closing SyncServiceImpl." }
-        // dispose task and wait queues
-        FuturesWaitQueue.close()
-        logger.debug { "SyncServiceImpl is closed." }
-    }
-
     private fun registerLanguages(): MPSLanguageRepository {
-        val repository = mpsProject.repository
-        val mpsLanguageRepo = MPSLanguageRepository(repository)
+        val mpsLanguageRepo = MPSLanguageRepository(mpsRepository)
         ILanguageRepository.register(mpsLanguageRepo)
         return mpsLanguageRepo
     }

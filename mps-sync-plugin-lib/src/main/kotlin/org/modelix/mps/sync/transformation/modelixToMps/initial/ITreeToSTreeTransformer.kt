@@ -24,9 +24,9 @@ import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.modelix.util.isModule
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
-import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import java.util.concurrent.CompletableFuture
 
@@ -34,11 +34,14 @@ import java.util.concurrent.CompletableFuture
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-class ITreeToSTreeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLanguageRepository) {
+class ITreeToSTreeTransformer(
+    private val branch: IBranch,
+    mpsLanguageRepository: MPSLanguageRepository,
+    serviceLocator: ServiceLocator,
+) {
 
-    private val moduleTransformer = ModuleTransformer(branch, mpsLanguageRepository)
-
-    private val syncQueue = SyncQueue
+    private val syncQueue = serviceLocator.syncQueue
+    private val moduleTransformer = ModuleTransformer(branch, serviceLocator, mpsLanguageRepository)
 
     fun transform(moduleId: String): Iterable<IBinding> {
         val result = syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.NONE) {

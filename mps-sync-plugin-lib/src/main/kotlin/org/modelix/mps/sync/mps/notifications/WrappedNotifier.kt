@@ -1,15 +1,14 @@
 package org.modelix.mps.sync.mps.notifications
 
-import com.intellij.openapi.components.Service
 import mu.KLogger
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.mps.services.InjectableService
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-@Service(Service.Level.PROJECT)
-class WrappedNotifier {
+class WrappedNotifier : InjectableService {
 
     private var notifier: INotifier = DefaultLoggerNotifier()
 

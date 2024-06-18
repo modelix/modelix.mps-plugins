@@ -21,15 +21,20 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.ITree
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.transformation.modelixToMps.incremental.ModelixTreeChangeVisitor
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class ModelixBranchListener(
     branch: IBranch,
+    serviceLocator: ServiceLocator,
     languageRepository: MPSLanguageRepository,
 ) : IBranchListener {
 
-    private val visitor = ModelixTreeChangeVisitor(branch, languageRepository)
+    private val visitor = ModelixTreeChangeVisitor(branch, serviceLocator, languageRepository)
 
     override fun treeChanged(oldTree: ITree?, newTree: ITree) {
         oldTree?.let { newTree.visitChanges(it, visitor) }

@@ -32,17 +32,14 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.model.api.getRootNode
 import org.modelix.mps.sync.IBinding
-import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
-import org.modelix.mps.sync.mps.notifications.WrappedNotifier
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
-import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.exceptions.ModuleAlreadySynchronized
 import org.modelix.mps.sync.transformation.exceptions.ModuleAlreadySynchronizedException
 import org.modelix.mps.sync.transformation.exceptions.MpsToModelixSynchronizationException
@@ -50,16 +47,23 @@ import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class ModuleSynchronizer(private val branch: IBranch) {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator: ServiceLocator) {
 
     private val logger = KotlinLogging.logger {}
-    private val nodeMap = MpsToModelixMap
-    private val syncQueue = SyncQueue
-    private val bindingsRegistry = BindingsRegistry
-    private val notifierInjector = WrappedNotifier
 
-    private val modelSynchronizer = ModelSynchronizer(branch, postponeReferenceResolution = true)
+    private val nodeMap = serviceLocator.nodeMap
+    private val syncQueue = serviceLocator.syncQueue
+    private val futuresWaitQueue = serviceLocator.futuresWaitQueue
+
+    private val bindingsRegistry = serviceLocator.bindingsRegistry
+    private val notifier = serviceLocator.wrappedNotifier
+    private val mpsProject = serviceLocator.mpsProject
+
+    private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator, true)
 
     fun addModule(
         module: AbstractModule,
@@ -86,7 +90,9 @@ class ModuleSynchronizer(private val branch: IBranch) {
             synchronizeModuleProperties(cloudModule, module)
 
             // synchronize dependencies
-            module.declaredDependencies.waitForCompletionOfEachTask(collectResults = true) { addDependency(module, it) }
+            module.declaredDependencies.waitForCompletionOfEachTask(futuresWaitQueue, collectResults = true) {
+                addDependency(module, it)
+            }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) { previousTaskResult ->
             if (previousTaskResult is Iterable<*>) {
                 @Suppress("UNCHECKED_CAST")
@@ -101,7 +107,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
 
             // synchronize models
             val modelSynchedFuture =
-                module.models.waitForCompletionOfEachTask { modelSynchronizer.addModel(it as SModelBase) }
+                module.models.waitForCompletionOfEachTask(futuresWaitQueue) { modelSynchronizer.addModel(it as SModelBase) }
 
             // pass on the dependencyBindings after the modelSynchedFuture is completed
             val passedOnDependencyBindingsFuture = CompletableFuture<Any?>()
@@ -128,7 +134,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
             }
 
             // register binding
-            val binding = ModuleBinding(module, branch)
+            val binding = ModuleBinding(module, branch, serviceLocator)
             bindingsRegistry.addModuleBinding(binding)
 
             val bindings = mutableSetOf<IBinding>(binding)
@@ -139,7 +145,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
 
     fun addDependency(module: SModule, dependency: SDependency) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
-            val repository = ActiveMpsProjectInjector.activeMpsProject?.repository!!
+            val repository = mpsProject.repository
             val targetModule = dependency.targetModule.resolve(repository)
             val isMappedToMps = nodeMap[targetModule] != null
 
@@ -174,7 +180,7 @@ class ModuleSynchronizer(private val branch: IBranch) {
             if (dependencyExists) {
                 val message =
                     "Module '${module.moduleName}''s Module Dependency for Module '${moduleReference.moduleName}' will not be synchronized, because it already exists on the server."
-                notifierInjector.notifyAndLogWarning(message, logger)
+                notifier.notifyAndLogWarning(message, logger)
                 return@continueWith dependencyBindings
             }
 
@@ -256,6 +262,6 @@ class ModuleSynchronizer(private val branch: IBranch) {
 
     private fun notifyAndLogError(message: String) {
         val exception = MpsToModelixSynchronizationException(message)
-        notifierInjector.notifyAndLogError(message, exception, logger)
+        notifier.notifyAndLogError(message, exception, logger)
     }
 }

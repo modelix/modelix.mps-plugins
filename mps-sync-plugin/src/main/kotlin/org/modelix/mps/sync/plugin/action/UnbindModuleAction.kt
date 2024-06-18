@@ -19,15 +19,10 @@ package org.modelix.mps.sync.plugin.action
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
-import com.intellij.openapi.components.service
-import com.intellij.openapi.project.Project
 import jetbrains.mps.project.AbstractModule
-import jetbrains.mps.workbench.MPSDataKeys
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.bindings.BindingsRegistry
-import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -47,32 +42,15 @@ class UnbindModuleAction : AnAction {
 
     constructor(text: String) : super(text)
 
-    override fun actionPerformed(event: AnActionEvent) {
-        var moduleName = ""
-        var project: Project? = null
-
-        try {
+    override fun actionPerformed(event: AnActionEvent) =
+        actionPerformedSafely(event, logger, "Module unbind error occurred.") { serviceLocator ->
             val module = event.getData(CONTEXT_MODULE) as? AbstractModule
-            checkNotNull(module) { "Synchronization is not possible, because Module is not an AbstractModule." }
-            moduleName = module.moduleName ?: ""
+            checkNotNull(module) { "Unbinding is not possible, because Module (${module?.moduleName}) is not an AbstractModule." }
 
-            project = event.getData(MPSDataKeys.PROJECT)
-            checkNotNull(project) { "Synchronization is not possible, because Project is null." }
-
-            val bindingsRegistry = project.service<BindingsRegistry>()
+            val bindingsRegistry = serviceLocator.bindingsRegistry
             val binding = bindingsRegistry.getModuleBinding(module)
             requireNotNull(binding) { "Module is not synchronized to the server yet." }
 
             binding.deactivate(removeFromServer = false)
-        } catch (t: Throwable) {
-            val message = "Module '$moduleName' unbind error occurred. Cause: ${t.message}"
-
-            val notifier = project?.service<WrappedNotifier>()
-            if (notifier == null) {
-                logger.error(t) { message }
-            } else {
-                notifier.notifyAndLogError(message, t, logger)
-            }
         }
-    }
 }

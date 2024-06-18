@@ -28,36 +28,43 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.mps.sync.IBinding
-import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
-import org.modelix.mps.sync.mps.notifications.WrappedNotifier
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.mps.util.isDescriptorModel
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
-import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.exceptions.ModelAlreadySynchronized
 import org.modelix.mps.sync.transformation.exceptions.ModelAlreadySynchronizedException
 import org.modelix.mps.sync.transformation.exceptions.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution: Boolean = false) {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+class ModelSynchronizer(
+    private val branch: IBranch,
+    private val serviceLocator: ServiceLocator,
+    postponeReferenceResolution: Boolean = false,
+) {
 
     private val logger = KotlinLogging.logger {}
-    private val nodeMap = MpsToModelixMap
-    private val syncQueue = SyncQueue
-    private val bindingsRegistry = BindingsRegistry
-    private val notifierInjector = WrappedNotifier
+
+    private val nodeMap = serviceLocator.nodeMap
+    private val syncQueue = serviceLocator.syncQueue
+    private val futuresWaitQueue = serviceLocator.futuresWaitQueue
+
+    private val bindingsRegistry = serviceLocator.bindingsRegistry
+    private val notifier = serviceLocator.wrappedNotifier
 
     private val nodeSynchronizer = if (postponeReferenceResolution) {
-        NodeSynchronizer(branch, synchronizedLinkedHashSet())
+        NodeSynchronizer(branch, synchronizedLinkedHashSet(), serviceLocator)
     } else {
-        NodeSynchronizer(branch)
+        NodeSynchronizer(branch, serviceLocator = serviceLocator)
     }
 
     private val resolvableModelImports = synchronizedLinkedHashSet<CloudResolvableModelImport>()
@@ -110,35 +117,36 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
             synchronizeModelProperties(cloudModel, model)
 
             // synchronize root nodes
-            model.rootNodes.waitForCompletionOfEachTask { nodeSynchronizer.addNode(it) }
+            model.rootNodes.waitForCompletionOfEachTask(futuresWaitQueue) { nodeSynchronizer.addNode(it) }
         }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { statusToken ->
             if (statusToken is ModelAlreadySynchronized) {
                 return@continueWith statusToken
             }
 
             // synchronize model imports
-            model.modelImports.waitForCompletionOfEachTask { addModelImport(model, it) }
+            model.modelImports.waitForCompletionOfEachTask(futuresWaitQueue) { addModelImport(model, it) }
         }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { statusToken ->
             if (statusToken is ModelAlreadySynchronized) {
                 return@continueWith statusToken
             }
 
             // synchronize language dependencies
-            model.importedLanguageIds().waitForCompletionOfEachTask { addLanguageDependency(model, it) }
+            model.importedLanguageIds()
+                .waitForCompletionOfEachTask(futuresWaitQueue) { addLanguageDependency(model, it) }
         }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) { statusToken ->
             if (statusToken is ModelAlreadySynchronized) {
                 return@continueWith statusToken
             }
 
             // synchronize devKits
-            model.importedDevkits().waitForCompletionOfEachTask { addDevKitDependency(model, it) }
+            model.importedDevkits().waitForCompletionOfEachTask(futuresWaitQueue) { addDevKitDependency(model, it) }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MPS_TO_MODELIX) { statusToken ->
             val isDescriptorModel = model.name.value.endsWith("@descriptor")
             if (isDescriptorModel || statusToken is ModelAlreadySynchronized) {
                 EmptyBinding()
             } else {
                 // register binding
-                val binding = ModelBinding(model, branch)
+                val binding = ModelBinding(model, branch, serviceLocator)
                 bindingsRegistry.addModelBinding(binding)
                 binding
             }
@@ -188,7 +196,7 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
         if (modelImportExists) {
             val message =
                 "Model Import for Model '${targetModel.name}' from Model '${source.name}' will not be synchronized, because it already exists on the server."
-            notifierInjector.notifyAndLogWarning(message, logger)
+            notifier.notifyAndLogWarning(message, logger)
             return
         }
 
@@ -218,7 +226,7 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
             if (dependencyExists) {
                 val message =
                     "Model '${model.name}''s Language Dependency for '$targetLanguageName' will not be synchronized, because it already exists on the server."
-                notifierInjector.notifyAndLogWarning(message, logger)
+                notifier.notifyAndLogWarning(message, logger)
                 return@enqueue null
             }
 
@@ -262,7 +270,7 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
             if (dependencyExists) {
                 val message =
                     "Model '${model.name}''s DevKit Dependency for '$devKitName' will not be synchronized, because it already exists on the server."
-                notifierInjector.notifyAndLogWarning(message, logger)
+                notifier.notifyAndLogWarning(message, logger)
                 return@enqueue null
             }
 
@@ -301,11 +309,14 @@ class ModelSynchronizer(private val branch: IBranch, postponeReferenceResolution
 
     private fun notifyAndLogError(message: String) {
         val exception = MpsToModelixSynchronizationException(message)
-        notifierInjector.notifyAndLogError(message, exception, logger)
+        notifier.notifyAndLogError(message, exception, logger)
     }
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class CloudResolvableModelImport(
     val sourceModel: SModel,
     val targetModel: SModel,

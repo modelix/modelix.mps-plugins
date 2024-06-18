@@ -16,14 +16,13 @@
 
 package org.modelix.mps.sync.bindings
 
-import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.Service
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.mps.services.InjectableService
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.synchronizedMap
 import java.util.concurrent.CompletableFuture
@@ -32,8 +31,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.function.BiConsumer
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-@Service(Service.Level.PROJECT)
-class BindingsRegistry : Disposable {
+class BindingsRegistry : InjectableService {
 
     private val modelBindingsByModule = synchronizedMap<SModule, MutableSet<ModelBinding>>()
     private val moduleBindings = synchronizedLinkedHashSet<ModuleBinding>()

@@ -13,12 +13,10 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.IRebindModulesSyncService
-import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.modelix.branch.BranchRegistry
-import org.modelix.mps.sync.mps.notifications.WrappedNotifier
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.runReadAction
 import org.modelix.mps.sync.mps.util.toMpsProject
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -69,7 +67,9 @@ data class PersistableState(
      * @return this with initialized fields, or the original state if [BranchRegistry.model] is null
      */
     fun fetchState(project: Project): PersistableState {
-        val branchRegistry = project.service<BranchRegistry>()
+        val serviceLocator = project.service<ServiceLocator>()
+
+        val branchRegistry = serviceLocator.branchRegistry
         val replicatedModel = branchRegistry.model
         if (replicatedModel == null) {
             logger.warn { "Replicated Model is null, therefore an empty PersistableState will be saved." }
@@ -84,7 +84,7 @@ data class PersistableState(
             localVersion = replicatedModel.getCurrentVersion().getContentHash()
         }
 
-        val bindingsRegistry = project.service<BindingsRegistry>()
+        val bindingsRegistry = serviceLocator.bindingsRegistry
         bindingsRegistry.getModuleBindings().forEach {
             moduleIds += it.module.moduleId.toString()
         }
@@ -162,14 +162,18 @@ data class PersistableState(
         } catch (t: Throwable) {
             val message =
                 "Error occurred, while restoring persisted state. Connection to model server, bindings and synchronization cache might not be established and activated. Please check logs for details."
-            val notifier = project.service<WrappedNotifier>()
+
+            val serviceLocator = project.service<ServiceLocator>()
+
+            val notifier = serviceLocator.wrappedNotifier
             notifier.notifyAndLogError(message, t, logger)
 
             client?.let {
                 it.close()
                 notifier.notifyAndLogInfo("Disconnected from server: ${it.baseUrl}", logger)
             }
-            MpsToModelixMap.clear()
+
+            serviceLocator.nodeMap.dispose()
 
             return null
         }

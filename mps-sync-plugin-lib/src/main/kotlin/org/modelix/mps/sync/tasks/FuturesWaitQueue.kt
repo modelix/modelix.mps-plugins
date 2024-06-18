@@ -19,6 +19,8 @@ package org.modelix.mps.sync.tasks
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.mps.notifications.WrappedNotifier
+import org.modelix.mps.sync.mps.services.InjectableService
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
@@ -26,17 +28,23 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.stream.Collectors
 import java.util.stream.Stream
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-object FuturesWaitQueue : Runnable, AutoCloseable {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+class FuturesWaitQueue : Runnable, InjectableService {
 
     private val logger = KotlinLogging.logger {}
-    private val threadPool = Executors.newSingleThreadExecutor()
-    private val pauseObject = Object()
-    private val notifierInjector = WrappedNotifier
 
     private val continuations = LinkedBlockingQueue<FutureWithPredecessors>()
+    private val threadPool = Executors.newSingleThreadExecutor()
+    private val pauseObject = Object()
 
-    init {
+    private lateinit var notifier: WrappedNotifier
+
+    override fun initService(serviceLocator: ServiceLocator) {
+        notifier = serviceLocator.wrappedNotifier
+
         threadPool.submit(this)
     }
 
@@ -64,7 +72,7 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
         notifyThread()
     }
 
-    override fun close() {
+    override fun dispose() {
         threadPool.shutdownNow()
     }
 
@@ -155,7 +163,7 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
         } catch (t: Throwable) {
             if (!threadPool.isShutdown) {
                 val message = "${javaClass.simpleName} is shutting down, because of an Exception. Cause: ${t.message}"
-                notifierInjector.notifyAndLogError(message, t, logger)
+                notifier.notifyAndLogError(message, t, logger)
             }
             continuations.forEach { it.future.future.completeExceptionally(t) }
         }
@@ -174,10 +182,16 @@ object FuturesWaitQueue : Runnable, AutoCloseable {
     }
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class FutureWithPredecessors(val predecessors: Set<CompletableFuture<Any?>>, val future: FillableFuture)
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class FillableFuture(
     val future: CompletableFuture<Any?>,
     val shallBeFilled: Boolean = false,

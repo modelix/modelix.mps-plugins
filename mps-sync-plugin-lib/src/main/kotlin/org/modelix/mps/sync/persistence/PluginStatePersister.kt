@@ -1,6 +1,7 @@
 package org.modelix.mps.sync.persistence
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import com.intellij.openapi.project.Project
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IRebindModulesSyncService
@@ -62,11 +63,12 @@ class PluginStatePersister(providedFile: File, defaultFileName: String? = null) 
      * [PersistableState.restoreState].
      *
      * @param syncService see [PersistableState.restoreState]
+     * @param project the [Project] that is opened in MPS
      *
      * @return see [PersistableState.restoreState]
      */
-    fun restore(syncService: IRebindModulesSyncService): RestoredStateContext? {
+    fun restore(syncService: IRebindModulesSyncService, project: Project): RestoredStateContext? {
         val state = load() ?: return null
-        return state.restoreState(syncService)
+        return state.restoreState(syncService, project)
     }
 }

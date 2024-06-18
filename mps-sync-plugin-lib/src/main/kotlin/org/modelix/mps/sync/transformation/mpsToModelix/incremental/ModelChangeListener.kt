@@ -31,15 +31,24 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.bindings.ModelBinding
-import org.modelix.mps.sync.mps.services.ApplicationLifecycleTracker
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class ModelChangeListener(branch: IBranch, private val binding: ModelBinding) : SModelListener {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+class ModelChangeListener(
+    private val binding: ModelBinding,
+    branch: IBranch,
+    serviceLocator: ServiceLocator,
+) : SModelListener {
 
-    private val modelSynchronizer = ModelSynchronizer(branch)
-    private val nodeSynchronizer = NodeSynchronizer(branch)
+    private val applicationLifecycleTracker = serviceLocator.applicationLifecycleTracker
+
+    private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)
+    private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 
     override fun importAdded(event: SModelImportEvent) {
         modelSynchronizer.addModelImport(event.model, event.modelUID)
@@ -82,7 +91,7 @@ class ModelChangeListener(branch: IBranch, private val binding: ModelBinding) : 
     }
 
     override fun beforeModelDisposed(model: SModel) {
-        if (!ApplicationLifecycleTracker.applicationClosing) {
+        if (!applicationLifecycleTracker.applicationClosing) {
             binding.deactivate(removeFromServer = true)
         }
     }

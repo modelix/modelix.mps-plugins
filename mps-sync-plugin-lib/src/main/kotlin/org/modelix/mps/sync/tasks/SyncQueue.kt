@@ -17,15 +17,14 @@
 package org.modelix.mps.sync.tasks
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
-import com.intellij.openapi.project.Project
+import jetbrains.mps.project.MPSProject
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.modelix.branch.BranchRegistry
 import org.modelix.mps.sync.mps.notifications.WrappedNotifier
+import org.modelix.mps.sync.mps.services.InjectableService
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.runReadAction
-import org.modelix.mps.sync.mps.util.toMpsProject
 import org.modelix.mps.sync.transformation.exceptions.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.exceptions.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.transformation.exceptions.SynchronizationException
@@ -39,19 +38,32 @@ import java.util.concurrent.ConcurrentLinkedQueue
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-@Service(Service.Level.PROJECT)
-class SyncQueue(project: Project) {
+class SyncQueue : InjectableService {
 
     private val logger = KotlinLogging.logger {}
 
     private val threadPool = ApplicationManager.getApplication().getService(SharedThreadPool::class.java).threadPool
 
-    private val notifierInjector: WrappedNotifier = project.service()
-    private val branchRegistry: BranchRegistry = project.service()
-    private val mpsProject = project.toMpsProject()
-
     private val activeSyncThreadsWithSyncDirection = ConcurrentHashMap<Thread, SyncDirection>()
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
+
+    private val notifier: WrappedNotifier
+        get() = serviceLocator.wrappedNotifier
+
+    private val branchRegistry: BranchRegistry
+        get() = serviceLocator.branchRegistry
+
+    private val mpsProject: MPSProject
+        get() = serviceLocator.mpsProject
+
+    private val futuresWaitQueue: FuturesWaitQueue
+        get() = serviceLocator.futuresWaitQueue
+
+    private lateinit var serviceLocator: ServiceLocator
+
+    override fun initService(serviceLocator: ServiceLocator) {
+        this.serviceLocator = serviceLocator
+    }
 
     fun enqueue(
         requiredLocks: LinkedHashSet<SyncLock>,
@@ -60,7 +72,7 @@ class SyncQueue(project: Project) {
     ): ContinuableSyncTask {
         val task = SyncTask(requiredLocks, syncDirection, action)
         enqueue(task)
-        return ContinuableSyncTask(task)
+        return ContinuableSyncTask(task, this, futuresWaitQueue)
     }
 
     fun enqueue(task: SyncTask) {
@@ -95,7 +107,7 @@ class SyncQueue(project: Project) {
             if (!threadPool.isShutdown) {
                 val message =
                     "Task is cancelled, because an Exception occurred in the ThreadPool of the SyncQueue. Cause: ${t.message}"
-                notifierInjector.notifyAndLogError(message, t, logger)
+                notifier.notifyAndLogError(message, t, logger)
             }
             task.result.completeExceptionally(t)
         }
@@ -108,7 +120,7 @@ class SyncQueue(project: Project) {
             } catch (t: Throwable) {
                 val message =
                     "Running the SyncQueue Tasks on Thread ${Thread.currentThread()} failed. Cause: ${t.message}"
-                notifierInjector.notifyAndLogError(message, t, logger)
+                notifier.notifyAndLogError(message, t, logger)
             }
         }
     }
@@ -152,7 +164,7 @@ class SyncQueue(project: Project) {
 
                     val wrapped = wrapErrorIntoSynchronizationException(t)
                     val cause = wrapped ?: t
-                    notifierInjector.notifyAndLogError(cause.message ?: pleaseCheckLogs, cause, logger)
+                    notifier.notifyAndLogError(cause.message ?: pleaseCheckLogs, cause, logger)
 
                     if (!taskResult.isCompletedExceptionally) {
                         taskResult.completeExceptionally(cause)
