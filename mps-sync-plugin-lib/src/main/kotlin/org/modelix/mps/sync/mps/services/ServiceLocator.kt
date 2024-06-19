@@ -35,7 +35,7 @@ class ServiceLocator(val project: Project) : Disposable {
     val nodeMap = MpsToModelixMap()
 
     val wrappedNotifier = WrappedNotifier()
-    val applicationLifecycleTracker = ApplicationLifecycleTracker()
+    val projectLifecycleTracker = ProjectLifecycleTracker()
     val futuresWaitQueue = FuturesWaitQueue()
 
     val mpsProject = project.toMpsProject()
@@ -47,7 +47,7 @@ class ServiceLocator(val project: Project) : Disposable {
         branchRegistry,
         nodeMap,
         wrappedNotifier,
-        applicationLifecycleTracker,
+        projectLifecycleTracker,
         futuresWaitQueue,
     )
 

@@ -62,7 +62,7 @@ class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceL
 
     private val bindingsRegistry = serviceLocator.bindingsRegistry
     private val notifier = serviceLocator.wrappedNotifier
-    private val applicationLifecycleTracker = serviceLocator.applicationLifecycleTracker
+    private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
 
     private val moduleSynchronizer = ModuleSynchronizer(branch, serviceLocator)
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)
@@ -75,7 +75,7 @@ class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceL
     }
 
     override fun modelRemoved(module: SModule, reference: SModelReference) {
-        if (applicationLifecycleTracker.applicationClosing) {
+        if (projectLifecycleTracker.projectClosing) {
             return
         }
 

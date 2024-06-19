@@ -45,7 +45,7 @@ class ModelChangeListener(
     serviceLocator: ServiceLocator,
 ) : SModelListener {
 
-    private val applicationLifecycleTracker = serviceLocator.applicationLifecycleTracker
+    private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
 
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)
     private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
@@ -91,7 +91,7 @@ class ModelChangeListener(
     }
 
     override fun beforeModelDisposed(model: SModel) {
-        if (!applicationLifecycleTracker.applicationClosing) {
+        if (!projectLifecycleTracker.projectClosing) {
             binding.deactivate(removeFromServer = true)
         }
     }

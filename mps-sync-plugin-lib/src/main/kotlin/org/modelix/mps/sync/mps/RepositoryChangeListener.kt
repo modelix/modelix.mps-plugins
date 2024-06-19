@@ -30,13 +30,13 @@ import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 )
 class RepositoryChangeListener(branch: IBranch, serviceLocator: ServiceLocator) : SRepositoryListenerBase() {
 
-    private val applicationLifecycleTracker = serviceLocator.applicationLifecycleTracker
+    private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
     private val bindingsRegistry = serviceLocator.bindingsRegistry
 
     private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 
     override fun moduleRemoved(module: SModuleReference) {
-        if (applicationLifecycleTracker.applicationClosing) {
+        if (projectLifecycleTracker.projectClosing) {
             return
         }
 
