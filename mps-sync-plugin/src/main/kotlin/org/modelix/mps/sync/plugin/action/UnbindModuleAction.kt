@@ -28,23 +28,16 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-class UnbindModuleAction : AnAction {
+@Suppress("ComponentNotRegistered")
+object UnbindModuleAction : AnAction("Unbind Module") {
 
-    companion object {
-        val CONTEXT_MODULE = DataKey.create<SModule>("MPS_Context_SModule")
-
-        fun create() = UnbindModuleAction("Unbind module")
-    }
+    private val contextModule = DataKey.create<SModule>("MPS_Context_SModule")
 
     private val logger = KotlinLogging.logger {}
 
-    constructor() : super()
-
-    constructor(text: String) : super(text)
-
     override fun actionPerformed(event: AnActionEvent) =
         actionPerformedSafely(event, logger, "Module unbind error occurred.") { serviceLocator ->
-            val module = event.getData(CONTEXT_MODULE) as? AbstractModule
+            val module = event.getData(contextModule) as? AbstractModule
             checkNotNull(module) { "Unbinding is not possible, because Module (${module?.moduleName}) is not an AbstractModule." }
 
             val bindingsRegistry = serviceLocator.bindingsRegistry
@@ -53,4 +46,8 @@ class UnbindModuleAction : AnAction {
 
             binding.deactivate(removeFromServer = false)
         }
+
+    override fun equals(other: Any?) = (javaClass == other?.javaClass)
+
+    override fun hashCode() = javaClass.hashCode()
 }

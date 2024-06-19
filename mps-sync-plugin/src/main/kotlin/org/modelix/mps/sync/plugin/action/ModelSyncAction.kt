@@ -28,23 +28,16 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-class ModelSyncAction : AnAction {
+@Suppress("ComponentNotRegistered")
+object ModelSyncAction : AnAction("Synchronize Model to Server") {
 
-    companion object {
-        val CONTEXT_MODEL = DataKey.create<SModel>("MPS_Context_SModel")
-
-        fun create() = ModelSyncAction("Synchronize model to server")
-    }
+    val contextModel = DataKey.create<SModel>("MPS_Context_SModel")
 
     private val logger = KotlinLogging.logger {}
 
-    constructor() : super()
-
-    constructor(text: String) : super(text)
-
     override fun actionPerformed(event: AnActionEvent) =
         actionPerformedSafely(event, logger, "Model synchronization error occurred.") { serviceLocator ->
-            val model = event.getData(CONTEXT_MODEL) as? SModelBase
+            val model = event.getData(contextModel) as? SModelBase
             checkNotNull(model) { "Synchronization is not possible, because Model (${model?.name}) is not an SModelBase." }
 
             val branchRegistry = serviceLocator.branchRegistry

@@ -28,23 +28,16 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-class UnbindModelAction : AnAction {
+@Suppress("ComponentNotRegistered")
+object UnbindModelAction : AnAction("Unbind Model") {
 
-    companion object {
-        val CONTEXT_MODEL = DataKey.create<SModel>("MPS_Context_SModel")
-
-        fun create() = UnbindModelAction("Unbind model")
-    }
+    private val contextModel = DataKey.create<SModel>("MPS_Context_SModel")
 
     private val logger = KotlinLogging.logger {}
 
-    constructor() : super()
-
-    constructor(text: String) : super(text)
-
     override fun actionPerformed(event: AnActionEvent) =
         actionPerformedSafely(event, logger, "Model unbind error occurred.") { serviceLocator ->
-            val model = event.getData(CONTEXT_MODEL) as? SModelBase
+            val model = event.getData(contextModel) as? SModelBase
             checkNotNull(model) { "Unbinding is not possible, because Model (${model?.name}) is not an SModelBase." }
 
             val bindingsRegistry = serviceLocator.bindingsRegistry

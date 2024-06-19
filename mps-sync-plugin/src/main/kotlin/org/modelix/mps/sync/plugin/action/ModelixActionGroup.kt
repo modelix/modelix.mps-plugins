@@ -22,24 +22,48 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.plugin.icons.CloudIcons
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class ModelixActionGroup : ActionGroup("Modelix Actions", "", CloudIcons.PLUGIN_ICON) {
+
+    private val modelActions = arrayOf(ModelSyncAction, UnbindModelAction)
+    private val moduleActions = arrayOf(ModuleSyncAction, UnbindModuleAction)
 
     init {
         isPopup = true
     }
 
     override fun getChildren(event: AnActionEvent?): Array<AnAction> {
-        val model = event?.getData(ModelSyncAction.CONTEXT_MODEL)
+        val model = event?.getData(ModelSyncAction.contextModel)
         if (model != null) {
-            return arrayOf(ModelSyncAction.create(), UnbindModelAction.create())
+            return modelActions
         }
 
-        val module = event?.getData(ModuleSyncAction.CONTEXT_MODULE)
+        val module = event?.getData(ModuleSyncAction.contextModule)
         if (module != null) {
-            return arrayOf(ModuleSyncAction.create(), UnbindModuleAction.create())
+            return moduleActions
         }
 
         return emptyArray()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ModelixActionGroup
+
+        if (!modelActions.contentEquals(other.modelActions)) return false
+        if (!moduleActions.contentEquals(other.moduleActions)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = modelActions.contentHashCode()
+        result = 31 * result + moduleActions.contentHashCode()
+        return result
     }
 }

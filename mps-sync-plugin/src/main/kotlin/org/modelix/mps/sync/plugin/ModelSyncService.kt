@@ -177,9 +177,13 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
         ).forEach {
             val actionGroup = ActionManager.getInstance().getAction(it)
             if (actionGroup is DefaultActionGroup) {
-                actionGroup.run {
-                    addSeparator()
-                    add(ModelixActionGroup())
+                val modelixActionGroup = ModelixActionGroup()
+                val actionsAreRegistered = actionGroup.childActionsOrStubs.contains(modelixActionGroup)
+                if (!actionsAreRegistered) {
+                    actionGroup.run {
+                        addSeparator()
+                        add(ModelixActionGroup())
+                    }
                 }
             } else {
                 logger.error { "Action Group $it was not found, thus the UI actions are not registered." }
