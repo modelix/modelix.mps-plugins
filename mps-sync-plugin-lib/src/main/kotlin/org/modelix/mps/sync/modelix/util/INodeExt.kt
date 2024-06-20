@@ -23,6 +23,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.api.isSubConceptOf
 import org.modelix.model.mpsadapters.MPSNode
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
@@ -41,31 +42,36 @@ fun INode.nodeIdAsLong(): Long =
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.isModule(): Boolean {
     val concept = this.concept ?: return false
-    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Module)
+    val moduleConceptRef = BuiltinLanguages.MPSRepositoryConcepts.Module.getReference()
+    return concept.isSubConceptOf(moduleConceptRef)
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.isModel(): Boolean {
     val concept = this.concept ?: return false
-    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Model)
+    val modelConceptRef = BuiltinLanguages.MPSRepositoryConcepts.Model.getReference()
+    return concept.isSubConceptOf(modelConceptRef)
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.isDevKitDependency(): Boolean {
     val concept = this.concept ?: return false
-    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency)
+    val devKitDepConceptRef = BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency.getReference()
+    return concept.isSubConceptOf(devKitDepConceptRef)
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.isSingleLanguageDependency(): Boolean {
     val concept = this.concept ?: return false
-    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency)
+    val languageDepConceptRef = BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.getReference()
+    return concept.isSubConceptOf(languageDepConceptRef)
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.isModelImport(): Boolean {
     val concept = this.concept ?: return false
-    val isModelReference = concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.ModelReference)
+    val modelReferenceConceptRef = BuiltinLanguages.MPSRepositoryConcepts.ModelReference.getReference()
+    val isModelReference = concept.isSubConceptOf(modelReferenceConceptRef)
     val isModelImportRole = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports == this.getContainmentLink()
     return isModelReference && isModelImportRole
 }
@@ -73,7 +79,8 @@ fun INode.isModelImport(): Boolean {
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.isModuleDependency(): Boolean {
     val concept = this.concept ?: return false
-    return concept.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency)
+    val moduleDepConceptRef = BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.getReference()
+    return concept.isSubConceptOf(moduleDepConceptRef)
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
