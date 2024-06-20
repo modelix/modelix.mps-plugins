@@ -53,6 +53,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.mps.ProjectAsNode
 import org.modelix.model.mpsadapters.mps.SModuleAsNode
 import org.modelix.model.server.Main.installStatusPages
+import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
@@ -157,6 +158,7 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
             val repositoriesManager = RepositoriesManager(localModelClient)
             KeyValueLikeModelServer(repositoriesManager, storeClient.forGlobalRepository(), inMemoryModels).init(this)
             ModelReplicationServer(repositoriesManager, localModelClient, inMemoryModels).init(this)
+            IdsApiImpl(repositoriesManager, localModelClient).init(this)
         }
         httpClient = client
         postModelServerSetup()
