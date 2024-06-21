@@ -7,7 +7,7 @@ npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.3" }
 [versions]
 modelixCore = "8.6.0"
 kotlinCoroutines="1.8.1"
-ktor="2.3.11"
+ktor="2.3.12"
 
 [libraries]
 modelix-model-api = { group = "org.modelix", name = "model-api", version.ref = "modelixCore" }
