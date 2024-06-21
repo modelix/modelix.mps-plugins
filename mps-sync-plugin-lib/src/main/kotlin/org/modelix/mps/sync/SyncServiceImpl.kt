@@ -1,5 +1,6 @@
 package org.modelix.mps.sync
 
+import com.google.common.base.Objects
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import kotlinx.coroutines.CoroutineScope
@@ -269,7 +270,27 @@ class SyncServiceImpl : ISyncService, InjectableService {
 
     private fun registerLanguages(): MPSLanguageRepository {
         val mpsLanguageRepo = MPSLanguageRepository(mpsRepository)
-        ILanguageRepository.register(mpsLanguageRepo)
+        /*
+         * SRepository is not comparable in MPSLanguageRepository, because at runtime it is ProjectRepository that does
+         * not implement equals or hashCode. Therefore, if we run the same MPS multiple times, then the repository will
+         * be registered more than once that confuses Modelix when resolving Concepts.
+         */
+        val comparabeMpsLanguageRepo = object : ILanguageRepository by mpsLanguageRepo {
+            override fun hashCode() = Objects.hashCode(this.getPriority(), this.getAllConcepts().map { it.getUID() })
+            override fun equals(other: Any?): Boolean {
+                return if (other == null || other !is ILanguageRepository) {
+                    false
+                } else if (this.getPriority() != other.getPriority()) {
+                    false
+                } else {
+                    val thisConceptUids = this.getAllConcepts().map { it.getUID() }
+                    val otherConceptUids = other.getAllConcepts().map { it.getUID() }
+                    return thisConceptUids == otherConceptUids
+                }
+            }
+        }
+
+        ILanguageRepository.register(comparabeMpsLanguageRepo)
         return mpsLanguageRepo
     }
 }
