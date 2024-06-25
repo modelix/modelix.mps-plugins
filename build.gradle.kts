@@ -120,6 +120,31 @@ allprojects {
             }
         }
     }
+
+    // Set maven metadata for all known publishing tasks. The exact tasks and names are only known after evaluation.
+    afterEvaluate {
+        tasks.withType<AbstractPublishToMaven>() {
+            this.publication?.apply {
+                setMetadata()
+            }
+        }
+    }
+}
+
+fun MavenPublication.setMetadata() {
+    pom {
+        url.set("https://github.com/modelix/modelix.mps-plugins")
+        scm {
+            connection.set("scm:git:https://github.com/modelix/modelix.mps-plugins.git")
+            url.set("https://github.com/modelix/modelix.mps-plugins")
+        }
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+            }
+        }
+    }
 }
 
 val mpsVersion = project.findProperty("mps.version")?.toString()?.takeIf { it.isNotEmpty() }
