@@ -41,3 +41,4 @@ jobs:
           -Pgpr.key=${{ secrets.GITHUB_TOKEN }}
           -Pgpr.universalkey=${{ secrets.GHP_UNIVERSAL_PUBLISH_TOKEN }}
           -Pmps.version=2023.2
+          -x test
