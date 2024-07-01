@@ -35,7 +35,7 @@ class MpsToModelixMapInitializerVisitor(
     }
 
     override suspend fun visitModel(node: INode) = runWithReadLocks {
-        val model = getMpsModel(node)
+        val model = getMpsModel(node) ?: return@runWithReadLocks
         val nodeId = node.nodeIdAsLong()
         cache.put(model, nodeId)
     }
@@ -44,7 +44,7 @@ class MpsToModelixMapInitializerVisitor(
         val nodeId = node.nodeIdAsLong()
         val modelNode = node.getModel()
         requireNotNull(modelNode) { "Model parent of Modelix Node '$nodeId' is not found." }
-        val mpsModel = getMpsModel(modelNode)
+        val mpsModel = getMpsModel(modelNode) ?: return@runWithReadLocks
 
         val mpsNodeId = node.getMpsNodeId()
         val mpsNode = mpsModel.getNode(mpsNodeId)
@@ -79,7 +79,7 @@ class MpsToModelixMapInitializerVisitor(
     }
 
     override suspend fun visitDevKitDependency(sourceModel: INode, devKitDependency: INode) = runWithReadLocks {
-        val model = getMpsModel(sourceModel)
+        val model = getMpsModel(sourceModel) ?: return@runWithReadLocks
         require(model is SModelBase) { "Model '${model.name}' (parent Module: ${model.module?.moduleName}) is not an SModelBase." }
 
         val nodeId = devKitDependency.nodeIdAsLong()
@@ -99,7 +99,7 @@ class MpsToModelixMapInitializerVisitor(
     }
 
     override suspend fun visitLanguageDependency(sourceModel: INode, languageDependency: INode) = runWithReadLocks {
-        val model = getMpsModel(sourceModel)
+        val model = getMpsModel(sourceModel) ?: return@runWithReadLocks
         require(model is SModelBase) { "Model '${model.name}' (parent Module: ${model.module?.moduleName}) is not an SModelBase." }
 
         val nodeId = languageDependency.nodeIdAsLong()
@@ -121,7 +121,7 @@ class MpsToModelixMapInitializerVisitor(
     }
 
     override suspend fun visitModelImport(sourceModel: INode, modelImport: INode) = runWithReadLocks {
-        val model = getMpsModel(sourceModel)
+        val model = getMpsModel(sourceModel) ?: return@runWithReadLocks
         require(model is SModelBase) { "Model '${model.name}' (parent Module: ${model.module?.moduleName}) is not an SModelBase." }
 
         val nodeId = modelImport.nodeIdAsLong()
@@ -145,13 +145,30 @@ class MpsToModelixMapInitializerVisitor(
         cache.put(model, targetModelImport, nodeId)
     }
 
-    private fun getMpsModel(modelNode: INode): SModel {
+    override suspend fun visitReadonlyModule(node: INode) = visitModule(node)
+
+    override suspend fun visitReadonlyModel(node: INode) = visitModel(node)
+
+    override suspend fun visitReadonlyModelNode(node: INode) = visitNode(node)
+
+    override suspend fun visitReadonlyModuleDependency(sourceModule: INode, readonlyModuleDependency: INode) =
+        visitModuleDependency(sourceModule, readonlyModuleDependency)
+
+    override suspend fun visitReadonlyModelImport(sourceModel: INode, readonlyModelImport: INode) =
+        visitModelImport(sourceModel, readonlyModelImport)
+
+    private fun getMpsModel(modelNode: INode): SModel? {
         val modelixModelId = modelNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)
         requireNotNull(modelixModelId) {
             val nodeId = modelNode.nodeIdAsLong()
             "Model ID is null in Modelix Node '$nodeId'."
         }
         val modelId = PersistenceFacade.getInstance().createModelId(modelixModelId)
+        if (!modelId.isGloballyUnique) {
+            logger.warn { "Visiting Model (with Modelix Node ID '${modelNode.nodeIdAsLong()}' aborted, because its Model ID '$modelId' is not globally unique." }
+            return null
+        }
+
         val model = repository.getModel(modelId)
         requireNotNull(model) { "Model with ID '$modelId' is not found." }
         return model

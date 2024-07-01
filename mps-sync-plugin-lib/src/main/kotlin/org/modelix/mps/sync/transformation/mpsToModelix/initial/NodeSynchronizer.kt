@@ -33,6 +33,7 @@ import org.modelix.model.mpsadapters.MPSChildLink
 import org.modelix.model.mpsadapters.MPSConcept
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
+import org.modelix.mps.sync.modelix.ModelixSyncPluginConcepts
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.getModelixId
@@ -137,10 +138,38 @@ class NodeSynchronizer(
 
     private fun setReferenceInTheCloud(cloudNode: INode, modelixReferenceLink: IReferenceLink, mpsTargetNode: SNode?) {
         val cloudTargetNode = mpsTargetNode?.let {
-            val targetNodeId = nodeMap[mpsTargetNode]!!
+            val targetNodeId = nodeMap[it] ?: if (it.model?.isReadOnly == true) {
+                addReadonlyNode(it)
+            } else {
+                throw IllegalStateException("Modelix Node of $mpsTargetNode not found.")
+            }
+
             branch.getNode(targetNodeId)
         }
+
         cloudNode.setReferenceTarget(modelixReferenceLink, cloudTargetNode)
+    }
+
+    private fun addReadonlyNode(node: SNode): Long {
+        val parentModel = node.model
+        val parentNodeId = nodeMap[parentModel]!!
+        val cloudParentNode = branch.getNode(parentNodeId)
+
+        // store all referred node in the parent's root node
+        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes
+        throwExceptionIfChildExists(cloudParentNode, childLink, node)
+        val cloudNode = cloudParentNode.addNewChild(childLink, -1, ModelixSyncPluginConcepts.ReadonlyModelNode)
+        val cloudNodeId = cloudNode.nodeIdAsLong()
+        nodeMap.put(node, cloudNodeId)
+
+        /*
+         * Save MPS Node ID explicitly.
+         * If you change this property here, please also change in method 'throwExceptionIfChildExists', where we use
+         * node.getModelixId() to check if the node already exists.
+         */
+        cloudNode.setPropertyValue(PropertyFromName(NodeData.ID_PROPERTY_KEY), node.getModelixId())
+
+        return cloudNodeId
     }
 
     fun setProperty(property: IProperty, newValue: String, sourceNodeIdProducer: (MpsToModelixMap) -> Long) =
