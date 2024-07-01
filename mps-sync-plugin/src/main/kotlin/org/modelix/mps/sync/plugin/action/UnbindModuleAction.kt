@@ -46,8 +46,4 @@ object UnbindModuleAction : AnAction("Unbind Module") {
 
             binding.deactivate(removeFromServer = false)
         }
-
-    override fun equals(other: Any?) = (javaClass == other?.javaClass)
-
-    override fun hashCode() = javaClass.hashCode()
 }
