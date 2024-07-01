@@ -23,6 +23,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
+import com.intellij.ui.components.CheckBox
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.content.ContentFactory
 import kotlinx.coroutines.CoroutineScope
@@ -45,6 +46,8 @@ import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.mps.notifications.AlertNotifier
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
 import org.modelix.mps.sync.mps.notifications.UserResponse
+import org.modelix.mps.sync.mps.services.ServiceLocator
+import org.modelix.mps.sync.mps.services.SyncPreferences
 import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.plugin.ModelSyncService
 import org.modelix.mps.sync.plugin.configuration.SyncPluginState
@@ -90,6 +93,7 @@ class ModelSyncGuiFactory : ToolWindowFactory {
         private val dispatcher = Dispatchers.Default
 
         private val modelSyncService: ModelSyncService = activeProject.service()
+        private val syncPreferences: SyncPreferences = activeProject.service<ServiceLocator>().preferences
         private val bindingsComboBoxRefresher = BindingsComboBoxRefresher(this, activeProject)
 
         private val serverURL = JBTextField(TEXTFIELD_WIDTH)
@@ -165,12 +169,12 @@ class ModelSyncGuiFactory : ToolWindowFactory {
             val inputBox = Box.createVerticalBox()
 
             val urlPanel = JPanel()
-            urlPanel.add(JLabel("Server URL:    "))
+            urlPanel.add(JLabel("Server URL:"))
             urlPanel.add(serverURL)
             inputBox.add(urlPanel)
 
             val jwtPanel = JPanel()
-            jwtPanel.add(JLabel("JWT:           "))
+            jwtPanel.add(JLabel("JWT:"))
             jwtPanel.add(jwt)
 
             connectButton.addActionListener {
@@ -188,6 +192,19 @@ class ModelSyncGuiFactory : ToolWindowFactory {
             inputBox.add(jwtPanel)
 
             inputBox.add(JSeparator())
+
+            val preferencesPanel = JPanel()
+            val readonlySyncCheckbox = CheckBox(
+                text = "Synchronize read-only modules and models",
+                selected = syncPreferences.synchronizeReadonlyModulesAndModels,
+                toolTip = "Synchronize read-only modules and models via module dependencies and model imports.",
+            )
+            readonlySyncCheckbox.addActionListener {
+                syncPreferences.synchronizeReadonlyModulesAndModels =
+                    !syncPreferences.synchronizeReadonlyModulesAndModels
+            }
+            preferencesPanel.add(readonlySyncCheckbox)
+            inputBox.add(preferencesPanel)
 
             val connectionsPanel = JPanel()
             connectionsCB.isEnabled = false

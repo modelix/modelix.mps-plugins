@@ -62,6 +62,7 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
     private val bindingsRegistry = serviceLocator.bindingsRegistry
     private val notifier = serviceLocator.wrappedNotifier
     private val mpsProject = serviceLocator.mpsProject
+    private val preferences = serviceLocator.preferences
 
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator, true)
 
@@ -157,8 +158,16 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
                     notifyAndLogError(message)
                     message
                 }
-                // connect the addModule task to this one, so if that fails/succeeds we'll also fail/succeed
-                addModule(targetModule).getResult()
+
+                if (targetModule.isReadOnly && !preferences.synchronizeReadonlyModulesAndModels) {
+                    val message =
+                        "Dependency ($dependency)'s target Module ($targetModule) is read-only, therefore it will not be synchronized."
+                    notifier.notifyAndLogWarning(message, logger)
+                    setOf(EmptyBinding())
+                } else {
+                    // connect the addModule task to this one, so if that fails/succeeds we'll also fail/succeed
+                    addModule(targetModule).getResult()
+                }
             } else {
                 setOf(EmptyBinding())
             }

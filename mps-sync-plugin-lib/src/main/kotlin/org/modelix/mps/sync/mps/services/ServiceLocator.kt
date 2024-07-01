@@ -30,6 +30,8 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 class ServiceLocator(val project: Project) : Disposable {
 
     val syncService = SyncServiceImpl()
+    val preferences = SyncPreferences()
+
     val syncQueue = SyncQueue()
     val bindingsRegistry = BindingsRegistry()
     val branchRegistry = BranchRegistry()
@@ -53,6 +55,7 @@ class ServiceLocator(val project: Project) : Disposable {
         wrappedNotifier,
         projectLifecycleTracker,
         futuresWaitQueue,
+        preferences,
     )
 
     init {
