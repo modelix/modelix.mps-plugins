@@ -1,8 +1,8 @@
 package org.modelix.mps.sync.mps.services
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.SyncServiceImpl
@@ -41,7 +41,8 @@ class ServiceLocator(val project: Project) : Disposable {
 
     val mpsProject = project.toMpsProject()
 
-    val languageRepository = service<MPSLanguageRepositoryProvider>().mpsLanguageRepository
+    val languageRepository = ApplicationManager.getApplication()
+        .getService(MPSLanguageRepositoryProvider::class.java).mpsLanguageRepository
 
     private val services: Set<InjectableService> = setOf(
         syncService,
