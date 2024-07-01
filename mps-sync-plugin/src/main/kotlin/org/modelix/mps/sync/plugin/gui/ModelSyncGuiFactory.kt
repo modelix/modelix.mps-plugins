@@ -165,12 +165,12 @@ class ModelSyncGuiFactory : ToolWindowFactory {
             val inputBox = Box.createVerticalBox()
 
             val urlPanel = JPanel()
-            urlPanel.add(JLabel("Server URL:    "))
+            urlPanel.add(JLabel("Server URL:"))
             urlPanel.add(serverURL)
             inputBox.add(urlPanel)
 
             val jwtPanel = JPanel()
-            jwtPanel.add(JLabel("JWT:           "))
+            jwtPanel.add(JLabel("JWT:"))
             jwtPanel.add(jwt)
 
             connectButton.addActionListener {

@@ -39,6 +39,7 @@ object UnbindModelAction : AnAction("Unbind Model") {
         actionPerformedSafely(event, logger, "Model unbind error occurred.") { serviceLocator ->
             val model = event.getData(contextModel) as? SModelBase
             checkNotNull(model) { "Unbinding is not possible, because Model (${model?.name}) is not an SModelBase." }
+            check(!model.isReadOnly) { "Unbinding is not possible, because Model (${model.name}) is read-only." }
 
             val bindingsRegistry = serviceLocator.bindingsRegistry
             val binding = bindingsRegistry.getModelBinding(model)

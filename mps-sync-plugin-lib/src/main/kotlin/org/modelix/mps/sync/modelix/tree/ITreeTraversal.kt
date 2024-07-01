@@ -9,9 +9,14 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.getRootNode
+import org.modelix.mps.sync.modelix.ModelixSyncPluginConcepts
 import org.modelix.mps.sync.modelix.util.isDevKitDependency
 import org.modelix.mps.sync.modelix.util.isModel
 import org.modelix.mps.sync.modelix.util.isModule
+import org.modelix.mps.sync.modelix.util.isReadonlyModel
+import org.modelix.mps.sync.modelix.util.isReadonlyModelImport
+import org.modelix.mps.sync.modelix.util.isReadonlyModule
+import org.modelix.mps.sync.modelix.util.isReadonlyModuleDependency
 import org.modelix.mps.sync.modelix.util.isSingleLanguageDependency
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 
@@ -49,7 +54,22 @@ class ITreeTraversal(val branch: IBranch) {
     }
 
     private suspend fun visit(node: INode, visitor: IBranchVisitor) {
-        if (node.isModule()) {
+        if (node.isReadonlyModule()) {
+            visitor.visitReadonlyModule(node)
+            val modelsJobs = mutableListOf<Job>()
+            coroutineScope {
+                branch.runRead {
+                    modelsJobs.addAll(
+                        node.getChildren(ModelixSyncPluginConcepts.ReadonlyModule.readonlyModels).map {
+                            launch {
+                                visit(it, visitor)
+                            }
+                        },
+                    )
+                }
+            }
+            modelsJobs.joinAll()
+        } else if (node.isModule()) {
             visitor.visitModule(node)
 
             val dependenciesJobs = mutableListOf<Job>()
@@ -57,8 +77,14 @@ class ITreeTraversal(val branch: IBranch) {
                 branch.runRead {
                     dependenciesJobs.addAll(
                         node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies).map {
-                            launch {
-                                visitor.visitModuleDependency(node, it)
+                            if (it.isReadonlyModuleDependency()) {
+                                launch {
+                                    visitor.visitReadonlyModuleDependency(node, it)
+                                }
+                            } else {
+                                launch {
+                                    visitor.visitModuleDependency(node, it)
+                                }
                             }
                         },
                     )
@@ -79,6 +105,22 @@ class ITreeTraversal(val branch: IBranch) {
                 }
             }
             modelsJobs.joinAll()
+        } else if (node.isReadonlyModel()) {
+            visitor.visitReadonlyModel(node)
+
+            val rootNodesJobs = mutableListOf<Job>()
+            coroutineScope {
+                branch.runRead {
+                    rootNodesJobs.addAll(
+                        node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes).map {
+                            launch {
+                                visitor.visitReadonlyModelNode(it)
+                            }
+                        },
+                    )
+                }
+            }
+            rootNodesJobs.joinAll()
         } else if (node.isModel()) {
             visitor.visitModel(node)
 
@@ -87,8 +129,14 @@ class ITreeTraversal(val branch: IBranch) {
                 branch.runRead {
                     modelImportJobs.addAll(
                         node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports).map {
-                            launch {
-                                visitor.visitModelImport(node, it)
+                            if (it.isReadonlyModelImport()) {
+                                launch {
+                                    visitor.visitReadonlyModelImport(node, it)
+                                }
+                            } else {
+                                launch {
+                                    visitor.visitModelImport(node, it)
+                                }
                             }
                         },
                     )
@@ -101,19 +149,19 @@ class ITreeTraversal(val branch: IBranch) {
                 branch.runRead {
                     usedLanguagesJobs.addAll(
                         node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages).map {
-                            launch {
-                                if (it.isDevKitDependency()) {
-                                    // visit devkit dependency
+                            if (it.isDevKitDependency()) {
+                                launch {
                                     visitor.visitDevKitDependency(node, it)
-                                } else if (it.isSingleLanguageDependency()) {
-                                    // visit language dependency
-                                    visitor.visitLanguageDependency(node, it)
-                                } else {
-                                    val nodeId = node.nodeIdAsLong()
-                                    val message =
-                                        "Node ($nodeId) is not transformed, because it is neither DevKit nor SingleLanguageDependency."
-                                    throw IllegalStateException(message)
                                 }
+                            } else if (it.isSingleLanguageDependency()) {
+                                launch {
+                                    visitor.visitLanguageDependency(node, it)
+                                }
+                            } else {
+                                val nodeId = node.nodeIdAsLong()
+                                val message =
+                                    "Node ($nodeId) is not transformed, because it is neither DevKit nor SingleLanguageDependency."
+                                throw IllegalStateException(message)
                             }
                         },
                     )
@@ -218,4 +266,45 @@ interface IBranchVisitor {
      * @param modelImport the node to visit
      */
     suspend fun visitModelImport(sourceModel: INode, modelImport: INode)
+
+    /**
+     * Visits a [org.modelix.mps.sync.modelix.ModelixSyncPluginConcepts.ReadonlyModule] node.
+     *
+     * @param node the node to visit
+     */
+    suspend fun visitReadonlyModule(node: INode)
+
+    /**
+     * Visits a [org.modelix.mps.sync.modelix.ModelixSyncPluginConcepts.ReadonlyModel] node.
+     *
+     * @param node the node to visit
+     */
+    suspend fun visitReadonlyModel(node: INode)
+
+    /**
+     * Visits a [org.modelix.mps.sync.modelix.ModelixSyncPluginConcepts.ReadonlyModelNode] node.
+     *
+     * @param node the node to visit
+     */
+    suspend fun visitReadonlyModelNode(node: INode)
+
+    /**
+     * Visits a [org.modelix.mps.sync.modelix.ModelixSyncPluginConcepts.ReadonlyModuleDependency] node.
+     *
+     * @param sourceModule the source [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Module] node from
+     * which the [org.modelix.mps.sync.modelix.ModelixSyncPluginConcepts.ReadonlyModuleDependency] originates
+     *
+     * @param readonlyModuleDependency the node to visit
+     */
+    suspend fun visitReadonlyModuleDependency(sourceModule: INode, readonlyModuleDependency: INode)
+
+    /**
+     * Visits a [org.modelix.mps.sync.modelix.ModelixSyncPluginConcepts.ReadonlyModelReference] node.
+     *
+     * @param sourceModel the source [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Model] node from
+     * which the [org.modelix.mps.sync.modelix.ModelixSyncPluginConcepts.ReadonlyModelReference] originates
+     *
+     * @param readonlyModelImport the node to visit
+     */
+    suspend fun visitReadonlyModelImport(sourceModel: INode, readonlyModelImport: INode)
 }

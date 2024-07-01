@@ -25,6 +25,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.isSubConceptOf
 import org.modelix.model.mpsadapters.MPSNode
+import org.modelix.mps.sync.modelix.ModelixSyncPluginConcepts
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.nodeIdAsLong(): Long =
@@ -81,6 +82,43 @@ fun INode.isModuleDependency(): Boolean {
     val concept = this.concept ?: return false
     val moduleDepConceptRef = BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.getReference()
     return concept.isSubConceptOf(moduleDepConceptRef)
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+fun INode.isReadonlyModule(): Boolean {
+    val concept = this.concept ?: return false
+    val moduleConceptRef = ModelixSyncPluginConcepts.ReadonlyModule.getReference()
+    return concept.isSubConceptOf(moduleConceptRef)
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+fun INode.isReadonlyModel(): Boolean {
+    val concept = this.concept ?: return false
+    val modelConceptRef = ModelixSyncPluginConcepts.ReadonlyModel.getReference()
+    return concept.isSubConceptOf(modelConceptRef)
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+fun INode.isReadonlyModelNode(): Boolean {
+    val concept = this.concept ?: return false
+    val modelConceptRef = ModelixSyncPluginConcepts.ReadonlyModelNode.getReference()
+    return concept.isSubConceptOf(modelConceptRef)
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+fun INode.isReadonlyModuleDependency(): Boolean {
+    val concept = this.concept ?: return false
+    val moduleDepConceptRef = ModelixSyncPluginConcepts.ReadonlyModuleDependency.getReference()
+    return concept.isSubConceptOf(moduleDepConceptRef)
+}
+
+@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+fun INode.isReadonlyModelImport(): Boolean {
+    val concept = this.concept ?: return false
+    val modelReferenceConceptRef = ModelixSyncPluginConcepts.ReadonlyModelReference.getReference()
+    val isModelReference = concept.isSubConceptOf(modelReferenceConceptRef)
+    val isModelImportRole = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports == this.getContainmentLink()
+    return isModelReference && isModelImportRole
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")

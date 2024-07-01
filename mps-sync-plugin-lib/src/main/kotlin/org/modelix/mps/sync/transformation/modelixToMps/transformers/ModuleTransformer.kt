@@ -77,6 +77,7 @@ class ModuleTransformer(
     private val bindingsRegistry = serviceLocator.bindingsRegistry
     private val notifier = serviceLocator.wrappedNotifier
     private val mpsProject = serviceLocator.mpsProject
+    private val repository = mpsProject.repository
 
     private val solutionProducer = SolutionProducer(mpsProject)
 
@@ -107,7 +108,7 @@ class ModuleTransformer(
                 // resolve references only after all dependent (and contained) modules and models have been transformed
                 if (isTransformationStartingModule) {
                     // resolve cross-model references (and node references)
-                    modelTransformer.resolveCrossModelReferences(mpsProject.repository)
+                    modelTransformer.resolveCrossModelReferences(repository)
                 }
                 flattenedBindings
             }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) { dependencyAndModelBindings ->
@@ -149,6 +150,24 @@ class ModuleTransformer(
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) { unflattenedBindings ->
             @Suppress("UNCHECKED_CAST")
             (unflattenedBindings as Iterable<Iterable<IBinding>>).flatten()
+        }
+
+    fun transformToReadonlyModule(nodeId: Long) =
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val iNode = branch.getNode(nodeId)
+            val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
+            check(serializedId.isNotEmpty()) {
+                val message = "Node ($iNode) cannot be transformed to Module, because its ID is empty."
+                notifyAndLogError(message)
+                message
+            }
+
+            val moduleId = PersistenceFacade.getInstance().createModuleId(serializedId)
+            val sModule = repository.getModule(moduleId)
+                ?: throw IllegalArgumentException("Module with Module ID '$moduleId' is not found.")
+
+            // TODO shall we collect readonly modules somewhere else?
+            nodeMap.put(sModule, iNode.nodeIdAsLong())
         }
 
     fun transformModuleDependency(
@@ -202,26 +221,34 @@ class ModuleTransformer(
             linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE),
             SyncDirection.MODELIX_TO_MPS,
         ) { dependencyBinding ->
-            val iNode = branch.getNode(nodeId)
-            val targetModuleId = getTargetModuleIdFromModuleDependency(iNode)
-
-            if (parentModule.moduleId != targetModuleId) {
-                val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
-                val moduleReference = ModuleReference(moduleName, targetModuleId)
-                val reexport = (
-                    iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
-                        ?: "false"
-                    ).toBoolean()
-                parentModule.addDependency(moduleReference, reexport)
-
-                nodeMap.put(parentModule, moduleReference, iNode.nodeIdAsLong())
-            } else {
-                // do not transform self-dependencies
-                logger.warn { "Self-dependency of Module ($parentModule) is ignored." }
-            }
-
+            transformModuleDependency(nodeId, parentModule)
             dependencyBinding
         }
+
+    fun transformReadonlyModuleDependency(nodeId: Long, parentModule: AbstractModule) =
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            transformModuleDependency(nodeId, parentModule)
+        }
+
+    private fun transformModuleDependency(nodeId: Long, parentModule: AbstractModule) {
+        val iNode = branch.getNode(nodeId)
+        val targetModuleId = getTargetModuleIdFromModuleDependency(iNode)
+        if (parentModule.moduleId != targetModuleId) {
+            val moduleName = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name)
+            val moduleReference = ModuleReference(moduleName, targetModuleId)
+            val reexport = (
+                iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport)
+                    ?: "false"
+                ).toBoolean()
+
+            parentModule.addDependency(moduleReference, reexport)
+
+            nodeMap.put(parentModule, moduleReference, iNode.nodeIdAsLong())
+        } else {
+            // do not transform self-dependencies
+            logger.warn { "Self-dependency of Module ($parentModule) is ignored." }
+        }
+    }
 
     fun modulePropertyChanged(role: String, nodeId: Long, sModule: SModule, newValue: String?, usesRoleIds: Boolean) {
         val moduleId = sModule.moduleId

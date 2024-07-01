@@ -30,6 +30,11 @@ import org.modelix.mps.sync.modelix.util.isModel
 import org.modelix.mps.sync.modelix.util.isModelImport
 import org.modelix.mps.sync.modelix.util.isModule
 import org.modelix.mps.sync.modelix.util.isModuleDependency
+import org.modelix.mps.sync.modelix.util.isReadonlyModel
+import org.modelix.mps.sync.modelix.util.isReadonlyModelImport
+import org.modelix.mps.sync.modelix.util.isReadonlyModelNode
+import org.modelix.mps.sync.modelix.util.isReadonlyModule
+import org.modelix.mps.sync.modelix.util.isReadonlyModuleDependency
 import org.modelix.mps.sync.modelix.util.isSingleLanguageDependency
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.services.ServiceLocator
@@ -80,6 +85,29 @@ class ModelixTreeChangeVisitor(
             }
 
             val iNode = getNode(nodeId)
+            if (iNode.isReadonlyModule()) {
+                val message = "Reference ($role) of read-only Module (Modelix Node ID: $nodeId) cannot be changed."
+                notifyAndLogError(message)
+                return@enqueue null
+            } else if (iNode.isReadonlyModel()) {
+                val message = "Reference ($role) of read-only Model (Modelix Node ID: $nodeId) cannot be changed."
+                notifyAndLogError(message)
+                return@enqueue null
+            } else if (iNode.isReadonlyModuleDependency()) {
+                val message =
+                    "Reference ($role) of read-only ModuleDependency (Modelix Node ID: $nodeId) cannot be changed."
+                notifyAndLogError(message)
+                return@enqueue null
+            } else if (iNode.isReadonlyModelImport()) {
+                val message = "Reference ($role) of read-only ModelImport (Modelix Node ID: $nodeId) cannot be changed."
+                notifyAndLogError(message)
+                return@enqueue null
+            } else if (iNode.isReadonlyModelNode()) {
+                val message = "Reference ($role) of read-only Node (Modelix Node ID: $nodeId) cannot be changed."
+                notifyAndLogError(message)
+                return@enqueue null
+            }
+
             val usesRoleIds = iNode.usesRoleIds()
             val iReferenceLink = iNode.getReferenceLinks().find {
                 if (usesRoleIds) {
@@ -111,6 +139,29 @@ class ModelixTreeChangeVisitor(
             }
 
             val iNode = getNode(nodeId)
+            if (iNode.isReadonlyModule()) {
+                val message = "Property ($role) of read-only Module (Modelix Node ID: $nodeId) cannot be changed."
+                notifyAndLogError(message)
+                return@enqueue null
+            } else if (iNode.isReadonlyModel()) {
+                val message = "Property ($role) of read-only Model (Modelix Node ID: $nodeId) cannot be changed."
+                notifyAndLogError(message)
+                return@enqueue null
+            } else if (iNode.isReadonlyModuleDependency()) {
+                val message =
+                    "Property ($role) of read-only ModuleDependency (Modelix Node ID: $nodeId) cannot be changed."
+                notifyAndLogError(message)
+                return@enqueue null
+            } else if (iNode.isReadonlyModelImport()) {
+                val message = "Property ($role) of read-only ModelImport (Modelix Node ID: $nodeId) cannot be changed."
+                notifyAndLogError(message)
+                return@enqueue null
+            } else if (iNode.isReadonlyModelNode()) {
+                val message = "Property ($role) of read-only Node (Modelix Node ID: $nodeId) cannot be changed."
+                notifyAndLogError(message)
+                return@enqueue null
+            }
+
             val usesRoleIds = iNode.usesRoleIds()
             val iProperty = PropertyFromName(role)
             val newValue = iNode.getPropertyValue(iProperty)
@@ -135,8 +186,6 @@ class ModelixTreeChangeVisitor(
 
             val message = "Property setting case for Node ($nodeId) and property ($role) was missed."
             notifyAndLogError(message)
-
-            null
         }
     }
 
@@ -145,6 +194,14 @@ class ModelixTreeChangeVisitor(
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (!isMapped) {
                 logger.info { "Element represented by Node ($nodeId) is already removed." }
+                return@enqueue null
+            }
+
+            val iNode = getNode(nodeId)
+            if (iNode.isReadonlyModule() || iNode.isReadonlyModel() ||
+                iNode.isReadonlyModuleDependency() || iNode.isReadonlyModelImport() || iNode.isReadonlyModelNode()
+            ) {
+                nodeMap.remove(nodeId)
                 return@enqueue null
             }
 
@@ -200,7 +257,21 @@ class ModelixTreeChangeVisitor(
             }
 
             val iNode = getNode(nodeId)
-            if (iNode.isModule()) {
+            if (iNode.isReadonlyModule()) {
+                moduleTransformer.transformToReadonlyModule(nodeId)
+            } else if (iNode.isReadonlyModel()) {
+                modelTransformer.transformToReadonlyModel(nodeId)
+            } else if (iNode.isReadonlyModuleDependency()) {
+                val moduleNodeId = iNode.getModule()?.nodeIdAsLong()
+                val parentModule = nodeMap.getModule(moduleNodeId)!!
+                require(parentModule is AbstractModule) {
+                    val message =
+                        "Parent Module ($moduleNodeId) of Node (${iNode.nodeIdAsLong()}) is not an AbstractModule. Therefore Node cannot be added."
+                    notifyAndLogError(message)
+                    message
+                }
+                moduleTransformer.transformReadonlyModuleDependency(nodeId, parentModule)
+            } else if (iNode.isModule()) {
                 moduleTransformer.transformToModule(nodeId)
             } else if (iNode.isModuleDependency()) {
                 val moduleNodeId = iNode.getModule()?.nodeIdAsLong()
@@ -214,12 +285,14 @@ class ModelixTreeChangeVisitor(
                 moduleTransformer.transformModuleDependency(nodeId, parentModule)
             } else if (iNode.isModel()) {
                 modelTransformer.transformToModel(nodeId)
-            } else if (iNode.isModelImport()) {
+            } else if (iNode.isModelImport() || iNode.isReadonlyModelImport()) {
                 modelTransformer.transformModelImport(nodeId)
             } else if (iNode.isSingleLanguageDependency()) {
                 nodeTransformer.transformLanguageDependency(nodeId)
             } else if (iNode.isDevKitDependency()) {
                 nodeTransformer.transformDevKitDependency(nodeId)
+            } else if (iNode.isReadonlyModelNode()) {
+                nodeTransformer.transformReadonlyNode(nodeId)
             } else {
                 nodeTransformer.transformNode(nodeId)
             }
@@ -250,6 +323,20 @@ class ModelixTreeChangeVisitor(
             }
 
             val iNode = getNode(nodeId)
+            if (iNode.isReadonlyModule()) {
+                val message = "Read-only Module (Modelix Node ID: $nodeId) cannot be moved to new parent."
+                notifyAndLogError(message)
+                return@enqueue null
+            } else if (iNode.isReadonlyModel()) {
+                val message = "Read-only Model (Modelix Node ID: $nodeId) cannot be moved to new parent."
+                notifyAndLogError(message)
+                return@enqueue null
+            } else if (iNode.isReadonlyModelNode()) {
+                val message = "Read-only Node (Modelix Node ID: $nodeId) cannot be moved to new parent."
+                notifyAndLogError(message)
+                return@enqueue null
+            }
+
             val newParent = iNode.parent
             if (newParent == null) {
                 val message = "Node ($nodeId)'s new parent is null."

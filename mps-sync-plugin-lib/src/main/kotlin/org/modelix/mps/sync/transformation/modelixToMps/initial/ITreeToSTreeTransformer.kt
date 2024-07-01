@@ -46,10 +46,9 @@ class ITreeToSTreeTransformer(
     fun transform(moduleId: String): Iterable<IBinding> {
         val result = syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.NONE) {
             val moduleNode = branch.getRootNode().allChildren.firstOrNull {
-                it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) == moduleId
+                it.isModule() && it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) == moduleId
             }
             requireNotNull(moduleNode) { "Module node with ID '$moduleId' is not found on the root level." }
-            require(moduleNode.isModule()) { "Transformation entry point (Node $moduleNode) must be a Module." }
             val entryNodeId = moduleNode.nodeIdAsLong()
             moduleTransformer.transformToModuleCompletely(entryNodeId, true).getResult()
         }

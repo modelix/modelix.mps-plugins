@@ -150,6 +150,42 @@ class ModelTransformer(
                 }
         }
 
+    fun transformToReadonlyModel(nodeId: Long) =
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+            val iNode = branch.getNode(nodeId)
+            if (isDescriptorModel(iNode)) {
+                return@enqueue null
+            }
+
+            val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+            checkNotNull(name) {
+                val message = "Node ($iNode) cannot be transformed to Model, because its name is null."
+                notifyAndLogError(message)
+                message
+            }
+
+            val moduleId = iNode.getModule()?.nodeIdAsLong()!!
+            val module: SModule? = nodeMap.getModule(moduleId)
+            checkNotNull(module) {
+                val message =
+                    "Node ($iNode) cannot be transformed to Model, because parent Module with ID $moduleId is not found."
+                notifyAndLogError(message)
+                message
+            }
+
+            val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) ?: ""
+            check(serializedId.isNotEmpty()) {
+                val message = "Node ($iNode) cannot be transformed to Model, because its ID is null."
+                notifyAndLogError(message)
+                message
+            }
+
+            val modelId = PersistenceFacade.getInstance().createModelId(serializedId)
+            val sModel = mpsProject.repository.getModel(modelId)
+                ?: throw IllegalArgumentException("Model with Model ID '$modelId' is not found.")
+            nodeMap.put(sModel, iNode.nodeIdAsLong())
+        }
+
     fun transformModelImport(nodeId: Long) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val iNode = branch.getNode(nodeId)

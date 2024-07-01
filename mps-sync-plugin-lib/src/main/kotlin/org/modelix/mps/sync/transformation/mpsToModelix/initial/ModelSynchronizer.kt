@@ -30,6 +30,8 @@ import org.modelix.model.api.getNode
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
+import org.modelix.mps.sync.modelix.ModelixSyncPluginConcepts
+import org.modelix.mps.sync.modelix.util.isModel
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.getModelixId
@@ -103,7 +105,7 @@ class ModelSynchronizer(
             // duplicate check
             val modelId = model.getModelixId()
             val modelExists = cloudModule.getChildren(childLink)
-                .any { modelId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) }
+                .any { it.isModel() && modelId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) }
             if (modelExists) {
                 if (nodeMap.isMappedToModelix(model)) {
                     return@enqueue ModelAlreadySynchronized(model)
@@ -152,6 +154,58 @@ class ModelSynchronizer(
             }
         }
 
+    fun addReadonlyModel(model: SModelBase) =
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
+            // We do not track changes in descriptor models. See ModelTransformer.isDescriptorModel()
+            if (model.isDescriptorModel()) {
+                return@enqueue ModelAlreadySynchronized(model)
+            }
+
+            val parentModule = model.module
+            if (parentModule == null) {
+                val message = "Model ($model) cannot be synchronized to the server, because its Module is null."
+                notifyAndLogError(message)
+                throw IllegalStateException(message)
+            }
+
+            val moduleModelixId = nodeMap[parentModule]
+            if (moduleModelixId == null) {
+                val message =
+                    "Model ($model) cannot be synchronized to the server, because its Module ($parentModule) is not found in the local sync cache."
+                notifyAndLogError(message)
+                throw IllegalStateException(message)
+            }
+            val cloudModule = branch.getNode(moduleModelixId)
+            val childLink = ModelixSyncPluginConcepts.ReadonlyModule.readonlyModels
+
+            // duplicate check
+            val modelId = model.getModelixId()
+            val modelExists = cloudModule.getChildren(childLink)
+                .any { modelId == it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id) }
+            if (modelExists) {
+                if (nodeMap.isMappedToModelix(model)) {
+                    return@enqueue ModelAlreadySynchronized(model)
+                } else {
+                    throw ModelAlreadySynchronizedException(model)
+                }
+            }
+
+            val cloudModel = cloudModule.addNewChild(childLink, -1, ModelixSyncPluginConcepts.ReadonlyModel)
+
+            nodeMap.put(model, cloudModel.nodeIdAsLong())
+            synchronizeReadonlyModelProperties(cloudModel, model)
+        }
+
+    private fun synchronizeReadonlyModelProperties(cloudModel: INode, model: SModel) {
+        cloudModel.setPropertyValue(
+            BuiltinLanguages.MPSRepositoryConcepts.Model.id,
+            // if you change this property here, please also change above where we check if the model already exists in its parent node
+            model.getModelixId(),
+        )
+
+        cloudModel.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, model.name.value)
+    }
+
     private fun synchronizeModelProperties(cloudModel: INode, model: SModel) {
         cloudModel.setPropertyValue(
             BuiltinLanguages.MPSRepositoryConcepts.Model.id,
@@ -178,7 +232,49 @@ class ModelSynchronizer(
             }
         }
 
-    private fun addModelImportToCloud(source: SModel, targetModel: SModel) {
+    private fun addModelImportToCloud(source: SModel, targetModel: SModel) =
+        if (targetModel.isReadOnly) {
+            addReadonlyModelImportToCloud(source, targetModel)
+        } else {
+            addNormalModelImportToCloud(source, targetModel)
+        }
+
+    private fun addReadonlyModelImportToCloud(source: SModel, targetModel: SModel) {
+        val modelixId = nodeMap[source]!!
+        val cloudParentNode = branch.getNode(modelixId)
+        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
+
+        val targetModelReference = ModelixSyncPluginConcepts.ReadonlyModelReference.readonlyModel
+        val targetModelModelixId = nodeMap[targetModel]!!
+        val cloudTargetModel = branch.getNode(targetModelModelixId)
+        val idProperty = BuiltinLanguages.MPSRepositoryConcepts.Model.id
+        val cloudTargetModelId = cloudTargetModel.getPropertyValue(idProperty)
+
+        // duplicate check and sync
+        val modelImportExists = cloudParentNode.getChildren(childLink).any {
+            cloudTargetModelId == it.getReferenceTarget(targetModelReference)?.getPropertyValue(idProperty)
+        }
+        if (modelImportExists) {
+            val message =
+                "Model Import for Model '${targetModel.name}' from Model '${source.name}' will not be synchronized, because it already exists on the server."
+            notifier.notifyAndLogWarning(message, logger)
+            return
+        }
+
+        val cloudModelReference =
+            cloudParentNode.addNewChild(childLink, -1, ModelixSyncPluginConcepts.ReadonlyModelReference)
+
+        nodeMap.put(source, targetModel.reference, cloudModelReference.nodeIdAsLong())
+
+        // warning: might be fragile, because we synchronize the fields by hand
+        cloudModelReference.setReferenceTarget(targetModelReference, cloudTargetModel)
+        cloudModelReference.setReferenceTarget(
+            BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model,
+            cloudTargetModel,
+        )
+    }
+
+    private fun addNormalModelImportToCloud(source: SModel, targetModel: SModel) {
         val modelixId = nodeMap[source]!!
         val cloudParentNode = branch.getNode(modelixId)
         val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports

@@ -39,6 +39,7 @@ object UnbindModuleAction : AnAction("Unbind Module") {
         actionPerformedSafely(event, logger, "Module unbind error occurred.") { serviceLocator ->
             val module = event.getData(contextModule) as? AbstractModule
             checkNotNull(module) { "Unbinding is not possible, because Module (${module?.moduleName}) is not an AbstractModule." }
+            check(!module.isReadOnly) { "Unbinding is not possible, because Module (${module.moduleName}) is read-only." }
 
             val bindingsRegistry = serviceLocator.bindingsRegistry
             val binding = bindingsRegistry.getModuleBinding(module)
