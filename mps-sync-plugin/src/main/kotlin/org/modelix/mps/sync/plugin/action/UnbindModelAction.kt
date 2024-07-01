@@ -42,7 +42,7 @@ object UnbindModelAction : AnAction("Unbind Model") {
 
             val bindingsRegistry = serviceLocator.bindingsRegistry
             val binding = bindingsRegistry.getModelBinding(model)
-            require(binding != null) { "Model is not synchronized to the server yet." }
+            checkNotNull(binding) { "Model is not synchronized to the server yet." }
 
             binding.deactivate(removeFromServer = false)
         }

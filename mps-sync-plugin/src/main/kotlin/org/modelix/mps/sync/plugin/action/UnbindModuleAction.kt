@@ -42,7 +42,7 @@ object UnbindModuleAction : AnAction("Unbind Module") {
 
             val bindingsRegistry = serviceLocator.bindingsRegistry
             val binding = bindingsRegistry.getModuleBinding(module)
-            requireNotNull(binding) { "Module is not synchronized to the server yet." }
+            checkNotNull(binding) { "Module is not synchronized to the server yet." }
 
             binding.deactivate(removeFromServer = false)
         }
