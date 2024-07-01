@@ -35,29 +35,31 @@ import org.modelix.model.api.getNode
 import org.modelix.model.api.getRootNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.IBinding
-import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.factories.SolutionProducer
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
-import org.modelix.mps.sync.tasks.FuturesWaitQueue
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
-import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.cache.ModuleWithModuleReference
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.transformation.exceptions.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.util.BooleanUtil
 import org.modelix.mps.sync.util.bindTo
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.text.ParseException
 import java.util.concurrent.CompletableFuture
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLanguageRepository) {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+class ModuleTransformer(
+    private val branch: IBranch,
+    private val serviceLocator: ServiceLocator,
+    mpsLanguageRepository: MPSLanguageRepository,
+) {
 
     companion object {
         fun getTargetModuleIdFromModuleDependency(moduleDependency: INode): SModuleId {
@@ -67,14 +69,18 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
     }
 
     private val logger = KotlinLogging.logger {}
-    private val nodeMap = MpsToModelixMap
-    private val syncQueue = SyncQueue
-    private val bindingsRegistry = BindingsRegistry
-    private val notifierInjector = InjectableNotifierWrapper
 
-    private val solutionProducer = SolutionProducer()
+    private val nodeMap = serviceLocator.nodeMap
+    private val syncQueue = serviceLocator.syncQueue
+    private val futuresWaitQueue = serviceLocator.futuresWaitQueue
 
-    private val modelTransformer = ModelTransformer(branch, mpsLanguageRepository)
+    private val bindingsRegistry = serviceLocator.bindingsRegistry
+    private val notifier = serviceLocator.wrappedNotifier
+    private val mpsProject = serviceLocator.mpsProject
+
+    private val solutionProducer = SolutionProducer(mpsProject)
+
+    private val modelTransformer = ModelTransformer(branch, serviceLocator, mpsLanguageRepository)
 
     fun transformToModuleCompletely(nodeId: Long, isTransformationStartingModule: Boolean = false) =
         transformToModule(nodeId, true)
@@ -82,13 +88,13 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                 // transform models
                 val module = branch.getNode(nodeId)
                 val modelBindingsFuture = module.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models)
-                    .waitForCompletionOfEachTask(collectResults = true) {
+                    .waitForCompletionOfEachTask(futuresWaitQueue, collectResults = true) {
                         modelTransformer.transformToModelCompletely(it.nodeIdAsLong(), branch, bindingsRegistry)
                     }
 
                 // join the newly added model bindings with the existing bindings
                 val collectedBindingsFuture = CompletableFuture<Any?>()
-                FuturesWaitQueue.add(
+                futuresWaitQueue.add(
                     collectedBindingsFuture,
                     setOf(modelBindingsFuture, CompletableFuture.completedFuture(dependencyBindings)),
                     collectResults = true,
@@ -101,15 +107,14 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
                 // resolve references only after all dependent (and contained) modules and models have been transformed
                 if (isTransformationStartingModule) {
                     // resolve cross-model references (and node references)
-                    val project = ActiveMpsProjectInjector.activeMpsProject!!
-                    modelTransformer.resolveCrossModelReferences(project.repository)
+                    modelTransformer.resolveCrossModelReferences(mpsProject.repository)
                 }
                 flattenedBindings
             }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) { dependencyAndModelBindings ->
                 // register binding
                 val iNode = branch.getNode(nodeId)
                 val module = nodeMap.getModule(iNode.nodeIdAsLong()) as AbstractModule
-                val moduleBinding = ModuleBinding(module, branch)
+                val moduleBinding = ModuleBinding(module, branch, serviceLocator)
                 bindingsRegistry.addModuleBinding(moduleBinding)
 
                 val bindings = mutableSetOf<IBinding>()
@@ -138,7 +143,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
 
             // transform dependencies and collect its bindings (implicitly via the tasks' return value)
             iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)
-                .waitForCompletionOfEachTask(collectResults = true) {
+                .waitForCompletionOfEachTask(futuresWaitQueue, collectResults = true) {
                     transformModuleDependency(it.nodeIdAsLong(), sModule, fetchTargetModule)
                 }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) { unflattenedBindings ->
@@ -304,8 +309,7 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
             ModelDeleteHelper(model).delete()
             modelNodeId?.let { nodeMap.remove(it) }
         }
-        val project = ActiveMpsProjectInjector.activeMpsProject!!
-        ModuleDeleteHelper(project).deleteModules(listOf(sModule), false, true)
+        ModuleDeleteHelper(mpsProject).deleteModules(listOf(sModule), false, true)
         nodeMap.remove(nodeId)
     }
 
@@ -332,6 +336,6 @@ class ModuleTransformer(private val branch: IBranch, mpsLanguageRepository: MPSL
 
     private fun notifyAndLogError(message: String) {
         val exception = ModelixToMpsSynchronizationException(message)
-        notifierInjector.notifyAndLogError(message, exception, logger)
+        notifier.notifyAndLogError(message, exception, logger)
     }
 }

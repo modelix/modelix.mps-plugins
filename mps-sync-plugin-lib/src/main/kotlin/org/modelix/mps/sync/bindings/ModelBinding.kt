@@ -22,27 +22,30 @@ import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.IBinding
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
-import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.ModelChangeListener
 import org.modelix.mps.sync.transformation.mpsToModelix.incremental.NodeChangeListener
 import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+class ModelBinding(val model: SModelBase, branch: IBranch, serviceLocator: ServiceLocator) : IBinding {
 
     private val logger = KotlinLogging.logger {}
-    private val nodeMap = MpsToModelixMap
-    private val syncQueue = SyncQueue
-    private val bindingsRegistry = BindingsRegistry
-    private val notifierInjector = InjectableNotifierWrapper
 
-    private val modelChangeListener = ModelChangeListener(branch, this)
-    private val nodeChangeListener = NodeChangeListener(branch)
+    private val nodeMap = serviceLocator.nodeMap
+    private val syncQueue = serviceLocator.syncQueue
+
+    private val bindingsRegistry = serviceLocator.bindingsRegistry
+    private val notifier = serviceLocator.wrappedNotifier
+
+    private val modelChangeListener = ModelChangeListener(this, branch, serviceLocator)
+    private val nodeChangeListener = NodeChangeListener(branch, serviceLocator)
 
     @Volatile
     private var isDisposed = false
@@ -68,7 +71,7 @@ class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
         bindingsRegistry.bindingActivated(this)
 
         val message = "${name()} is activated."
-        notifierInjector.notifyAndLogInfo(message, logger)
+        notifier.notifyAndLogInfo(message, logger)
 
         callback?.run()
     }
@@ -142,7 +145,7 @@ class ModelBinding(val model: SModelBase, branch: IBranch) : IBinding {
                     ""
                 }
             }."
-            notifierInjector.notifyAndLogInfo(message, logger)
+            notifier.notifyAndLogInfo(message, logger)
 
             callback?.run()
         }.getResult()

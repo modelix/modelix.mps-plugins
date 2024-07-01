@@ -32,31 +32,34 @@ import org.modelix.mps.sync.modelix.util.isModule
 import org.modelix.mps.sync.modelix.util.isModuleDependency
 import org.modelix.mps.sync.modelix.util.isSingleLanguageDependency
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
-import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.transformation.exceptions.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.NodeTransformer
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class ModelixTreeChangeVisitor(
     private val branch: IBranch,
+    serviceLocator: ServiceLocator,
     languageRepository: MPSLanguageRepository,
 ) : ITreeChangeVisitorEx {
 
     private val logger = KotlinLogging.logger {}
-    private val nodeMap = MpsToModelixMap
-    private val syncQueue = SyncQueue
-    private val notifierInjector = InjectableNotifierWrapper
 
-    private val nodeTransformer = NodeTransformer(branch, languageRepository)
-    private val modelTransformer = ModelTransformer(branch, languageRepository)
-    private val moduleTransformer = ModuleTransformer(branch, languageRepository)
+    private val nodeMap = serviceLocator.nodeMap
+    private val syncQueue = serviceLocator.syncQueue
+    private val notifier = serviceLocator.wrappedNotifier
+    private val mpsRepository = serviceLocator.mpsProject.repository
+
+    private val nodeTransformer = NodeTransformer(branch, serviceLocator, languageRepository)
+    private val modelTransformer = ModelTransformer(branch, serviceLocator, languageRepository)
+    private val moduleTransformer = ModuleTransformer(branch, serviceLocator, languageRepository)
 
     override fun referenceChanged(nodeId: Long, role: String) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
@@ -231,8 +234,7 @@ class ModelixTreeChangeVisitor(
      */
     override fun childrenChanged(nodeId: Long, role: String?) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
-            val project = ActiveMpsProjectInjector.activeMpsProject!!
-            modelTransformer.resolveModelImports(project.repository)
+            modelTransformer.resolveModelImports(mpsRepository)
             nodeTransformer.resolveReferences()
             null
         }
@@ -293,6 +295,6 @@ class ModelixTreeChangeVisitor(
 
     private fun notifyAndLogError(message: String) {
         val exception = ModelixToMpsSynchronizationException(message)
-        notifierInjector.notifyAndLogError(message, exception, logger)
+        notifier.notifyAndLogError(message, exception, logger)
     }
 }

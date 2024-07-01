@@ -1,5 +1,7 @@
 package org.modelix.mps.sync.persistence
 
+import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
 import jetbrains.mps.project.AbstractModule
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
@@ -11,13 +13,15 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.IRebindModulesSyncService
-import org.modelix.mps.sync.bindings.BindingsRegistry
-import org.modelix.mps.sync.modelix.BranchRegistry
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.modelix.branch.BranchRegistry
+import org.modelix.mps.sync.mps.services.ServiceLocator
+import org.modelix.mps.sync.mps.util.runReadAction
+import org.modelix.mps.sync.mps.util.toMpsProject
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 /**
  * States are capable of taking a snapshot of the current bindings to modelix servers with getCurrentState(),
  * and recreating that state by calling load(). Note that currently the bindings of the state will be added during
@@ -53,16 +57,20 @@ data class PersistableState(
 ) {
 
     private val logger = KotlinLogging.logger {}
-    private val notifier = InjectableNotifierWrapper
 
     /**
      * Initializes the [PersistableState]'s fields with values fetched from the internal state of the modelix sync lib.
      * The method overrides the values of the [this]' fields.
      *
+     * @param project the opened [Project]
+     *
      * @return this with initialized fields, or the original state if [BranchRegistry.model] is null
      */
-    fun fetchState(): PersistableState {
-        val replicatedModel = BranchRegistry.model
+    fun fetchState(project: Project): PersistableState {
+        val serviceLocator = project.service<ServiceLocator>()
+
+        val branchRegistry = serviceLocator.branchRegistry
+        val replicatedModel = branchRegistry.model
         if (replicatedModel == null) {
             logger.warn { "Replicated Model is null, therefore an empty PersistableState will be saved." }
             return this
@@ -76,7 +84,8 @@ data class PersistableState(
             localVersion = replicatedModel.getCurrentVersion().getContentHash()
         }
 
-        BindingsRegistry.getModuleBindings().forEach {
+        val bindingsRegistry = serviceLocator.bindingsRegistry
+        bindingsRegistry.getModuleBindings().forEach {
             moduleIds += it.module.moduleId.toString()
         }
 
@@ -92,10 +101,11 @@ data class PersistableState(
      * 4. creates bindings for the synchronized modules ([PersistableState.moduleIds])
      *
      * @param syncService the interface to the modelix sync lib to restore its state
+     * @param project the opened [Project]
      *
      * @return some context statistics about the restored state
      */
-    fun restoreState(syncService: IRebindModulesSyncService): RestoredStateContext? {
+    fun restoreState(syncService: IRebindModulesSyncService, project: Project): RestoredStateContext? {
         var client: ModelClientV2? = null
 
         try {
@@ -125,7 +135,7 @@ data class PersistableState(
             val branchReference = BranchReference(repositoryId, branchName)
             var modules = listOf<AbstractModule>()
             var bindings: Iterable<IBinding>? = null
-            ActiveMpsProjectInjector.runMpsReadAction { repository ->
+            project.toMpsProject().runReadAction { repository ->
                 logger.debug { "Restoring SModules." }
                 modules = moduleIds.map {
                     val id = PersistenceFacade.getInstance().createModuleId(it)
@@ -147,25 +157,26 @@ data class PersistableState(
             logger.debug { "Bindings are recreated, now activating them." }
             bindings!!.forEach(IBinding::activate)
             logger.debug { "Bindings are activated." }
+
             return RestoredStateContext(client, branchReference, modules)
         } catch (t: Throwable) {
             val message =
                 "Error occurred, while restoring persisted state. Connection to model server, bindings and synchronization cache might not be established and activated. Please check logs for details."
+
+            val serviceLocator = project.service<ServiceLocator>()
+
+            val notifier = serviceLocator.wrappedNotifier
             notifier.notifyAndLogError(message, t, logger)
 
-            close(client, MpsToModelixMap)
+            client?.let {
+                it.close()
+                notifier.notifyAndLogInfo("Disconnected from server: ${it.baseUrl}", logger)
+            }
+
+            serviceLocator.nodeMap.dispose()
 
             return null
         }
-    }
-
-    private fun close(client: ModelClientV2?, cache: MpsToModelixMap) {
-        client?.let {
-            it.close()
-            val message = "Disconnected from server: ${it.baseUrl}"
-            notifier.notifyAndLogInfo(message, logger)
-        }
-        cache.clear()
     }
 }
 
@@ -176,7 +187,10 @@ data class PersistableState(
  * @property branchReference the branch in the repository to which we are connected
  * @property modules the MPS modules for which we established the bindings
  */
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class RestoredStateContext(
     val modelClient: ModelClientV2,
     val branchReference: BranchReference,

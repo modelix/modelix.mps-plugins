@@ -22,6 +22,7 @@ import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.mps.services.InjectableService
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.synchronizedMap
 import java.util.concurrent.CompletableFuture
@@ -30,7 +31,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.function.BiConsumer
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-object BindingsRegistry {
+class BindingsRegistry : InjectableService {
 
     private val modelBindingsByModule = synchronizedMap<SModule, MutableSet<ModelBinding>>()
     private val moduleBindings = synchronizedLinkedHashSet<ModuleBinding>()
@@ -119,6 +120,10 @@ object BindingsRegistry {
 
     private fun bindingRemoved(binding: IBinding) =
         changedBindings.put(BindingState(binding, BindingLifecycleState.REMOVE))
+
+    override fun dispose() {
+        deactivateBindings()
+    }
 }
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")

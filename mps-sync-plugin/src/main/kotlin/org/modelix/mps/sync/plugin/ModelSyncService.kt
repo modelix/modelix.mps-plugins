@@ -31,13 +31,14 @@ package org.modelix.mps.sync.plugin
  * limitations under the License.
  */
 
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
+import mu.KLogger
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
@@ -48,36 +49,47 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.IRebindModulesSyncService
 import org.modelix.mps.sync.ISyncService
-import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.plugin.action.ModelixActionGroup
 import java.net.URL
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-@Service(Service.Level.APP)
-class ModelSyncService : Disposable, IRebindModulesSyncService {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+@Service(Service.Level.PROJECT)
+class ModelSyncService(project: Project) : IRebindModulesSyncService {
 
-    private val logger = KotlinLogging.logger { }
-    private val notifierInjector = InjectableNotifierWrapper
+    private val logger: KLogger = KotlinLogging.logger { }
 
-    private lateinit var syncService: ISyncService
+    private val notifier: WrappedNotifier
+    private val syncService: ISyncService
 
     init {
+        val serviceLocator = project.service<ServiceLocator>()
+        notifier = serviceLocator.wrappedNotifier
+        syncService = serviceLocator.syncService
+
         logger.debug { "ModelixSyncPlugin: Registering sync actions" }
         registerSyncActions()
         logger.debug { "ModelixSyncPlugin: Registration finished" }
+
+        logger.debug { "ModelixSyncPlugin: Initializing the InjectableNotifierWrapper" }
+        notifier.setNotifier(BalloonNotifier(project))
+        logger.debug { "ModelixSyncPlugin: InjectableNotifierWrapper is initialized" }
     }
 
     override fun connectModelServer(serverURL: String, jwt: String?): ModelClientV2? {
         var client: ModelClientV2? = null
         try {
             client = syncService.connectModelServer(URL(serverURL), jwt)
-            notifierInjector.notifyAndLogInfo("Connected to server: $serverURL", logger)
+            notifier.notifyAndLogInfo("Connected to server: $serverURL", logger)
         } catch (t: Throwable) {
             val message = "Unable to connect to $serverURL. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
+            notifier.notifyAndLogError(message, t, logger)
         }
         return client
     }
@@ -92,7 +104,7 @@ class ModelSyncService : Disposable, IRebindModulesSyncService {
             return syncService.rebindModules(client, branchReference, initialVersion, modules)
         } catch (t: Throwable) {
             val message = "Error while binding modules to Branch '$branchReference'. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
+            notifier.notifyAndLogError(message, t, logger)
             return null
         }
     }
@@ -102,11 +114,11 @@ class ModelSyncService : Disposable, IRebindModulesSyncService {
         val baseUrl = modelClient.baseUrl
         try {
             syncService.disconnectModelServer(modelClient)
-            notifierInjector.notifyAndLogInfo("Disconnected from server: $baseUrl", logger)
+            notifier.notifyAndLogInfo("Disconnected from server: $baseUrl", logger)
             client = null
         } catch (t: Throwable) {
             val message = "Unable to disconnect from $baseUrl. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
+            notifier.notifyAndLogError(message, t, logger)
         }
         return client
     }
@@ -114,11 +126,11 @@ class ModelSyncService : Disposable, IRebindModulesSyncService {
     fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch? {
         try {
             val branch = syncService.connectToBranch(client, branchReference)
-            notifierInjector.notifyAndLogInfo("Connected to branch: $branchReference", logger)
+            notifier.notifyAndLogInfo("Connected to branch: $branchReference", logger)
             return branch
         } catch (t: Throwable) {
             val message = "Unable to connect to branch ${branchReference.branchName}. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
+            notifier.notifyAndLogError(message, t, logger)
             return null
         }
     }
@@ -126,10 +138,10 @@ class ModelSyncService : Disposable, IRebindModulesSyncService {
     fun disconnectFromBranch(branch: IBranch, branchName: String) {
         try {
             syncService.disconnectFromBranch(branch, branchName)
-            notifierInjector.notifyAndLogInfo("Disconnected from branch: $branchName", logger)
+            notifier.notifyAndLogInfo("Disconnected from branch: $branchName", logger)
         } catch (t: Throwable) {
             val message = "Unable to disconnect from branch $branchName. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
+            notifier.notifyAndLogError(message, t, logger)
         }
     }
 
@@ -150,33 +162,13 @@ class ModelSyncService : Disposable, IRebindModulesSyncService {
         } catch (t: Throwable) {
             val message =
                 "Error while binding Module '${module.name}' from Repository '$repositoryID' and Branch '$branchName'. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
+            notifier.notifyAndLogError(message, t, logger)
         }
     }
 
     fun bindModuleFromMps(module: AbstractModule, branch: IBranch) = syncService.bindModuleFromMps(module, branch)
 
     fun bindModelFromMps(model: SModelBase, branch: IBranch) = syncService.bindModelFromMps(model, branch)
-
-    fun setActiveProject(project: Project) {
-        // TODO FIXME ModelSyncService MUST BE Project scoped instead of APP scoped, otherwise this workaround here is fragile
-        logger.debug { "ModelixSyncPlugin: Initializing Sync Service" }
-        val notifier = BalloonNotifier(project)
-        syncService = SyncServiceImpl(notifier)
-        logger.debug { "ModelixSyncPlugin: Sync Service is initialized" }
-
-        syncService.setActiveProject(project)
-    }
-
-    fun ensureStarted() {
-        logger.debug { "ModelixSyncPlugin: EnsureStarted" }
-    }
-
-    override fun dispose() {
-        logger.debug { "ModelixSyncPlugin: Dispose" }
-        syncService.close()
-        logger.debug { "ModelixSyncPlugin: Disposed" }
-    }
 
     private fun registerSyncActions() {
         listOf(
@@ -185,9 +177,13 @@ class ModelSyncService : Disposable, IRebindModulesSyncService {
         ).forEach {
             val actionGroup = ActionManager.getInstance().getAction(it)
             if (actionGroup is DefaultActionGroup) {
-                actionGroup.run {
-                    addSeparator()
-                    add(ModelixActionGroup())
+                val modelixActionGroup = ModelixActionGroup
+                val actionsAreRegistered = actionGroup.childActionsOrStubs.contains(modelixActionGroup)
+                if (!actionsAreRegistered) {
+                    actionGroup.run {
+                        addSeparator()
+                        add(modelixActionGroup)
+                    }
                 }
             } else {
                 logger.error { "Action Group $it was not found, thus the UI actions are not registered." }

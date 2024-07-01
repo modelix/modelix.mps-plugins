@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.modelix
+package org.modelix.mps.sync.modelix.branch
 
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
@@ -27,32 +27,38 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.RepositoryChangeListener
+import org.modelix.mps.sync.mps.services.InjectableService
+import org.modelix.mps.sync.mps.services.ServiceLocator
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-object BranchRegistry : AutoCloseable {
+class BranchRegistry : InjectableService {
 
-    val branch: IBranch?
-        get() = model?.getBranch()
+    private lateinit var serviceLocator: ServiceLocator
+
+    private val mpsProject: MPSProject
+        get() = serviceLocator.mpsProject
 
     var model: ReplicatedModel? = null
         private set
 
-    // TODO refactor it so we can get as many replicated models from as many clients and branches as we wish...
     private var client: ModelClientV2? = null
     private var branchReference: BranchReference? = null
 
     private lateinit var branchListener: ModelixBranchListener
-
-    // the MPS Project and its registered change listener
-    private lateinit var project: MPSProject
     private lateinit var repoChangeListener: RepositoryChangeListener
 
+    override fun initService(serviceLocator: ServiceLocator) {
+        this.serviceLocator = serviceLocator
+    }
+
+    fun getBranch() = model?.getBranch()
+
     fun unsetBranch(branch: IBranch) {
-        if (branch == this.branch) {
-            close()
+        if (branch == getBranch()) {
+            dispose()
         }
     }
 
@@ -60,14 +66,13 @@ object BranchRegistry : AutoCloseable {
         client: ModelClientV2,
         branchReference: BranchReference,
         languageRepository: MPSLanguageRepository,
-        targetProject: MPSProject,
         replicatedModelContext: ReplicatedModelInitContext,
     ): ReplicatedModel {
         if (this.client == client && this.branchReference == branchReference) {
             return model!!
         }
 
-        close()
+        dispose()
 
         val coroutineScope = replicatedModelContext.coroutineScope
         val initialVersion = replicatedModelContext.initialVersion
@@ -85,22 +90,17 @@ object BranchRegistry : AutoCloseable {
         this.branchReference = branchReference
         this.client = client
 
-        val repositoryChangeListener = RepositoryChangeListener(branch)
-        targetProject.repository.addRepositoryListener(repositoryChangeListener)
-        project = targetProject
+        val repositoryChangeListener = RepositoryChangeListener(branch, serviceLocator)
+        mpsProject.repository.addRepositoryListener(repositoryChangeListener)
         repoChangeListener = repositoryChangeListener
 
         return model!!
     }
 
-    override fun close() {
-        if (branch == null) {
-            return
-        }
-
-        // remove listeners
-        branch!!.removeListener(branchListener)
-        project.repository.removeRepositoryListener(repoChangeListener)
+    override fun dispose() {
+        val branch = getBranch() ?: return
+        branch.removeListener(branchListener)
+        mpsProject.repository.removeRepositoryListener(repoChangeListener)
 
         model?.dispose()
 
@@ -110,12 +110,15 @@ object BranchRegistry : AutoCloseable {
     }
 
     private fun registerBranchListener(branch: IBranch, languageRepository: MPSLanguageRepository) {
-        branchListener = ModelixBranchListener(branch, languageRepository)
+        branchListener = ModelixBranchListener(branch, serviceLocator, languageRepository)
         branch.addListener(branchListener)
     }
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "2024.1")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class ReplicatedModelInitContext(
     val coroutineScope: CoroutineScope,
     val initialVersion: CLVersion? = null,

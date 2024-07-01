@@ -19,44 +19,33 @@ package org.modelix.mps.sync.plugin.action
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
-import com.intellij.openapi.components.service
 import jetbrains.mps.project.AbstractModule
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.modelix.BranchRegistry
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
-import org.modelix.mps.sync.plugin.ModelSyncService
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class ModuleSyncAction : AnAction {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+@Suppress("ComponentNotRegistered")
+object ModuleSyncAction : AnAction("Synchronize Module to Server") {
 
-    companion object {
-        val CONTEXT_MODULE = DataKey.create<SModule>("MPS_Context_SModule")
-
-        fun create() = ModuleSyncAction("Synchronize module to server")
-    }
+    val contextModule = DataKey.create<SModule>("MPS_Context_SModule")
 
     private val logger = KotlinLogging.logger {}
-    private val notifierInjector = InjectableNotifierWrapper
 
-    constructor() : super()
+    override fun actionPerformed(event: AnActionEvent) =
+        actionPerformedSafely(event, logger, "Module synchronization error occurred.") { serviceLocator ->
+            val module = event.getData(contextModule) as? AbstractModule
+            checkNotNull(module) { "Synchronization is not possible, because Module (${module?.moduleName}) is not an AbstractModule." }
 
-    constructor(text: String) : super(text)
+            val branchRegistry = serviceLocator.branchRegistry
+            val branch = branchRegistry.getBranch()
+            checkNotNull(branch) { "Connect to a server and branch before synchronizing a Module." }
 
-    override fun actionPerformed(event: AnActionEvent) {
-        var moduleName = ""
-        try {
-            val module = event.getData(CONTEXT_MODULE)!! as AbstractModule
-            moduleName = module.moduleName ?: ""
-            val branch = BranchRegistry.branch
-            check(branch != null) { "Connect to a server and branch before synchronizing a module." }
-
-            val bindings = service<ModelSyncService>().bindModuleFromMps(module, branch)
+            val syncService = serviceLocator.syncService
+            val bindings = syncService.bindModuleFromMps(module, branch)
             bindings.forEach { it.activate() }
-        } catch (t: Throwable) {
-            val message = "Module '$moduleName' synchronization error occurred. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
         }
-    }
 }

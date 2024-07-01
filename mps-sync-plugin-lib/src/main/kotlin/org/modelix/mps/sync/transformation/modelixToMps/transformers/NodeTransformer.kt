@@ -38,29 +38,36 @@ import org.modelix.mps.sync.modelix.util.isModel
 import org.modelix.mps.sync.modelix.util.isModule
 import org.modelix.mps.sync.modelix.util.isSingleLanguageDependency
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 import org.modelix.mps.sync.mps.factories.SNodeFactory
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.addDevKit
 import org.modelix.mps.sync.mps.util.addLanguageImport
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
-import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.transformation.exceptions.ModelixToMpsSynchronizationException
 import java.util.UUID
 import kotlin.reflect.KFunction2
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLanguageRepository) {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+class NodeTransformer(
+    private val branch: IBranch,
+    serviceLocator: ServiceLocator,
+    mpsLanguageRepository: MPSLanguageRepository,
+) {
 
     private val logger = KotlinLogging.logger {}
-    private val nodeMap = MpsToModelixMap
-    private val syncQueue = SyncQueue
-    private val notifierInjector = InjectableNotifierWrapper
 
-    private val nodeFactory = SNodeFactory(mpsLanguageRepository, nodeMap, syncQueue, branch)
+    private val nodeMap = serviceLocator.nodeMap
+    private val syncQueue = serviceLocator.syncQueue
+
+    private val notifier = serviceLocator.wrappedNotifier
+    private val mpsRepository = serviceLocator.mpsProject.repository
+
+    private val nodeFactory = SNodeFactory(mpsLanguageRepository, branch, serviceLocator)
 
     fun transformToNode(iNode: INode): ContinuableSyncTask {
         val nodeId = iNode.nodeIdAsLong()
@@ -264,12 +271,11 @@ class NodeTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLan
 
     private fun getDependentModule(iNode: INode): SModule {
         val uuid = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)!!
-        val activeProject = ActiveMpsProjectInjector.activeMpsProject!!
-        return activeProject.repository.getModule(ModuleId.regular(UUID.fromString(uuid)))!!
+        return mpsRepository.getModule(ModuleId.regular(UUID.fromString(uuid)))!!
     }
 
     private fun notifyAndLogError(message: String) {
         val exception = ModelixToMpsSynchronizationException(message)
-        notifierInjector.notifyAndLogError(message, exception, logger)
+        notifier.notifyAndLogError(message, exception, logger)
     }
 }

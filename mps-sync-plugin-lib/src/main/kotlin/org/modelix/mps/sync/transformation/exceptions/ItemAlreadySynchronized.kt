@@ -1,4 +1,4 @@
-package org.modelix.mps.sync.modelix
+package org.modelix.mps.sync.transformation.exceptions
 
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode

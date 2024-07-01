@@ -14,20 +14,23 @@
  * limitations under the License.
  */
 
-package org.modelix.mps.sync.mps.util
+package org.modelix.mps.sync.mps
 
 import jetbrains.mps.extapi.model.EditableSModelBase
 import jetbrains.mps.extapi.persistence.FileDataSource
 import jetbrains.mps.project.AbstractModule
+import jetbrains.mps.project.MPSProject
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelName
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class ModelRenameHelper(private val model: EditableSModelBase) {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+class ModelRenameHelper(private val model: EditableSModelBase, private val mpsProject: MPSProject) {
 
     val logger = KotlinLogging.logger {}
 
@@ -48,7 +51,6 @@ class ModelRenameHelper(private val model: EditableSModelBase) {
 
     // adopted from Renamer.updateModelAndModuleReferences(project) in MPS 2023.2
     private fun updateModelAndModuleReferences() {
-        val mpsProject = ActiveMpsProjectInjector.activeMpsProject!!
         mpsProject.modelAccess.checkWriteAccess()
         val var1: Iterator<*> = mpsProject.projectModulesWithGenerators.iterator()
 

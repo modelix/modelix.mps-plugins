@@ -23,33 +23,27 @@ import jetbrains.mps.project.AbstractModule
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.bindings.BindingsRegistry
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class UnbindModuleAction : AnAction {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+@Suppress("ComponentNotRegistered")
+object UnbindModuleAction : AnAction("Unbind Module") {
 
-    companion object {
-        val CONTEXT_MODULE = DataKey.create<SModule>("MPS_Context_SModule")
-
-        fun create() = UnbindModuleAction("Unbind module")
-    }
+    private val contextModule = DataKey.create<SModule>("MPS_Context_SModule")
 
     private val logger = KotlinLogging.logger {}
 
-    constructor() : super()
+    override fun actionPerformed(event: AnActionEvent) =
+        actionPerformedSafely(event, logger, "Module unbind error occurred.") { serviceLocator ->
+            val module = event.getData(contextModule) as? AbstractModule
+            checkNotNull(module) { "Unbinding is not possible, because Module (${module?.moduleName}) is not an AbstractModule." }
 
-    constructor(text: String) : super(text)
-
-    override fun actionPerformed(event: AnActionEvent) {
-        try {
-            val module = event.getData(CONTEXT_MODULE)!! as AbstractModule
-
-            val binding = BindingsRegistry.getModuleBinding(module)
-            require(binding != null) { "Module is not synchronized to the server yet." }
+            val bindingsRegistry = serviceLocator.bindingsRegistry
+            val binding = bindingsRegistry.getModuleBinding(module)
+            checkNotNull(binding) { "Module is not synchronized to the server yet." }
 
             binding.deactivate(removeFromServer = false)
-        } catch (ex: Exception) {
-            logger.error(ex) { "Module unbind error occurred" }
         }
-    }
 }

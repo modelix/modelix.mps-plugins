@@ -19,44 +19,33 @@ package org.modelix.mps.sync.plugin.action
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
-import com.intellij.openapi.components.service
 import jetbrains.mps.extapi.model.SModelBase
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.modelix.BranchRegistry
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
-import org.modelix.mps.sync.plugin.ModelSyncService
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class ModelSyncAction : AnAction {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+@Suppress("ComponentNotRegistered")
+object ModelSyncAction : AnAction("Synchronize Model to Server") {
 
-    companion object {
-        val CONTEXT_MODEL = DataKey.create<SModel>("MPS_Context_SModel")
-
-        fun create() = ModelSyncAction("Synchronize model to server")
-    }
+    val contextModel = DataKey.create<SModel>("MPS_Context_SModel")
 
     private val logger = KotlinLogging.logger {}
-    private val notifierInjector = InjectableNotifierWrapper
 
-    constructor() : super()
+    override fun actionPerformed(event: AnActionEvent) =
+        actionPerformedSafely(event, logger, "Model synchronization error occurred.") { serviceLocator ->
+            val model = event.getData(contextModel) as? SModelBase
+            checkNotNull(model) { "Synchronization is not possible, because Model (${model?.name}) is not an SModelBase." }
 
-    constructor(text: String) : super(text)
+            val branchRegistry = serviceLocator.branchRegistry
+            val branch = branchRegistry.getBranch()
+            checkNotNull(branch) { "Connect to a server and branch before synchronizing a Model." }
 
-    override fun actionPerformed(event: AnActionEvent) {
-        var modelName = ""
-        try {
-            val model = event.getData(CONTEXT_MODEL)!! as SModelBase
-            modelName = model.name.simpleName
-            val branch = BranchRegistry.branch
-            check(branch != null) { "Connect to a server and branch before synchronizing a model." }
-
-            val binding = service<ModelSyncService>().bindModelFromMps(model, branch)
+            val syncService = serviceLocator.syncService
+            val binding = syncService.bindModelFromMps(model, branch)
             binding.activate()
-        } catch (t: Throwable) {
-            val message = "Model '$modelName' synchronization error occurred. Cause: ${t.message}"
-            notifierInjector.notifyAndLogError(message, t, logger)
         }
-    }
 }

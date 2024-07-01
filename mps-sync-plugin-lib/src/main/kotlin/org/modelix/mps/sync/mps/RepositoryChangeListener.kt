@@ -21,18 +21,22 @@ import org.jetbrains.mps.openapi.module.SRepositoryListenerBase
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITree
-import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class RepositoryChangeListener(branch: IBranch) : SRepositoryListenerBase() {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+class RepositoryChangeListener(branch: IBranch, serviceLocator: ServiceLocator) : SRepositoryListenerBase() {
 
-    private val bindingsRegistry = BindingsRegistry
+    private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
+    private val bindingsRegistry = serviceLocator.bindingsRegistry
 
-    private val nodeSynchronizer = NodeSynchronizer(branch)
+    private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 
     override fun moduleRemoved(module: SModuleReference) {
-        if (ApplicationLifecycleTracker.applicationClosing) {
+        if (projectLifecycleTracker.projectClosing) {
             return
         }
 

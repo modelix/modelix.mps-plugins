@@ -24,11 +24,7 @@ import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.clear
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.isEmpty
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.isMappedToModelix
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.isMappedToMps
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap.remove
+import org.modelix.mps.sync.mps.services.InjectableService
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.synchronizedMap
 
@@ -44,7 +40,7 @@ import org.modelix.mps.sync.util.synchronizedMap
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-object MpsToModelixMap {
+class MpsToModelixMap : InjectableService {
 
     private val nodeToModelixId = synchronizedMap<SNode, Long>()
     private val modelixIdToNode = synchronizedMap<Long, SNode>()
@@ -241,7 +237,7 @@ object MpsToModelixMap {
 
     fun isEmpty() = objectsRelatedToAModel.isEmpty() && objectsRelatedToAModule.isEmpty()
 
-    fun clear() {
+    override fun dispose() {
         nodeToModelixId.clear()
         modelixIdToNode.clear()
         modelToModelixId.clear()

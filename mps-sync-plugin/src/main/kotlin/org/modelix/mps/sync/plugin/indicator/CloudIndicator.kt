@@ -48,9 +48,6 @@ class CloudIndicator : StatusBarWidgetFactory {
     private class CloudToolWidget : JBLabel(), CustomStatusBarWidget {
 
         init {
-            // todo: add listener on model sync service to get connection status automatically
-            // service<ModelSyncService>() ...
-
             object : ClickListener() {
                 override fun onClick(event: MouseEvent, clickCount: Int): Boolean {
                     // todo: maybe even allow opening the tool bar from here

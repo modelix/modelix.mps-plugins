@@ -19,7 +19,10 @@ package org.modelix.mps.sync.tasks
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.util.concurrent.CompletableFuture
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class SyncTask(
     requiredLocks: LinkedHashSet<SyncLock>,
     val syncDirection: SyncDirection,
@@ -33,8 +36,15 @@ class SyncTask(
     private val stackTrace: List<StackTraceElement> = Thread.currentThread().stackTrace.toList()
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class ContinuableSyncTask(private val previousTask: SyncTask) {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+class ContinuableSyncTask(
+    private val previousTask: SyncTask,
+    private val syncQueue: SyncQueue,
+    private val futuresWaitQueue: FuturesWaitQueue,
+) {
 
     fun continueWith(
         requiredLocks: LinkedHashSet<SyncLock>,
@@ -42,7 +52,7 @@ class ContinuableSyncTask(private val previousTask: SyncTask) {
         action: SyncTaskAction,
     ): ContinuableSyncTask {
         val continuation = CompletableFuture<Any?>()
-        FuturesWaitQueue.add(continuation, setOf(getResult()), true)
+        futuresWaitQueue.add(continuation, setOf(getResult()), true)
 
         val task = SyncTask(requiredLocks, syncDirection, action, continuation)
         continuation.whenComplete { _, throwable ->
@@ -51,15 +61,18 @@ class ContinuableSyncTask(private val previousTask: SyncTask) {
                 task.result.completeExceptionally(throwable)
             } else {
                 // this will only run if previousTask is completed according to the FuturesWaitQueue
-                SyncQueue.enqueue(task)
+                syncQueue.enqueue(task)
             }
         }
 
-        return ContinuableSyncTask(task)
+        return ContinuableSyncTask(task, syncQueue, futuresWaitQueue)
     }
 
     fun getResult() = previousTask.result
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 typealias SyncTaskAction = (Any?) -> Any?

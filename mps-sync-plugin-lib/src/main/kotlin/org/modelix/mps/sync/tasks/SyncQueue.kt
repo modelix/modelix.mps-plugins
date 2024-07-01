@@ -16,36 +16,53 @@
 
 package org.modelix.mps.sync.tasks
 
+import com.intellij.openapi.application.ApplicationManager
+import jetbrains.mps.project.MPSProject
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.modelix.BranchRegistry
-import org.modelix.mps.sync.mps.ActiveMpsProjectInjector
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
-import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
-import org.modelix.mps.sync.transformation.MpsToModelixSynchronizationException
-import org.modelix.mps.sync.transformation.SynchronizationException
-import org.modelix.mps.sync.transformation.pleaseCheckLogs
+import org.modelix.mps.sync.modelix.branch.BranchRegistry
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
+import org.modelix.mps.sync.mps.services.InjectableService
+import org.modelix.mps.sync.mps.services.ServiceLocator
+import org.modelix.mps.sync.mps.util.runReadAction
+import org.modelix.mps.sync.transformation.exceptions.ModelixToMpsSynchronizationException
+import org.modelix.mps.sync.transformation.exceptions.MpsToModelixSynchronizationException
+import org.modelix.mps.sync.transformation.exceptions.SynchronizationException
+import org.modelix.mps.sync.transformation.exceptions.pleaseCheckLogs
 import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.Executors
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-object SyncQueue : AutoCloseable {
+class SyncQueue : InjectableService {
 
     private val logger = KotlinLogging.logger {}
-    private val threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
-    private val notifierInjector = InjectableNotifierWrapper
+
+    private val threadPool = ApplicationManager.getApplication().getService(SharedThreadPool::class.java).threadPool
 
     private val activeSyncThreadsWithSyncDirection = ConcurrentHashMap<Thread, SyncDirection>()
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
 
-    override fun close() {
-        threadPool.shutdownNow()
+    private val notifier: WrappedNotifier
+        get() = serviceLocator.wrappedNotifier
+
+    private val branchRegistry: BranchRegistry
+        get() = serviceLocator.branchRegistry
+
+    private val mpsProject: MPSProject
+        get() = serviceLocator.mpsProject
+
+    private val futuresWaitQueue: FuturesWaitQueue
+        get() = serviceLocator.futuresWaitQueue
+
+    private lateinit var serviceLocator: ServiceLocator
+
+    override fun initService(serviceLocator: ServiceLocator) {
+        this.serviceLocator = serviceLocator
     }
 
     fun enqueue(
@@ -55,7 +72,7 @@ object SyncQueue : AutoCloseable {
     ): ContinuableSyncTask {
         val task = SyncTask(requiredLocks, syncDirection, action)
         enqueue(task)
-        return ContinuableSyncTask(task)
+        return ContinuableSyncTask(task, this, futuresWaitQueue)
     }
 
     fun enqueue(task: SyncTask) {
@@ -90,7 +107,7 @@ object SyncQueue : AutoCloseable {
             if (!threadPool.isShutdown) {
                 val message =
                     "Task is cancelled, because an Exception occurred in the ThreadPool of the SyncQueue. Cause: ${t.message}"
-                notifierInjector.notifyAndLogError(message, t, logger)
+                notifier.notifyAndLogError(message, t, logger)
             }
             task.result.completeExceptionally(t)
         }
@@ -103,7 +120,7 @@ object SyncQueue : AutoCloseable {
             } catch (t: Throwable) {
                 val message =
                     "Running the SyncQueue Tasks on Thread ${Thread.currentThread()} failed. Cause: ${t.message}"
-                notifierInjector.notifyAndLogError(message, t, logger)
+                notifier.notifyAndLogError(message, t, logger)
             }
         }
     }
@@ -147,7 +164,7 @@ object SyncQueue : AutoCloseable {
 
                     val wrapped = wrapErrorIntoSynchronizationException(t)
                     val cause = wrapped ?: t
-                    notifierInjector.notifyAndLogError(cause.message ?: pleaseCheckLogs, cause, logger)
+                    notifier.notifyAndLogError(cause.message ?: pleaseCheckLogs, cause, logger)
 
                     if (!taskResult.isCompletedExceptionally) {
                         taskResult.completeExceptionally(cause)
@@ -164,10 +181,10 @@ object SyncQueue : AutoCloseable {
 
     private fun runWithLock(lock: SyncLock, runnable: () -> Unit) {
         when (lock) {
-            SyncLock.MPS_WRITE -> ActiveMpsProjectInjector.activeMpsProject!!.modelAccess.executeCommandInEDT(runnable)
-            SyncLock.MPS_READ -> ActiveMpsProjectInjector.runMpsReadAction { runnable() }
-            SyncLock.MODELIX_READ -> BranchRegistry.branch!!.runRead(runnable)
-            SyncLock.MODELIX_WRITE -> BranchRegistry.branch!!.runWrite(runnable)
+            SyncLock.MPS_WRITE -> mpsProject.modelAccess.executeCommandInEDT(runnable)
+            SyncLock.MPS_READ -> mpsProject.runReadAction { runnable() }
+            SyncLock.MODELIX_READ -> getModelixBranch().runRead(runnable)
+            SyncLock.MODELIX_WRITE -> getModelixBranch().runWrite(runnable)
             SyncLock.NONE -> runnable.invoke()
         }
     }
@@ -187,6 +204,8 @@ object SyncQueue : AutoCloseable {
             null
         }
     }
+
+    private fun getModelixBranch() = branchRegistry.getBranch() ?: throw IllegalStateException("Branch is null.")
 }
 
 // List.headTail does not work in some MPS versions (e.g. 2020.3.6), therefore we reimplemented the method

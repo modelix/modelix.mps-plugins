@@ -34,11 +34,10 @@ import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.modelix.util.getMpsNodeId
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
-import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
 @UnstableModelixFeature(
@@ -47,10 +46,13 @@ import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 )
 class SNodeFactory(
     private val conceptRepository: MPSLanguageRepository,
-    private val nodeMap: MpsToModelixMap,
-    private val syncQueue: SyncQueue,
     private val branch: IBranch,
+    serviceLocator: ServiceLocator,
 ) {
+
+    private val nodeMap = serviceLocator.nodeMap
+    private val syncQueue = serviceLocator.syncQueue
+    private val futuresWaitQueue = serviceLocator.futuresWaitQueue
 
     private val resolvableReferences = mutableListOf<ResolvableReference>()
 
@@ -58,7 +60,7 @@ class SNodeFactory(
         createNode(nodeId, model)
             .continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
                 val iNode = branch.getNode(nodeId)
-                iNode.allChildren.waitForCompletionOfEachTask {
+                iNode.allChildren.waitForCompletionOfEachTask(futuresWaitQueue) {
                     createNodeRecursively(it.nodeIdAsLong(), model)
                 }
             }

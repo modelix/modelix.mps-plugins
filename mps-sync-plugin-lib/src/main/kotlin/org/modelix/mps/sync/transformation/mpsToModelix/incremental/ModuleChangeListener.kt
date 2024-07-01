@@ -30,40 +30,43 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.getNode
 import org.modelix.mps.sync.IBinding
-import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
-import org.modelix.mps.sync.mps.ApplicationLifecycleTracker
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.descriptorSuffix
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
-import org.modelix.mps.sync.tasks.SyncQueue
 import org.modelix.mps.sync.tasks.SyncTaskAction
-import org.modelix.mps.sync.transformation.MpsToModelixSynchronizationException
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.transformation.exceptions.MpsToModelixSynchronizationException
+import org.modelix.mps.sync.transformation.exceptions.pleaseCheckLogs
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModuleSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
-import org.modelix.mps.sync.transformation.pleaseCheckLogs
 import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.waitForCompletionOfEach
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.concurrent.CompletableFuture
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceLocator) : SModuleListener {
 
     private val logger = KotlinLogging.logger {}
-    private val nodeMap = MpsToModelixMap
-    private val syncQueue = SyncQueue
-    private val bindingsRegistry = BindingsRegistry
-    private val notifierInjector = InjectableNotifierWrapper
 
-    private val moduleSynchronizer = ModuleSynchronizer(branch)
-    private val modelSynchronizer = ModelSynchronizer(branch)
-    private val nodeSynchronizer = NodeSynchronizer(branch)
+    private val nodeMap = serviceLocator.nodeMap
+    private val syncQueue = serviceLocator.syncQueue
+    private val futuresWaitQueue = serviceLocator.futuresWaitQueue
+
+    private val bindingsRegistry = serviceLocator.bindingsRegistry
+    private val notifier = serviceLocator.wrappedNotifier
+    private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
+
+    private val moduleSynchronizer = ModuleSynchronizer(branch, serviceLocator)
+    private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)
+    private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 
     private val moduleChangeSyncInProgress = synchronizedLinkedHashSet<SModule>()
 
@@ -72,7 +75,7 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
     }
 
     override fun modelRemoved(module: SModule, reference: SModelReference) {
-        if (ApplicationLifecycleTracker.applicationClosing) {
+        if (projectLifecycleTracker.projectClosing) {
             return
         }
 
@@ -139,7 +142,7 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
                         ModuleTransformer.getTargetModuleIdFromModuleDependency(dependencyINode) == targetModuleId
                     }
                 }
-                addedDependencies.waitForCompletionOfEachTask(collectResults = true) { dependency ->
+                addedDependencies.waitForCompletionOfEachTask(futuresWaitQueue, collectResults = true) { dependency ->
                     moduleSynchronizer.addDependency(
                         module,
                         dependency,
@@ -161,9 +164,9 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
         }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // resolve model imports (that had not been resolved, because the corresponding module/model were not uploaded yet)
             errorHandlerWrapper(it, module) {
-                module.models.waitForCompletionOfEach { model ->
+                module.models.waitForCompletionOfEach(futuresWaitQueue) { model ->
                     if (model is SModelDescriptorStub && model.modelListeners.isNotEmpty()) {
-                        model.modelListeners.waitForCompletionOfEach { listener ->
+                        model.modelListeners.waitForCompletionOfEach(futuresWaitQueue) { listener ->
                             if (listener is ModelChangeListener) {
                                 listener.resolveModelImports().getResult()
                             } else {
@@ -191,7 +194,7 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
                         targetModuleIdAccordingToModelix == sDependency.targetModule.moduleId
                     }
                 }
-                removedDependencies.waitForCompletionOfEachTask { dependencyINode ->
+                removedDependencies.waitForCompletionOfEachTask(futuresWaitQueue) { dependencyINode ->
                     nodeSynchronizer.removeNode(
                         parentNodeIdProducer = { it[module]!! },
                         childNodeIdProducer = { dependencyINode.nodeIdAsLong() },
@@ -257,7 +260,7 @@ class ModuleChangeListener(private val branch: IBranch) : SModuleListener {
         moduleChangeSyncInProgress.remove(module)
         throwable?.let {
             val exception = MpsToModelixSynchronizationException(it.message ?: pleaseCheckLogs, it)
-            notifierInjector.notifyAndLogError(exception.message, exception, logger)
+            notifier.notifyAndLogError(exception.message, exception, logger)
             throw it
         }
     }

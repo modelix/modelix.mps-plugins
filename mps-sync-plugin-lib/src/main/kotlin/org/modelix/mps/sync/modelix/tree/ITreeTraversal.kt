@@ -1,4 +1,4 @@
-package org.modelix.mps.sync.modelix
+package org.modelix.mps.sync.modelix.tree
 
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope

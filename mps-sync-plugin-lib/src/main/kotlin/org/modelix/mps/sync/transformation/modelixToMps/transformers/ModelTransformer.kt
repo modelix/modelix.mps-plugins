@@ -45,33 +45,40 @@ import org.modelix.mps.sync.modelix.util.getModel
 import org.modelix.mps.sync.modelix.util.getModule
 import org.modelix.mps.sync.modelix.util.isModel
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
-import org.modelix.mps.sync.mps.notifications.InjectableNotifierWrapper
-import org.modelix.mps.sync.mps.util.ModelRenameHelper
+import org.modelix.mps.sync.mps.ModelRenameHelper
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.createModel
 import org.modelix.mps.sync.mps.util.deleteDevKit
 import org.modelix.mps.sync.mps.util.deleteLanguage
 import org.modelix.mps.sync.mps.util.descriptorSuffix
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
-import org.modelix.mps.sync.tasks.SyncQueue
-import org.modelix.mps.sync.transformation.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.cache.ModelWithModelReference
 import org.modelix.mps.sync.transformation.cache.ModelWithModuleReference
-import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
+import org.modelix.mps.sync.transformation.exceptions.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLanguageRepository) {
+class ModelTransformer(
+    private val branch: IBranch,
+    private val serviceLocator: ServiceLocator,
+    mpsLanguageRepository: MPSLanguageRepository,
+) {
 
     private val logger = KotlinLogging.logger {}
-    private val nodeMap = MpsToModelixMap
-    private val syncQueue = SyncQueue
-    private val notifierInjector = InjectableNotifierWrapper
 
-    private val nodeTransformer = NodeTransformer(branch, mpsLanguageRepository)
+    private val nodeMap = serviceLocator.nodeMap
+    private val syncQueue = serviceLocator.syncQueue
+    private val futuresWaitQueue = serviceLocator.futuresWaitQueue
+
+    private val notifier = serviceLocator.wrappedNotifier
+    private val mpsProject = serviceLocator.mpsProject
+
+    private val nodeTransformer = NodeTransformer(branch, serviceLocator, mpsLanguageRepository)
+
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
 
     fun transformToModelCompletely(nodeId: Long, branch: IBranch, bindingsRegistry: BindingsRegistry) =
@@ -79,14 +86,15 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
             .continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
                 val model = branch.getNode(nodeId)
                 // transform nodes
-                model.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes).waitForCompletionOfEachTask {
-                    nodeTransformer.transformToNode(it)
-                }
+                model.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes)
+                    .waitForCompletionOfEachTask(futuresWaitQueue) {
+                        nodeTransformer.transformToNode(it)
+                    }
             }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
                 val model = branch.getNode(nodeId)
                 // transform language or DevKit dependencies
                 model.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages)
-                    .waitForCompletionOfEachTask {
+                    .waitForCompletionOfEachTask(futuresWaitQueue) {
                         nodeTransformer.transformLanguageOrDevKitDependency(it)
                     }
             }.continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
@@ -96,7 +104,7 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
                 } else {
                     // register binding
                     val model = nodeMap.getModel(iNode.nodeIdAsLong()) as SModelBase
-                    val binding = ModelBinding(model, branch)
+                    val binding = ModelBinding(model, branch, serviceLocator)
                     bindingsRegistry.addModelBinding(binding)
                     binding
                 }
@@ -136,9 +144,10 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
             }
 
             // register model imports
-            iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports).waitForCompletionOfEachTask {
-                transformModelImport(it.nodeIdAsLong())
-            }
+            iNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports)
+                .waitForCompletionOfEachTask(futuresWaitQueue) {
+                    transformModelImport(it.nodeIdAsLong())
+                }
         }
 
     fun transformModelImport(nodeId: Long) =
@@ -232,7 +241,7 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
                     return
                 }
 
-                ModelRenameHelper(sModel).renameModel(newValue)
+                ModelRenameHelper(sModel, mpsProject).renameModel(newValue)
             }
         } else if (isStereotypeProperty) {
             val oldValue = sModel.name.stereotype
@@ -244,7 +253,7 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
                     return
                 }
 
-                ModelRenameHelper(sModel).changeStereotype(newValue)
+                ModelRenameHelper(sModel, mpsProject).changeStereotype(newValue)
             }
         } else {
             val message =
@@ -341,12 +350,12 @@ class ModelTransformer(private val branch: IBranch, mpsLanguageRepository: MPSLa
 
     private fun notifyAndLogError(message: String) {
         val exception = ModelixToMpsSynchronizationException(message)
-        notifierInjector.notifyAndLogError(message, exception, logger)
+        notifier.notifyAndLogError(message, exception, logger)
     }
 
     private fun notifyAndLogError(message: String, cause: Exception) {
         val exception = ModelixToMpsSynchronizationException(message, cause)
-        notifierInjector.notifyAndLogError(message, exception, logger)
+        notifier.notifyAndLogError(message, exception, logger)
     }
 }
 

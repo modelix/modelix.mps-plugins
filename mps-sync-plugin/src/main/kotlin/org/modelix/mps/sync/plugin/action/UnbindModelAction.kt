@@ -23,33 +23,27 @@ import jetbrains.mps.extapi.model.SModelBase
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.mps.sync.bindings.BindingsRegistry
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class UnbindModelAction : AnAction {
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+@Suppress("ComponentNotRegistered")
+object UnbindModelAction : AnAction("Unbind Model") {
 
-    companion object {
-        val CONTEXT_MODEL = DataKey.create<SModel>("MPS_Context_SModel")
-
-        fun create() = UnbindModelAction("Unbind model")
-    }
+    private val contextModel = DataKey.create<SModel>("MPS_Context_SModel")
 
     private val logger = KotlinLogging.logger {}
 
-    constructor() : super()
+    override fun actionPerformed(event: AnActionEvent) =
+        actionPerformedSafely(event, logger, "Model unbind error occurred.") { serviceLocator ->
+            val model = event.getData(contextModel) as? SModelBase
+            checkNotNull(model) { "Unbinding is not possible, because Model (${model?.name}) is not an SModelBase." }
 
-    constructor(text: String) : super(text)
-
-    override fun actionPerformed(event: AnActionEvent) {
-        try {
-            val model = event.getData(CONTEXT_MODEL)!! as SModelBase
-
-            val binding = BindingsRegistry.getModelBinding(model)
-            require(binding != null) { "Model is not synchronized to the server yet." }
+            val bindingsRegistry = serviceLocator.bindingsRegistry
+            val binding = bindingsRegistry.getModelBinding(model)
+            checkNotNull(binding) { "Model is not synchronized to the server yet." }
 
             binding.deactivate(removeFromServer = false)
-        } catch (ex: Exception) {
-            logger.error(ex) { "Model unbind error occurred" }
         }
-    }
 }
