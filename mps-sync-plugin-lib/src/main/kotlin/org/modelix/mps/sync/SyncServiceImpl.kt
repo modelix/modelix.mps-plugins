@@ -1,6 +1,5 @@
 package org.modelix.mps.sync
 
-import com.google.common.base.Objects
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import kotlinx.coroutines.CoroutineScope
@@ -11,7 +10,6 @@ import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
-import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.lazy.BranchReference
@@ -59,14 +57,10 @@ class SyncServiceImpl : ISyncService, InjectableService {
     private val mpsRepository: SRepository
         get() = serviceLocator.mpsProject.repository
 
-    private lateinit var serviceLocator: ServiceLocator
+    private val languageRepository: MPSLanguageRepository
+        get() = serviceLocator.languageRepository
 
-    init {
-        logger.debug { "SyncServiceImpl: Registering built-in languages" }
-        // just a dummy call, the initializer of ILanguageRegistry takes care of the rest...
-        ILanguageRepository.default.javaClass
-        logger.debug { "SyncServiceImpl: Built-in languages are registered" }
-    }
+    private lateinit var serviceLocator: ServiceLocator
 
     override fun initService(serviceLocator: ServiceLocator) {
         this.serviceLocator = serviceLocator
@@ -124,7 +118,6 @@ class SyncServiceImpl : ISyncService, InjectableService {
         initialVersion: CLVersion? = null,
     ): ReplicatedModel {
         logger.info { "Connecting to branch $branchReference with initial version $initialVersion (null = latest version)." }
-        val languageRepository = registerLanguages()
         val model = branchRegistry.setReplicatedModel(
             client,
             branchReference,
@@ -147,8 +140,6 @@ class SyncServiceImpl : ISyncService, InjectableService {
     ): Iterable<IBinding> {
         val moduleName = module.name
         logger.info { "Binding Module '$moduleName' from the server ($branchReference)." }
-        val languageRepository = registerLanguages()
-
         // fetch replicated model and branch content
         val branch = connectToBranch(client, branchReference)
 
@@ -266,31 +257,5 @@ class SyncServiceImpl : ISyncService, InjectableService {
         }
 
         return binding
-    }
-
-    private fun registerLanguages(): MPSLanguageRepository {
-        val mpsLanguageRepo = MPSLanguageRepository(mpsRepository)
-        /*
-         * SRepository is not comparable in MPSLanguageRepository, because at runtime it is ProjectRepository that does
-         * not implement equals or hashCode. Therefore, if we run the same MPS multiple times, then the repository will
-         * be registered more than once that confuses Modelix when resolving Concepts.
-         */
-        val comparabeMpsLanguageRepo = object : ILanguageRepository by mpsLanguageRepo {
-            override fun hashCode() = Objects.hashCode(this.getPriority(), this.getAllConcepts().map { it.getUID() })
-            override fun equals(other: Any?): Boolean {
-                return if (other == null || other !is ILanguageRepository) {
-                    false
-                } else if (this.getPriority() != other.getPriority()) {
-                    false
-                } else {
-                    val thisConceptUids = this.getAllConcepts().map { it.getUID() }
-                    val otherConceptUids = other.getAllConcepts().map { it.getUID() }
-                    return thisConceptUids == otherConceptUids
-                }
-            }
-        }
-
-        ILanguageRepository.register(comparabeMpsLanguageRepo)
-        return mpsLanguageRepo
     }
 }
