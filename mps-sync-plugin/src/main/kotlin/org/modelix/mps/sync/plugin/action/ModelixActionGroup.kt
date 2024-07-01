@@ -26,7 +26,9 @@ import org.modelix.mps.sync.plugin.icons.CloudIcons
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-class ModelixActionGroup : ActionGroup("Modelix Actions", "", CloudIcons.PLUGIN_ICON) {
+// we register the action group by hand, thus we do not need it in the plugin.xml
+@Suppress("ComponentNotRegistered")
+object ModelixActionGroup : ActionGroup("Modelix Actions", "", CloudIcons.PLUGIN_ICON) {
 
     private val modelActions = arrayOf(ModelSyncAction, UnbindModelAction)
     private val moduleActions = arrayOf(ModuleSyncAction, UnbindModuleAction)
@@ -47,23 +49,5 @@ class ModelixActionGroup : ActionGroup("Modelix Actions", "", CloudIcons.PLUGIN_
         }
 
         return emptyArray()
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as ModelixActionGroup
-
-        if (!modelActions.contentEquals(other.modelActions)) return false
-        if (!moduleActions.contentEquals(other.moduleActions)) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = modelActions.contentHashCode()
-        result = 31 * result + moduleActions.contentHashCode()
-        return result
     }
 }

@@ -177,12 +177,12 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
         ).forEach {
             val actionGroup = ActionManager.getInstance().getAction(it)
             if (actionGroup is DefaultActionGroup) {
-                val modelixActionGroup = ModelixActionGroup()
+                val modelixActionGroup = ModelixActionGroup
                 val actionsAreRegistered = actionGroup.childActionsOrStubs.contains(modelixActionGroup)
                 if (!actionsAreRegistered) {
                     actionGroup.run {
                         addSeparator()
-                        add(ModelixActionGroup())
+                        add(modelixActionGroup)
                     }
                 }
             } else {
