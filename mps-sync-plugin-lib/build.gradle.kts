@@ -8,8 +8,7 @@ repositories {
 }
 
 val mpsVersion = project.findProperty("mps.version")?.toString().takeIf { !it.isNullOrBlank() } ?: "2020.3.6"
-
-val mpsZip by configurations.creating
+val mpsHome = rootProject.layout.buildDirectory.dir("mps-$mpsVersion")
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
@@ -21,10 +20,8 @@ dependencies {
     implementation(libs.modelix.model.client)
     implementation(libs.modelix.mps.model.adapters)
 
-    // extracting jars from zipped products
-    mpsZip("com.jetbrains:mps:$mpsVersion")
     compileOnly(
-        zipTree({ mpsZip.singleFile }).matching {
+        fileTree(mpsHome).matching {
             include("lib/**/*.jar")
         },
     )
