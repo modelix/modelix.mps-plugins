@@ -4,7 +4,6 @@ plugins {
 }
 
 group = "org.modelix.mps"
-val mpsZip by configurations.creating
 
 val mpsToIdeaMap = mapOf(
     "2020.3.6" to "203.8084.24", // https://github.com/JetBrains/MPS/blob/2020.3.6/build/version.properties
@@ -22,6 +21,7 @@ if (!mpsToIdeaMap.containsKey(mpsVersion)) {
 }
 val ideaVersion = mpsToIdeaMap.getValue(mpsVersion)
 println("Building for MPS version $mpsVersion and IntelliJ version $ideaVersion")
+val mpsHome = rootProject.layout.buildDirectory.dir("mps-$mpsVersion")
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
@@ -35,17 +35,14 @@ dependencies {
 
     implementation(project(":mps-sync-plugin-lib"))
 
-    // extracting jars from zipped products
-    mpsZip("com.jetbrains:mps:$mpsVersion")
     compileOnly(
-        zipTree({ mpsZip.singleFile }).matching {
+        fileTree(mpsHome).matching {
             include("lib/**/*.jar")
         },
     )
 }
 
 // Configure Gradle IntelliJ Plugin (https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html)
-val mpsHome = rootProject.layout.buildDirectory.dir("mps-$mpsVersion")
 intellij {
     localPath = mpsHome.map { it.asFile.absolutePath }
     instrumentCode = false
