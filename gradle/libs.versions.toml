@@ -5,7 +5,7 @@ modelix-model-api-gen = { id = "org.modelix.model-api-gen", version.ref = "model
 npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.3" }
 
 [versions]
-modelixCore = "8.14.1"
+modelixCore = "8.15.3"
 kotlinCoroutines="1.8.1"
 ktor="2.3.12"
 
