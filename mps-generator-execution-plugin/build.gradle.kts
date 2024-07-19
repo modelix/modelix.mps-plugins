@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 buildscript {
     dependencies {
-        classpath("org.modelix.mps:build-tools-lib:1.5.0-plugin-loading")
+        classpath("org.modelix.mps:build-tools-lib:1.7.1")
     }
 }
 
