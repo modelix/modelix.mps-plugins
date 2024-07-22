@@ -247,6 +247,8 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
             ((module as? AbstractModule)?.moduleVersion).toString(),
         )
 
+        // TODO Olekz should stereotype be synced?
+        // TODO Olekz should virtualPackage be synced?
         val compileInMPS =
             module is AbstractModule && module !is DevKit && module.moduleDescriptor?.compileInMPS == true
         cloudModule.setPropertyValue(

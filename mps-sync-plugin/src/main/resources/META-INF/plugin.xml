@@ -30,6 +30,6 @@
         <toolWindow id="Modelix Model Synchronization" secondary="true"
                     icon="org.modelix.mps.sync.plugin.icons.CloudIcons.PLUGIN_ICON" anchor="right"
                     factoryClass="org.modelix.mps.sync.plugin.gui.ModelSyncGuiFactory"/>
-
+        <postStartupActivity implementation="org.modelix.mps.sync.plugin.ModelSyncStartupActivity"/>
     </extensions>
 </idea-plugin>

@@ -147,8 +147,9 @@ class SyncQueue : InjectableService {
         } else {
             val lockHeadAndTail = locks.customHeadTail()
             val lockHead = lockHeadAndTail.first
-
+            println("runWithLock($lockHead)")
             runWithLock(lockHead) {
+                println("after runWithLock($lockHead)")
                 val currentThread = Thread.currentThread()
                 val wasAddedHere = !activeSyncThreadsWithSyncDirection.containsKey(currentThread)
                 if (wasAddedHere) {
@@ -160,6 +161,7 @@ class SyncQueue : InjectableService {
                     runWithLocks(LinkedHashSet(lockTail), task)
                 } catch (t: Throwable) {
                     val message = "Exception in task on $currentThread, Thread ID ${currentThread.id}."
+                    t.printStackTrace()
                     logger.error(t) { message }
 
                     val wrapped = wrapErrorIntoSynchronizationException(t)
@@ -180,6 +182,9 @@ class SyncQueue : InjectableService {
     }
 
     private fun runWithLock(lock: SyncLock, runnable: () -> Unit) {
+        println("runWithLock ${mpsProject.modelAccess}")
+        println("runWithLock ApplicationManager.getApplication().isDispatchThread() ${ApplicationManager.getApplication().isDispatchThread}")
+//        ThreadUtils.runInUIThreadAndWait()
         when (lock) {
             SyncLock.MPS_WRITE -> mpsProject.modelAccess.executeCommandInEDT(runnable)
             SyncLock.MPS_READ -> mpsProject.runReadAction { runnable() }

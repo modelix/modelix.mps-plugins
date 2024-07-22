@@ -4,6 +4,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
+import kotlinx.coroutines.Dispatchers
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.bindings.BindingsRegistry
@@ -29,6 +30,8 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 @Service(Service.Level.PROJECT)
 class ServiceLocator(val project: Project) : Disposable {
 
+    val networkDispatcher = Dispatchers.IO // rather IO-intensive tasks
+    val cpuDispatcher = Dispatchers.Default // rather CPU-intensive tasks
     val syncService = SyncServiceImpl()
     val syncQueue = SyncQueue()
     val bindingsRegistry = BindingsRegistry()

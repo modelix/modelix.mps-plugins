@@ -19,10 +19,12 @@ package org.modelix.mps.sync.transformation.modelixToMps.incremental
 import jetbrains.mps.project.AbstractModule
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.metamodel.getReferenceTarget
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
+import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.modelix.util.getModule
 import org.modelix.mps.sync.modelix.util.isDevKitDependency
@@ -88,6 +90,15 @@ class ModelixTreeChangeVisitor(
                     role == it.getSimpleName()
                 }
             }
+
+            val targetINodeRef = iReferenceLink?.let { iNode.getReferenceTarget(it) }
+
+            if (TODO("not a reference to an node on the branch")) {
+                val mpsArae = MPSArea(mpsRepository)
+                mpsArae.resolveNode(targetINodeRef)
+            } else {
+            }
+
             val targetINode = iReferenceLink?.let { iNode.getReferenceTarget(it) }
             val targetSNode = targetINode?.let { nodeMap.getNode(it.nodeIdAsLong()) }
 
@@ -192,6 +203,7 @@ class ModelixTreeChangeVisitor(
     }
 
     override fun nodeAdded(nodeId: Long) {
+        println("nodeAdded")
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
             if (isMapped) {
@@ -233,6 +245,7 @@ class ModelixTreeChangeVisitor(
      * (Moreover, there is no guarantee in which order the method of this class will be called, due to the undefined order of changes after the Diff calculation.)
      */
     override fun childrenChanged(nodeId: Long, role: String?) {
+        println("childrenChanged")
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             modelTransformer.resolveModelImports(mpsRepository)
             nodeTransformer.resolveReferences()

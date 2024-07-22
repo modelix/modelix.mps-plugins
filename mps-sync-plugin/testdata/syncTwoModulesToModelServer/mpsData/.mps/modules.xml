@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="MPSProject">
+    <projectModules>
+      <modulePath path="$PROJECT_DIR$/solutions/aSolution1/aSolution1.msd" folder="" />
+      <modulePath path="$PROJECT_DIR$/solutions/aSolution2/aSolution2.msd" folder="" />
+    </projectModules>
+  </component>
+</project>

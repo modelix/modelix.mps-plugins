@@ -3,7 +3,6 @@ package org.modelix.mps.sync
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
@@ -42,8 +41,11 @@ class SyncServiceImpl : ISyncService, InjectableService {
 
     private val logger = KotlinLogging.logger {}
 
-    private val networkDispatcher = Dispatchers.IO // rather IO-intensive tasks
-    private val cpuDispatcher = Dispatchers.Default // rather CPU-intensive tasks
+    private val networkDispatcher
+        get() = serviceLocator.networkDispatcher
+
+    private val cpuDispatcher
+        get() = serviceLocator.cpuDispatcher
 
     private val notifier: WrappedNotifier
         get() = serviceLocator.wrappedNotifier
@@ -112,7 +114,7 @@ class SyncServiceImpl : ISyncService, InjectableService {
             model.getBranch()
         }
 
-    private fun setReplicatedModel(
+    fun setReplicatedModel(
         client: ModelClientV2,
         branchReference: BranchReference,
         initialVersion: CLVersion? = null,

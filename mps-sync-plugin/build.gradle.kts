@@ -32,6 +32,7 @@ dependencies {
     implementation(libs.modelix.model.client)
     implementation(libs.modelix.modelql.core)
     implementation(libs.modelix.modelql.untyped)
+    implementation(libs.modelix.mps.model.adapters)
 
     implementation(project(":mps-sync-plugin-lib"))
 
@@ -40,6 +41,13 @@ dependencies {
             include("lib/**/*.jar")
         },
     )
+
+    testImplementation(coreLibs.kotlin.coroutines.test)
+    testImplementation(coreLibs.kotlin.serialization.json)
+    // TODO Olekz use version catalog
+    testImplementation("org.testcontainers:testcontainers:1.19.8")
+    testImplementation("org.awaitility:awaitility:3.0.0")
+    testImplementation("org.hamcrest:hamcrest:2.2")
 }
 
 // Configure Gradle IntelliJ Plugin (https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html)
