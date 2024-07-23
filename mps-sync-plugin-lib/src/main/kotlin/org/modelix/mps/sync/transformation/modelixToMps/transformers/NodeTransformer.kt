@@ -33,6 +33,7 @@ import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.mps.sync.modelix.util.getModel
+import org.modelix.mps.sync.modelix.util.getMpsNodeId
 import org.modelix.mps.sync.modelix.util.isDevKitDependency
 import org.modelix.mps.sync.modelix.util.isModel
 import org.modelix.mps.sync.modelix.util.isModule
@@ -100,6 +101,27 @@ class NodeTransformer(
             }
         }
     }
+
+    fun transformReadonlyNode(nodeId: Long) =
+        syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+            val iNode = branch.getNode(nodeId)
+            val modelId = iNode.getModel()?.nodeIdAsLong()
+            val model = nodeMap.getModel(modelId)
+            val isTransformed = nodeMap.isMappedToMps(nodeId)
+            if (isTransformed) {
+                logger.info { "Node $nodeId is already transformed." }
+            } else {
+                if (model == null) {
+                    val message =
+                        "Node $nodeId(${iNode.concept?.getLongName() ?: "concept null"}) was not transformed, because model is null."
+                    notifyAndLogError(message)
+                } else {
+                    val mpsNodeId = iNode.getMpsNodeId()
+                    val mpsNode = model.getNode(mpsNodeId)
+                    nodeMap.put(mpsNode, nodeId)
+                }
+            }
+        }
 
     fun transformLanguageOrDevKitDependency(iNode: INode): ContinuableSyncTask {
         val nodeId = iNode.nodeIdAsLong()

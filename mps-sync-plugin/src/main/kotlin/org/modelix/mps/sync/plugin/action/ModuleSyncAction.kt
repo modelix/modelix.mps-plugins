@@ -39,6 +39,7 @@ object ModuleSyncAction : AnAction("Synchronize Module to Server") {
         actionPerformedSafely(event, logger, "Module synchronization error occurred.") { serviceLocator ->
             val module = event.getData(contextModule) as? AbstractModule
             checkNotNull(module) { "Synchronization is not possible, because Module (${module?.moduleName}) is not an AbstractModule." }
+            check(!module.isReadOnly) { "Synchronization action is not allowed on read-only Module (${module.moduleName})." }
 
             val branchRegistry = serviceLocator.branchRegistry
             val branch = branchRegistry.getBranch()

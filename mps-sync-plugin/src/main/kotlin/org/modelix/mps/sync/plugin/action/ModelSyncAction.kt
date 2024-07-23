@@ -39,6 +39,7 @@ object ModelSyncAction : AnAction("Synchronize Model to Server") {
         actionPerformedSafely(event, logger, "Model synchronization error occurred.") { serviceLocator ->
             val model = event.getData(contextModel) as? SModelBase
             checkNotNull(model) { "Synchronization is not possible, because Model (${model?.name}) is not an SModelBase." }
+            check(!model.isReadOnly) { "Synchronization action is not allowed on read-only Model (${model.name})." }
 
             val branchRegistry = serviceLocator.branchRegistry
             val branch = branchRegistry.getBranch()

@@ -6,6 +6,7 @@ import jetbrains.mps.smodel.MPSModuleRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.mps.sync.modelix.ModelixSyncPluginConcepts
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -17,8 +18,8 @@ class MPSLanguageRepositoryProvider {
     val mpsLanguageRepository: MPSLanguageRepository
 
     init {
-        // just a dummy call, to initialize the modelix built-in languages
-        ILanguageRepository.default.javaClass
+        // initialize the modelix built-in languages
+        ILanguageRepository.default.registerLanguage(ModelixSyncPluginConcepts)
 
         // MPS-internal convention that they use to get the SRepository
         val repository = MPSCoreComponents.getInstance().platform.findComponent(MPSModuleRepository::class.java)
