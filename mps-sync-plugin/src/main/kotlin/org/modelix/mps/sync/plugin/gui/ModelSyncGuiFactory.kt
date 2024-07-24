@@ -181,7 +181,7 @@ class ModelSyncGuiFactory : ToolWindowFactory {
                     return@addActionListener
                 }
 
-                val client = modelSyncService.connectModelServer(serverURL.text, jwt.text)
+                val client = modelSyncService.connectModelServer(serverURL.text) { jwt.text }
                 triggerRefresh(client)
             }
             jwtPanel.add(connectButton)

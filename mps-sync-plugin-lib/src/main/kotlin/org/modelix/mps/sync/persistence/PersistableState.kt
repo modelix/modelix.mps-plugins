@@ -120,7 +120,8 @@ data class PersistableState(
             }
 
             logger.debug { "Restoring connection to model server." }
-            client = syncService.connectModelServer(clientUrl, "")
+            // TODO FIXME auth token is missing
+            client = syncService.connectModelServer(clientUrl)
             if (client == null) {
                 throw IllegalStateException("Connection to $clientUrl failed, thus PersistableState is not restored.")
             }
