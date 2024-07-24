@@ -21,12 +21,12 @@ interface IRebindModulesSyncService {
      * Creates a connection to the model server. Do not forget to close the created client after use.
      *
      * @param serverURL the model server URL
-     * @param jwt the JWT auth token
+     * @param authProvider a function that generates a JWT token that can be used for auth
      *
      * @return the model client that is connected to the model server
      */
     @Throws(IOException::class)
-    fun connectModelServer(serverURL: String, jwt: String? = null): ModelClientV2?
+    fun connectModelServer(serverURL: String, authProvider: () -> String? = { null }): ModelClientV2?
 
     /**
      * Connects to the model server's specific branch's specific version, and creates [IBinding]s for the modules and
