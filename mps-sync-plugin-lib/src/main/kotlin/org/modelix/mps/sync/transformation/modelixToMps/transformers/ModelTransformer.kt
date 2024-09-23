@@ -36,8 +36,11 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
+import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.getNode
+import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.model.mpsadapters.MPSModelImportAsNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
@@ -73,6 +76,7 @@ class ModelTransformer(
     private val nodeMap = serviceLocator.nodeMap
     private val syncQueue = serviceLocator.syncQueue
     private val futuresWaitQueue = serviceLocator.futuresWaitQueue
+    private val mpsRepository = serviceLocator.mpsProject.repository
 
     private val notifier = serviceLocator.wrappedNotifier
     private val mpsProject = serviceLocator.mpsProject
@@ -154,16 +158,28 @@ class ModelTransformer(
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val iNode = branch.getNode(nodeId)
             val sourceModel = nodeMap.getModel(iNode.getModel()?.nodeIdAsLong())!!
-            val targetModel = iNode.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
-            val targetId = targetModel.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)!!
-            resolvableModelImports.add(
-                ResolvableModelImport(
-                    source = sourceModel,
-                    targetModelId = targetId,
-                    targetModelModelixId = targetModel.nodeIdAsLong(),
-                    modelReferenceNodeId = iNode.nodeIdAsLong(),
-                ),
-            )
+
+            val targetModelRef = iNode.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
+            val serializedModelRef = targetModelRef.serialize()
+
+            val targetIsAnINode = PNodeReference.tryDeserialize(serializedModelRef) != null
+            if (targetIsAnINode) {
+                val targetModel = iNode.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
+                val targetId = targetModel.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)!!
+                // target iNode is probably not transformed yet, therefore delaying the model import resolution
+                resolvableModelImports.add(
+                    ResolvableModelImport(
+                        source = sourceModel,
+                        targetModelId = targetId,
+                        targetModelModelixId = targetModel.nodeIdAsLong(),
+                        modelReferenceNodeId = iNode.nodeIdAsLong(),
+                    ),
+                )
+            } else {
+                // target is an SModel in MPS
+                val modelixModelImport = MPSArea(mpsRepository).resolveNode(targetModelRef) as MPSModelImportAsNode
+                ModelImports(sourceModel).addModelImport(modelixModelImport.importedModel.reference)
+            }
         }
 
     fun resolveModelImports(repository: SRepository) {

@@ -27,6 +27,7 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
+import org.modelix.model.mpsadapters.MPSModelImportReference
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
@@ -200,13 +201,17 @@ class ModelSynchronizer(
             return
         }
 
+        // warning: might be fragile, because we synchronize the ModelReference's fields by hand
         val cloudModelReference =
             cloudParentNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.ModelReference)
 
         nodeMap.put(source, targetModel.reference, cloudModelReference.nodeIdAsLong())
 
-        // warning: might be fragile, because we synchronize the fields by hand
-        cloudModelReference.setReferenceTarget(targetModelReference, cloudTargetModel)
+        if (targetModel.isReadOnly) {
+            cloudModelReference.setReferenceTarget(targetModelReference, MPSModelImportReference(targetModel.reference, source.reference))
+        } else {
+            cloudModelReference.setReferenceTarget(targetModelReference, cloudTargetModel)
+        }
     }
 
     fun addLanguageDependency(model: SModel, language: SLanguage) =
