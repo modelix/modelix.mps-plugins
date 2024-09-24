@@ -28,8 +28,11 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
+import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.getNode
+import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.model.mpsadapters.MPSNode
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
 import org.modelix.mps.sync.modelix.util.getMpsNodeId
@@ -53,6 +56,7 @@ class SNodeFactory(
     private val nodeMap = serviceLocator.nodeMap
     private val syncQueue = serviceLocator.syncQueue
     private val futuresWaitQueue = serviceLocator.futuresWaitQueue
+    private val mpsRepository = serviceLocator.mpsProject.repository
 
     private val resolvableReferences = mutableListOf<ResolvableReference>()
 
@@ -125,17 +129,31 @@ class SNodeFactory(
     }
 
     private fun prepareLinkReferences(iNode: INode) {
-        iNode.getAllReferenceTargets().forEach {
-            val sourceNodeId = iNode.nodeIdAsLong()
-            val source = nodeMap.getNode(sourceNodeId)!!
+        val sourceNodeId = iNode.nodeIdAsLong()
+        val source = nodeMap.getNode(sourceNodeId)!!
 
+        iNode.getAllReferenceTargetRefs().forEach {
             val reference = when (val referenceLink = it.first) {
                 is MPSReferenceLink -> referenceLink.link
                 else -> source.concept.referenceLinks.first { refLink -> refLink.name == referenceLink.getSimpleName() }
             }
 
-            val targetNodeId = it.second.nodeIdAsLong()
-            resolvableReferences.add(ResolvableReference(source, reference, targetNodeId))
+            val targetNodeReference = it.second
+            val serializedRef = targetNodeReference.serialize()
+            val targetIsAnINode = PNodeReference.tryDeserialize(serializedRef) != null
+
+            if (targetIsAnINode) {
+                // delay the reference resolution, because the target node might not have been transformed yet
+                val targetNode = iNode.getReferenceTarget(it.first)
+                    ?: throw IllegalArgumentException("PNodeReference exists, but PNode cannot be resolved: '$serializedRef'")
+                val targetNodeId = targetNode.nodeIdAsLong()
+                resolvableReferences.add(ResolvableReference(source, reference, targetNodeId))
+            } else {
+                // target node is an existing SNode
+                val area = MPSArea(mpsRepository)
+                val mpsNode = area.resolveNode(targetNodeReference) as MPSNode
+                source.setReferenceTarget(reference, mpsNode.node)
+            }
         }
     }
 
