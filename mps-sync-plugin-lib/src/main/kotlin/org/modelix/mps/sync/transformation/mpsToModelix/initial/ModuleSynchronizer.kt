@@ -34,6 +34,7 @@ import org.modelix.model.api.getRootNode
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
+import org.modelix.mps.sync.modelix.util.ModuleDependencyConstants
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.getModelixId
@@ -61,7 +62,7 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
 
     private val bindingsRegistry = serviceLocator.bindingsRegistry
     private val notifier = serviceLocator.wrappedNotifier
-    private val mpsProject = serviceLocator.mpsProject
+    private val mpsRepository = serviceLocator.mpsProject.repository
 
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator, true)
 
@@ -145,12 +146,12 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
 
     fun addDependency(module: SModule, dependency: SDependency) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
-            val repository = mpsProject.repository
-            val targetModule = dependency.targetModule.resolve(repository)
+            val targetModule = dependency.targetModule.resolve(mpsRepository)!!
             val isMappedToMps = nodeMap[targetModule] != null
+            val targetModuleIsReadOnly = targetModule.isReadOnly
 
-            // add the target module to the server if it does not exist there yet
-            if (!isMappedToMps) {
+            // add the target module to the server if it does not exist there yet, and if it is not read-only
+            if (!isMappedToMps && !targetModuleIsReadOnly) {
                 require(targetModule is AbstractModule) {
                     val message =
                         "Dependency ($dependency)'s target Module ($targetModule) must be an AbstractModule. Dependency's source Module is ($module)."
@@ -189,7 +190,7 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
 
             nodeMap.put(module, moduleReference, cloudDependency.nodeIdAsLong())
 
-            // warning: might be fragile, because we synchronize the properties by hand
+            // warning: might be fragile, because we synchronize the ModuleDependency's properties by hand
             cloudDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport,
                 dependency.isReexport.toString(),
@@ -228,6 +229,12 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
             cloudDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.scope,
                 dependency.scope.toString(),
+            )
+
+            val targetModule = moduleReference.resolve(mpsRepository)!!
+            cloudDependency.setPropertyValue(
+                ModuleDependencyConstants.MODULE_DEPENDENCY_IS_READ_ONLY_PROPERTY,
+                targetModule.isReadOnly.toString(),
             )
 
             dependencyBindings
