@@ -26,6 +26,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSModelImportReference
 import org.modelix.mps.sync.IBinding
@@ -208,7 +209,8 @@ class ModelSynchronizer(
         nodeMap.put(source, targetModel.reference, cloudModelReference.nodeIdAsLong())
 
         if (targetModel.isReadOnly) {
-            cloudModelReference.setReferenceTarget(targetModelReference, MPSModelImportReference(targetModel.reference, source.reference))
+            val serialized = MPSModelImportReference(targetModel.reference, source.reference).serialize()
+            cloudModelReference.setReferenceTarget(targetModelReference, NodeReference(serialized))
         } else {
             cloudModelReference.setReferenceTarget(targetModelReference, cloudTargetModel)
         }
