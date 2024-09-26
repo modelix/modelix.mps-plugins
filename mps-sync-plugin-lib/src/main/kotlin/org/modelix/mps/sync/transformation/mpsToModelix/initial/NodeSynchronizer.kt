@@ -171,17 +171,25 @@ class NodeSynchronizer(
 
     fun setReference(
         mpsReferenceLink: SReferenceLink,
-        sourceNodeIdProducer: (MpsToModelixMap) -> Long,
-        targetNodeIdProducer: (MpsToModelixMap) -> Long?,
+        sourceNode: SNode,
+        targetNode: SNode?,
     ) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
-            val sourceNodeId = sourceNodeIdProducer.invoke(nodeMap)
-            val targetNodeId = targetNodeIdProducer.invoke(nodeMap)
+            val sourceNodeId = nodeMap[sourceNode]!!
+            val cloudNode = branch.getNode(sourceNodeId)
             val reference = MPSReferenceLink(mpsReferenceLink)
 
-            val cloudNode = branch.getNode(sourceNodeId)
-            val target = if (targetNodeId == null) null else branch.getNode(targetNodeId)
-            cloudNode.setReferenceTarget(reference, target)
+            if (targetNode == null) {
+                cloudNode.setReferenceTarget(reference, null as INode?)
+            } else if (targetNode.model?.isReadOnly == true) {
+                val serialized = MPSNodeReference(targetNode.reference).serialize()
+                val nodeReference = NodeReference(serialized)
+                cloudNode.setReferenceTarget(reference, nodeReference)
+            } else {
+                val targetNodeId = nodeMap[targetNode]!!
+                val targetModelixNode = branch.getNode(targetNodeId)
+                cloudNode.setReferenceTarget(reference, targetModelixNode)
+            }
         }
     }
 
