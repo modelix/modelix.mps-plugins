@@ -26,6 +26,7 @@ import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
 import org.modelix.model.data.NodeData
@@ -140,7 +141,8 @@ class NodeSynchronizer(
         if (mpsTargetNode == null) {
             cloudNode.setReferenceTarget(modelixReferenceLink, null as INode?)
         } else if (mpsTargetNode.model?.isReadOnly == true) {
-            val nodeReference = MPSNodeReference(mpsTargetNode.reference)
+            val serialized = MPSNodeReference(mpsTargetNode.reference).serialize()
+            val nodeReference = NodeReference(serialized)
             cloudNode.setReferenceTarget(modelixReferenceLink, nodeReference)
         } else {
             val targetNodeId = nodeMap[mpsTargetNode]!!
