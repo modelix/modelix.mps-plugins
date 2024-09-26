@@ -180,7 +180,44 @@ class ModelSynchronizer(
             }
         }
 
-    private fun addModelImportToCloud(source: SModel, targetModel: SModel) {
+    private fun addModelImportToCloud(source: SModel, targetModel: SModel) =
+        if (targetModel.isReadOnly) {
+            addReadOnlyModelImportToCloud(source, targetModel)
+        } else {
+            addNormalModelImportToCloud(source, targetModel)
+        }
+
+    private fun addReadOnlyModelImportToCloud(source: SModel, targetModel: SModel) {
+        val modelixId = nodeMap[source]!!
+        val cloudParentNode = branch.getNode(modelixId)
+        val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
+
+        val targetModelReference = BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model
+        val serialized = MPSModelImportReference(targetModel.reference, source.reference).serialize()
+        val targetModelNodeReference = NodeReference(serialized)
+
+        // duplicate check and sync
+        val modelImportExists = cloudParentNode.getChildren(childLink).any {
+            val targetRef = it.getReferenceTargetRef(targetModelReference)
+            targetRef is NodeReference && targetRef.serialized == targetModelNodeReference.serialized
+        }
+        if (modelImportExists) {
+            val message =
+                "Model Import for Model '${targetModel.name}' from Model '${source.name}' will not be synchronized, because it already exists on the server."
+            notifier.notifyAndLogWarning(message, logger)
+            return
+        }
+
+        // warning: might be fragile, because we synchronize the ModelReference's fields by hand
+        val cloudModelReference =
+            cloudParentNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.ModelReference)
+
+        nodeMap.put(source, targetModel.reference, cloudModelReference.nodeIdAsLong())
+
+        cloudModelReference.setReferenceTarget(targetModelReference, targetModelNodeReference)
+    }
+
+    private fun addNormalModelImportToCloud(source: SModel, targetModel: SModel) {
         val modelixId = nodeMap[source]!!
         val cloudParentNode = branch.getNode(modelixId)
         val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
@@ -208,12 +245,7 @@ class ModelSynchronizer(
 
         nodeMap.put(source, targetModel.reference, cloudModelReference.nodeIdAsLong())
 
-        if (targetModel.isReadOnly) {
-            val serialized = MPSModelImportReference(targetModel.reference, source.reference).serialize()
-            cloudModelReference.setReferenceTarget(targetModelReference, NodeReference(serialized))
-        } else {
-            cloudModelReference.setReferenceTarget(targetModelReference, cloudTargetModel)
-        }
+        cloudModelReference.setReferenceTarget(targetModelReference, cloudTargetModel)
     }
 
     fun addLanguageDependency(model: SModel, language: SLanguage) =
