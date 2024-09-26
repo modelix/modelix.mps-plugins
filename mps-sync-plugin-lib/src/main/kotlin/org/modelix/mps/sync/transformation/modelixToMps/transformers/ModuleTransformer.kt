@@ -111,7 +111,7 @@ class ModuleTransformer(
                     modelTransformer.resolveCrossModelReferences(mpsProject.repository)
                 }
                 flattenedBindings
-            }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) { dependencyAndModelBindings ->
+            }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MODELIX_TO_MPS) { dependencyAndModelBindings ->
                 // register binding
                 val iNode = branch.getNode(nodeId)
                 val module = nodeMap.getModule(iNode.nodeIdAsLong()) as AbstractModule
@@ -318,7 +318,7 @@ class ModuleTransformer(
     }
 
     fun outgoingModuleReferenceFromModuleDeleted(moduleWithModuleReference: ModuleWithModuleReference, nodeId: Long) {
-        val sourceModule = moduleWithModuleReference.source
+        val sourceModule = moduleWithModuleReference.sourceModuleReference.resolve(mpsProject.repository)
         if (sourceModule !is AbstractModule) {
             val message =
                 "Source Module ($sourceModule) is not an AbstractModule, therefore the outgoing Module Dependency reference cannot be removed. Corresponding Node ID is $nodeId."

@@ -101,7 +101,7 @@ class ModelTransformer(
                     .waitForCompletionOfEachTask(futuresWaitQueue) {
                         nodeTransformer.transformLanguageOrDevKitDependency(it)
                     }
-            }.continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+            }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MODELIX_TO_MPS) {
                 val iNode = branch.getNode(nodeId)
                 if (isDescriptorModel(iNode)) {
                     EmptyBinding()
@@ -323,11 +323,12 @@ class ModelTransformer(
     }
 
     fun modeImportDeleted(outgoingModelReference: ModelWithModelReference) {
-        ModelImports(outgoingModelReference.source).removeModelImport(outgoingModelReference.modelReference)
+        val model = outgoingModelReference.sourceModelReference.resolve(mpsRepository)
+        ModelImports(model).removeModelImport(outgoingModelReference.modelReference)
     }
 
     fun moduleDependencyOfModelDeleted(modelWithModuleReference: ModelWithModuleReference, nodeId: Long) {
-        val sourceModel = modelWithModuleReference.source
+        val sourceModel = modelWithModuleReference.sourceModelReference.resolve(mpsRepository)
         val targetModuleReference = modelWithModuleReference.moduleReference
         when (val targetModule = targetModuleReference.resolve(sourceModel.repository)) {
             is Language -> {

@@ -83,7 +83,7 @@ class NodeTransformer(
     fun transformNode(
         nodeId: Long,
         nodeFactoryMethod: KFunction2<Long, SModel?, ContinuableSyncTask> = nodeFactory::createNode,
-    ) = syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+    ) = syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MODELIX_TO_MPS) {
         val iNode = branch.getNode(nodeId)
         val modelId = iNode.getModel()?.nodeIdAsLong()
         val model = nodeMap.getModel(modelId)
