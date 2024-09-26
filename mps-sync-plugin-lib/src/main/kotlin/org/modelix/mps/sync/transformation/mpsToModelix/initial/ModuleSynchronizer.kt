@@ -62,7 +62,7 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
 
     private val bindingsRegistry = serviceLocator.bindingsRegistry
     private val notifier = serviceLocator.wrappedNotifier
-    private val mpsRepository = serviceLocator.mpsProject.repository
+    private val mpsRepository = serviceLocator.mpsRepository
 
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator, true)
 

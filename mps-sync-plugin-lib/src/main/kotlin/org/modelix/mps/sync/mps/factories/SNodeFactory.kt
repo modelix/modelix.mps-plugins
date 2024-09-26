@@ -56,7 +56,7 @@ class SNodeFactory(
     private val nodeMap = serviceLocator.nodeMap
     private val syncQueue = serviceLocator.syncQueue
     private val futuresWaitQueue = serviceLocator.futuresWaitQueue
-    private val mpsRepository = serviceLocator.mpsProject.repository
+    private val mpsRepository = serviceLocator.mpsRepository
 
     private val resolvableReferences = mutableListOf<ResolvableReference>()
 

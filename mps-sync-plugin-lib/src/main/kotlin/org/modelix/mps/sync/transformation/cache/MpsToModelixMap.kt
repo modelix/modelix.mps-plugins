@@ -66,9 +66,8 @@ class MpsToModelixMap : InjectableService {
     private val objectsRelatedToAModel = synchronizedMap<SModelReference, MutableSet<Any>>()
     private val objectsRelatedToAModule = synchronizedMap<SModuleReference, MutableSet<Any>>()
 
-    // TODO extract it to a new field in the serviceLocator so we do not have to repeat mpsProject.repository everywhere
     private val mpsRepository: SRepository
-        get() = serviceLocator.mpsProject.repository
+        get() = serviceLocator.mpsRepository
 
     private lateinit var serviceLocator: ServiceLocator
 

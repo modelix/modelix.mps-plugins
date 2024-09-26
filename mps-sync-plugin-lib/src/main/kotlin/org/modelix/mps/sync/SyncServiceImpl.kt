@@ -55,7 +55,7 @@ class SyncServiceImpl : ISyncService, InjectableService {
         get() = serviceLocator.branchRegistry
 
     private val mpsRepository: SRepository
-        get() = serviceLocator.mpsProject.repository
+        get() = serviceLocator.mpsRepository
 
     private val languageRepository: MPSLanguageRepository
         get() = serviceLocator.languageRepository

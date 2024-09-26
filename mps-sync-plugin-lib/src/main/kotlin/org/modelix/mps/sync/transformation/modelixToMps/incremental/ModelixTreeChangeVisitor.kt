@@ -58,7 +58,7 @@ class ModelixTreeChangeVisitor(
     private val nodeMap = serviceLocator.nodeMap
     private val syncQueue = serviceLocator.syncQueue
     private val notifier = serviceLocator.wrappedNotifier
-    private val mpsRepository = serviceLocator.mpsProject.repository
+    private val mpsRepository = serviceLocator.mpsRepository
 
     private val nodeTransformer = NodeTransformer(branch, serviceLocator, languageRepository)
     private val modelTransformer = ModelTransformer(branch, serviceLocator, languageRepository)

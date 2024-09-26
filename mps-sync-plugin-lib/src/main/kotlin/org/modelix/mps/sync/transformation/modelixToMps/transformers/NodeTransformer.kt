@@ -65,7 +65,7 @@ class NodeTransformer(
     private val syncQueue = serviceLocator.syncQueue
 
     private val notifier = serviceLocator.wrappedNotifier
-    private val mpsRepository = serviceLocator.mpsProject.repository
+    private val mpsRepository = serviceLocator.mpsRepository
 
     private val nodeFactory = SNodeFactory(mpsLanguageRepository, branch, serviceLocator)
 

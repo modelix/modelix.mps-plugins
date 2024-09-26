@@ -78,6 +78,7 @@ class ModuleTransformer(
     private val bindingsRegistry = serviceLocator.bindingsRegistry
     private val notifier = serviceLocator.wrappedNotifier
     private val mpsProject = serviceLocator.mpsProject
+    private val mpsRepository = serviceLocator.mpsRepository
 
     private val solutionProducer = SolutionProducer(mpsProject)
 
@@ -108,7 +109,7 @@ class ModuleTransformer(
                 // resolve references only after all dependent (and contained) modules and models have been transformed
                 if (isTransformationStartingModule) {
                     // resolve cross-model references (and node references)
-                    modelTransformer.resolveCrossModelReferences(mpsProject.repository)
+                    modelTransformer.resolveCrossModelReferences(mpsRepository)
                 }
                 flattenedBindings
             }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MODELIX_TO_MPS) { dependencyAndModelBindings ->
@@ -318,7 +319,7 @@ class ModuleTransformer(
     }
 
     fun outgoingModuleReferenceFromModuleDeleted(moduleWithModuleReference: ModuleWithModuleReference, nodeId: Long) {
-        val sourceModule = moduleWithModuleReference.sourceModuleReference.resolve(mpsProject.repository)
+        val sourceModule = moduleWithModuleReference.sourceModuleReference.resolve(mpsRepository)
         if (sourceModule !is AbstractModule) {
             val message =
                 "Source Module ($sourceModule) is not an AbstractModule, therefore the outgoing Module Dependency reference cannot be removed. Corresponding Node ID is $nodeId."

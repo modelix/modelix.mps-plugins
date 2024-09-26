@@ -4,6 +4,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
+import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.bindings.BindingsRegistry
@@ -40,6 +41,8 @@ class ServiceLocator(val project: Project) : Disposable {
     val futuresWaitQueue = FuturesWaitQueue()
 
     val mpsProject = project.toMpsProject()
+    val mpsRepository: SRepository
+        get() = mpsProject.repository
 
     val languageRepository = ApplicationManager.getApplication()
         .getService(MPSLanguageRepositoryProvider::class.java).mpsLanguageRepository
