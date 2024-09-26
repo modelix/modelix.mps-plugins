@@ -32,6 +32,8 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.mps.services.ServiceLocator
+import org.modelix.mps.sync.tasks.SyncDirection
+import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.ModelSynchronizer
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 
@@ -52,6 +54,7 @@ class ModelChangeListener(
 
     override fun importAdded(event: SModelImportEvent) {
         modelSynchronizer.addModelImport(event.model, event.modelUID)
+            .continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) { resolveModelImports().getResult() }
     }
 
     override fun importRemoved(event: SModelImportEvent) {

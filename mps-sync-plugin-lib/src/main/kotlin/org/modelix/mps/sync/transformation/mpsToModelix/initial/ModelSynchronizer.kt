@@ -342,8 +342,15 @@ class ModelSynchronizer(
     }
 
     private fun resolveModelImports() {
-        resolvableModelImports.forEach { addModelImportToCloud(it.sourceModel, it.targetModel) }
-        resolvableModelImports.clear()
+        resolvableModelImports.forEach {
+            try {
+                addModelImportToCloud(it.sourceModel, it.targetModel)
+                it.isResolved = true
+            } catch (ex: Exception) {
+                it.isResolved = false
+            }
+        }
+        resolvableModelImports.removeIf { it.isResolved }
     }
 
     private fun notifyAndLogError(message: String) {
@@ -359,4 +366,5 @@ class ModelSynchronizer(
 data class CloudResolvableModelImport(
     val sourceModel: SModel,
     val targetModel: SModel,
+    var isResolved: Boolean = false,
 )
