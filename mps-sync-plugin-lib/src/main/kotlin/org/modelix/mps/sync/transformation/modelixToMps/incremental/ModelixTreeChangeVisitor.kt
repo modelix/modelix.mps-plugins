@@ -203,8 +203,8 @@ class ModelixTreeChangeVisitor(
                 return@enqueue null
             }
 
-            val message = "A removal case for Node ($nodeId) was missed."
-            notifyAndLogError(message)
+            val message = "A removal case for Node ($nodeId) was missed. It can be ignored, if the Node's parent is deleted."
+            notifier.notifyAndLogWarning(message, logger)
 
             null
         }
