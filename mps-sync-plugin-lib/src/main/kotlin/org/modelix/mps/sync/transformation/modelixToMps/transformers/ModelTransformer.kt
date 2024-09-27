@@ -179,7 +179,10 @@ class ModelTransformer(
             } else {
                 // target is an SModel in MPS
                 val modelixModelImport = MPSArea(mpsRepository).resolveNode(targetModelRef) as MPSModelImportAsNode
-                ModelImports(sourceModel).addModelImport(modelixModelImport.importedModel.reference)
+                val modelImport = modelixModelImport.importedModel.reference
+                ModelImports(sourceModel).addModelImport(modelImport)
+
+                nodeMap.put(sourceModel, modelImport, iNode.nodeIdAsLong())
             }
         }
 
