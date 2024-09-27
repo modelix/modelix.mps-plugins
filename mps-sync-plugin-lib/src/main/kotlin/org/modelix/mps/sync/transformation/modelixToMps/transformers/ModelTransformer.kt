@@ -329,6 +329,7 @@ class ModelTransformer(
     fun modeImportDeleted(outgoingModelReference: ModelWithModelReference) {
         val model = outgoingModelReference.sourceModelReference.resolve(mpsRepository)
         ModelImports(model).removeModelImport(outgoingModelReference.modelReference)
+        nodeMap.remove(outgoingModelReference)
     }
 
     fun moduleDependencyOfModelDeleted(modelWithModuleReference: ModelWithModuleReference, nodeId: Long) {
@@ -339,6 +340,7 @@ class ModelTransformer(
                 try {
                     val sLanguage = MetaAdapterFactory.getLanguage(targetModuleReference)
                     sourceModel.deleteLanguage(sLanguage)
+                    nodeMap.remove(modelWithModuleReference)
                 } catch (ex: Exception) {
                     val message =
                         "Language Import ($targetModule) cannot be deleted, because ${ex.message} Corresponding Node ID is $nodeId."
@@ -349,6 +351,7 @@ class ModelTransformer(
             is DevKit -> {
                 try {
                     sourceModel.deleteDevKit(targetModuleReference)
+                    nodeMap.remove(modelWithModuleReference)
                 } catch (ex: Exception) {
                     val message =
                         "DevKit dependency ($targetModule) cannot be deleted, because ${ex.message} Corresponding Node ID is $nodeId."

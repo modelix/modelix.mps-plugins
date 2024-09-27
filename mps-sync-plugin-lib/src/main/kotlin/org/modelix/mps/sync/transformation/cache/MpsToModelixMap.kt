@@ -170,28 +170,23 @@ class MpsToModelixMap : InjectableService {
     fun getOutgoingModuleReferenceFromModule(modelixId: Long?) = modelixIdToModuleWithOutgoingModuleReference[modelixId]
 
     fun remove(modelixId: Long) {
-        // is related to node
         modelixIdToNode.remove(modelixId)?.let { nodeToModelixId.remove(it) }
 
-        // is related to model
         modelixIdToModel.remove(modelixId)?.let {
             modelToModelixId.remove(it)
 
             val model = it.resolve(mpsRepository)
             remove(model)
         }
-        modelixIdToModelWithOutgoingModelReference.remove(modelixId)
-            ?.let { modelWithOutgoingModelReferenceToModelixId.remove(it) }
-        modelixIdToModelWithOutgoingModuleReference.remove(modelixId)
-            ?.let { modelWithOutgoingModuleReferenceToModelixId.remove(it) }
 
-        // is related to module
+        modelixIdToModelWithOutgoingModelReference[modelixId]?.let { remove(it) }
+        modelixIdToModelWithOutgoingModuleReference[modelixId]?.let { remove(it) }
+
         modelixIdToModule.remove(modelixId)?.let {
             val module = it.resolve(mpsRepository)!!
             remove(module)
         }
-        modelixIdToModuleWithOutgoingModuleReference.remove(modelixId)
-            ?.let { moduleWithOutgoingModuleReferenceToModelixId.remove(it) }
+        modelixIdToModuleWithOutgoingModuleReference[modelixId]?.let { remove(it) }
     }
 
     fun remove(model: SModel) {
@@ -201,14 +196,12 @@ class MpsToModelixMap : InjectableService {
             when (it) {
                 is SModuleReference -> {
                     val target = ModelWithModuleReference(model, it)
-                    modelWithOutgoingModuleReferenceToModelixId.remove(target)
-                        ?.let { id -> modelixIdToModelWithOutgoingModuleReference.remove(id) }
+                    remove(target)
                 }
 
                 is SModelReference -> {
                     val target = ModelWithModelReference(model, it)
-                    modelWithOutgoingModelReferenceToModelixId.remove(target)
-                        ?.let { id -> modelixIdToModelWithOutgoingModelReference.remove(id) }
+                    remove(target)
                 }
 
                 is SNodeReference -> {
@@ -224,13 +217,27 @@ class MpsToModelixMap : InjectableService {
         objectsRelatedToAModule.remove(reference)?.forEach {
             if (it is SModuleReference) {
                 val target = ModuleWithModuleReference(module, it)
-                moduleWithOutgoingModuleReferenceToModelixId.remove(target)
-                    ?.let { id -> modelixIdToModuleWithOutgoingModuleReference.remove(id) }
+                remove(target)
             } else if (it is SModelReference) {
                 val model = it.resolve(mpsRepository)
                 remove(model)
             }
         }
+    }
+
+    fun remove(outgoingModelReference: ModelWithModelReference) {
+        modelWithOutgoingModelReferenceToModelixId.remove(outgoingModelReference)
+            ?.let { id -> modelixIdToModelWithOutgoingModelReference.remove(id) }
+    }
+
+    fun remove(modelWithModuleReference: ModelWithModuleReference) {
+        modelWithOutgoingModuleReferenceToModelixId.remove(modelWithModuleReference)
+            ?.let { id -> modelixIdToModelWithOutgoingModuleReference.remove(id) }
+    }
+
+    fun remove(moduleWithModuleReference: ModuleWithModuleReference) {
+        moduleWithOutgoingModuleReferenceToModelixId.remove(moduleWithModuleReference)
+            ?.let { id -> modelixIdToModuleWithOutgoingModuleReference.remove(id) }
     }
 
     fun isMappedToMps(modelixId: Long?): Boolean {

@@ -332,6 +332,7 @@ class ModuleTransformer(
             sourceModule.moduleDescriptor?.dependencies?.firstOrNull { it.moduleRef == targetModuleReference }
         if (dependency != null) {
             sourceModule.removeDependency(dependency)
+            nodeMap.remove(moduleWithModuleReference)
         } else {
             val message =
                 "Outgoing dependency $targetModuleReference from Module $sourceModule is not found, therefore it cannot be deleted. Corresponding Node ID is $nodeId."
