@@ -65,7 +65,7 @@ class NodeTransformer(
     private val syncQueue = serviceLocator.syncQueue
 
     private val notifier = serviceLocator.wrappedNotifier
-    private val mpsRepository = serviceLocator.mpsProject.repository
+    private val mpsRepository = serviceLocator.mpsRepository
 
     private val nodeFactory = SNodeFactory(mpsLanguageRepository, branch, serviceLocator)
 
@@ -83,7 +83,7 @@ class NodeTransformer(
     fun transformNode(
         nodeId: Long,
         nodeFactoryMethod: KFunction2<Long, SModel?, ContinuableSyncTask> = nodeFactory::createNode,
-    ) = syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+    ) = syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MODELIX_TO_MPS) {
         val iNode = branch.getNode(nodeId)
         val modelId = iNode.getModel()?.nodeIdAsLong()
         val model = nodeMap.getModel(modelId)

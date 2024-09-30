@@ -21,9 +21,12 @@ import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITreeChangeVisitorEx
+import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.getNode
+import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.model.mpsadapters.MPSNode
 import org.modelix.mps.sync.modelix.util.getModule
 import org.modelix.mps.sync.modelix.util.isDevKitDependency
 import org.modelix.mps.sync.modelix.util.isModel
@@ -55,7 +58,7 @@ class ModelixTreeChangeVisitor(
     private val nodeMap = serviceLocator.nodeMap
     private val syncQueue = serviceLocator.syncQueue
     private val notifier = serviceLocator.wrappedNotifier
-    private val mpsRepository = serviceLocator.mpsProject.repository
+    private val mpsRepository = serviceLocator.mpsRepository
 
     private val nodeTransformer = NodeTransformer(branch, serviceLocator, languageRepository)
     private val modelTransformer = ModelTransformer(branch, serviceLocator, languageRepository)
@@ -88,8 +91,25 @@ class ModelixTreeChangeVisitor(
                     role == it.getSimpleName()
                 }
             }
-            val targetINode = iReferenceLink?.let { iNode.getReferenceTarget(it) }
-            val targetSNode = targetINode?.let { nodeMap.getNode(it.nodeIdAsLong()) }
+            val targetSNode = iReferenceLink?.let {
+                val targetNodeReference = iNode.getReferenceTargetRef(it)
+                if (targetNodeReference == null) {
+                    null
+                } else {
+                    val serializedRef = targetNodeReference.serialize()
+                    val targetIsAnINode = PNodeReference.tryDeserialize(serializedRef) != null
+                    if (targetIsAnINode) {
+                        val targetNode = iNode.getReferenceTarget(it)
+                            ?: throw IllegalArgumentException("PNodeReference exists, but PNode cannot be resolved: '$serializedRef'")
+                        nodeMap.getNode(targetNode.nodeIdAsLong())
+                    } else {
+                        val area = MPSArea(mpsRepository)
+                        val mpsNode = area.resolveNode(targetNodeReference) as MPSNode?
+                        requireNotNull(mpsNode) { "SNode identified by Node $nodeId is not found." }
+                        mpsNode.node
+                    }
+                }
+            }
 
             val oldValue = sNode.getReferenceTarget(sReferenceLink)
             if (oldValue != targetSNode) {
@@ -184,8 +204,8 @@ class ModelixTreeChangeVisitor(
                 return@enqueue null
             }
 
-            val message = "A removal case for Node ($nodeId) was missed."
-            notifyAndLogError(message)
+            val message = "A removal case for Node ($nodeId) was missed. It can be ignored, if the Node's parent is deleted."
+            notifier.notifyAndLogWarning(message, logger)
 
             null
         }

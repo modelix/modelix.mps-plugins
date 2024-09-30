@@ -36,8 +36,11 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
+import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.getNode
+import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.mpsadapters.MPSLanguageRepository
+import org.modelix.model.mpsadapters.MPSModelImportAsNode
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
@@ -75,7 +78,9 @@ class ModelTransformer(
     private val futuresWaitQueue = serviceLocator.futuresWaitQueue
 
     private val notifier = serviceLocator.wrappedNotifier
+
     private val mpsProject = serviceLocator.mpsProject
+    private val mpsRepository = serviceLocator.mpsRepository
 
     private val nodeTransformer = NodeTransformer(branch, serviceLocator, mpsLanguageRepository)
 
@@ -97,7 +102,7 @@ class ModelTransformer(
                     .waitForCompletionOfEachTask(futuresWaitQueue) {
                         nodeTransformer.transformLanguageOrDevKitDependency(it)
                     }
-            }.continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
+            }.continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MODELIX_TO_MPS) {
                 val iNode = branch.getNode(nodeId)
                 if (isDescriptorModel(iNode)) {
                     EmptyBinding()
@@ -154,16 +159,32 @@ class ModelTransformer(
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val iNode = branch.getNode(nodeId)
             val sourceModel = nodeMap.getModel(iNode.getModel()?.nodeIdAsLong())!!
-            val targetModel = iNode.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
-            val targetId = targetModel.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)!!
-            resolvableModelImports.add(
-                ResolvableModelImport(
-                    source = sourceModel,
-                    targetModelId = targetId,
-                    targetModelModelixId = targetModel.nodeIdAsLong(),
-                    modelReferenceNodeId = iNode.nodeIdAsLong(),
-                ),
-            )
+
+            val targetModelRef = iNode.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
+            val serializedModelRef = targetModelRef.serialize()
+
+            val targetIsAnINode = PNodeReference.tryDeserialize(serializedModelRef) != null
+            if (targetIsAnINode) {
+                val targetModel = iNode.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
+                val targetId = targetModel.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)!!
+                // target iNode is probably not transformed yet, therefore delaying the model import resolution
+                resolvableModelImports.add(
+                    ResolvableModelImport(
+                        source = sourceModel,
+                        targetModelId = targetId,
+                        targetModelModelixId = targetModel.nodeIdAsLong(),
+                        modelReferenceNodeId = iNode.nodeIdAsLong(),
+                    ),
+                )
+            } else {
+                // target is an SModel in MPS
+                val modelixModelImport = MPSArea(mpsRepository).resolveNode(targetModelRef) as MPSModelImportAsNode?
+                requireNotNull(modelixModelImport) { "Model Import identified by Node $nodeId is not found." }
+                val modelImport = modelixModelImport.importedModel.reference
+                ModelImports(sourceModel).addModelImport(modelImport)
+
+                nodeMap.put(sourceModel, modelImport, iNode.nodeIdAsLong())
+            }
         }
 
     fun resolveModelImports(repository: SRepository) {
@@ -307,17 +328,20 @@ class ModelTransformer(
     }
 
     fun modeImportDeleted(outgoingModelReference: ModelWithModelReference) {
-        ModelImports(outgoingModelReference.source).removeModelImport(outgoingModelReference.modelReference)
+        val model = outgoingModelReference.sourceModelReference.resolve(mpsRepository)
+        ModelImports(model).removeModelImport(outgoingModelReference.modelReference)
+        nodeMap.remove(outgoingModelReference)
     }
 
     fun moduleDependencyOfModelDeleted(modelWithModuleReference: ModelWithModuleReference, nodeId: Long) {
-        val sourceModel = modelWithModuleReference.source
+        val sourceModel = modelWithModuleReference.sourceModelReference.resolve(mpsRepository)
         val targetModuleReference = modelWithModuleReference.moduleReference
         when (val targetModule = targetModuleReference.resolve(sourceModel.repository)) {
             is Language -> {
                 try {
                     val sLanguage = MetaAdapterFactory.getLanguage(targetModuleReference)
                     sourceModel.deleteLanguage(sLanguage)
+                    nodeMap.remove(modelWithModuleReference)
                 } catch (ex: Exception) {
                     val message =
                         "Language Import ($targetModule) cannot be deleted, because ${ex.message} Corresponding Node ID is $nodeId."
@@ -328,6 +352,7 @@ class ModelTransformer(
             is DevKit -> {
                 try {
                     sourceModel.deleteDevKit(targetModuleReference)
+                    nodeMap.remove(modelWithModuleReference)
                 } catch (ex: Exception) {
                     val message =
                         "DevKit dependency ($targetModule) cannot be deleted, because ${ex.message} Corresponding Node ID is $nodeId."

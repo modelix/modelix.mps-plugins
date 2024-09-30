@@ -20,11 +20,14 @@ import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNode
+import org.jetbrains.mps.openapi.model.SNodeReference
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
+import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.mps.services.InjectableService
+import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.synchronizedMap
 
@@ -32,7 +35,7 @@ import org.modelix.mps.sync.util.synchronizedMap
  * WARNING:
  * - use with caution, otherwise this cache may cause memory leaks
  * - if you add a new Map as a field in the class, then please also add it to the [remove], [isMappedToMps],
- * [isMappedToModelix], [isEmpty], [clear] methods below.
+ * [isMappedToModelix], [clear] methods below.
  * - if you want to persist the new field into a file, then add it to the [MpsToModelixMap.Serializer.serialize] and
  * [MpsToModelixMap.Serializer.deserialize] methods below.
  */
@@ -42,14 +45,14 @@ import org.modelix.mps.sync.util.synchronizedMap
 )
 class MpsToModelixMap : InjectableService {
 
-    private val nodeToModelixId = synchronizedMap<SNode, Long>()
-    private val modelixIdToNode = synchronizedMap<Long, SNode>()
+    private val nodeToModelixId = synchronizedMap<SNodeReference, Long>()
+    private val modelixIdToNode = synchronizedMap<Long, SNodeReference>()
 
-    private val modelToModelixId = synchronizedMap<SModel, Long>()
-    private val modelixIdToModel = synchronizedMap<Long, SModel>()
+    private val modelToModelixId = synchronizedMap<SModelReference, Long>()
+    private val modelixIdToModel = synchronizedMap<Long, SModelReference>()
 
-    private val moduleToModelixId = synchronizedMap<SModule, Long>()
-    private val modelixIdToModule = synchronizedMap<Long, SModule>()
+    private val moduleToModelixId = synchronizedMap<SModuleReference, Long>()
+    private val modelixIdToModule = synchronizedMap<Long, SModuleReference>()
 
     private val moduleWithOutgoingModuleReferenceToModelixId = synchronizedMap<ModuleWithModuleReference, Long>()
     private val modelixIdToModuleWithOutgoingModuleReference = synchronizedMap<Long, ModuleWithModuleReference>()
@@ -60,28 +63,40 @@ class MpsToModelixMap : InjectableService {
     private val modelWithOutgoingModelReferenceToModelixId = synchronizedMap<ModelWithModelReference, Long>()
     private val modelixIdToModelWithOutgoingModelReference = synchronizedMap<Long, ModelWithModelReference>()
 
-    private val objectsRelatedToAModel = synchronizedMap<SModel, MutableSet<Any>>()
-    private val objectsRelatedToAModule = synchronizedMap<SModule, MutableSet<Any>>()
+    private val objectsRelatedToAModel = synchronizedMap<SModelReference, MutableSet<Any>>()
+    private val objectsRelatedToAModule = synchronizedMap<SModuleReference, MutableSet<Any>>()
+
+    private val mpsRepository: SRepository
+        get() = serviceLocator.mpsRepository
+
+    private lateinit var serviceLocator: ServiceLocator
+
+    override fun initService(serviceLocator: ServiceLocator) {
+        this.serviceLocator = serviceLocator
+    }
 
     fun put(node: SNode, modelixId: Long) {
-        nodeToModelixId[node] = modelixId
-        modelixIdToNode[modelixId] = node
+        val nodeReference = node.reference
+        nodeToModelixId[nodeReference] = modelixId
+        modelixIdToNode[modelixId] = nodeReference
 
-        node.model?.let { putObjRelatedToAModel(it, node) }
+        node.model?.let { putObjRelatedToAModel(it, nodeReference) }
     }
 
     fun put(model: SModel, modelixId: Long) {
-        modelToModelixId[model] = modelixId
-        modelixIdToModel[modelixId] = model
+        val modelReference = model.reference
+        modelToModelixId[modelReference] = modelixId
+        modelixIdToModel[modelixId] = modelReference
 
-        putObjRelatedToAModel(model, model)
+        putObjRelatedToAModel(model, modelReference)
     }
 
     fun put(module: SModule, modelixId: Long) {
-        moduleToModelixId[module] = modelixId
-        modelixIdToModule[modelixId] = module
+        val moduleReference = module.moduleReference
+        moduleToModelixId[moduleReference] = modelixId
+        modelixIdToModule[modelixId] = moduleReference
 
-        putObjRelatedToAModule(module, module)
+        putObjRelatedToAModule(module, moduleReference)
     }
 
     fun put(sourceModule: SModule, moduleReference: SModuleReference, modelixId: Long) {
@@ -108,23 +123,24 @@ class MpsToModelixMap : InjectableService {
         putObjRelatedToAModel(sourceModel, modelReference)
     }
 
-    private fun putObjRelatedToAModel(model: SModel, obj: Any?) {
-        objectsRelatedToAModel.computeIfAbsent(model) { synchronizedLinkedHashSet() }.add(obj!!)
+    private fun putObjRelatedToAModel(model: SModel, obj: Any) {
+        val modelReference = model.reference
+        objectsRelatedToAModel.computeIfAbsent(modelReference) { synchronizedLinkedHashSet() }.add(obj)
         // just in case, the model has not been tracked yet. E.g. @descriptor models that are created locally but were not synchronized to the model server.
-        putObjRelatedToAModule(model.module, model)
+        putObjRelatedToAModule(model.module, modelReference)
     }
 
-    private fun putObjRelatedToAModule(module: SModule, obj: Any?) =
-        objectsRelatedToAModule.computeIfAbsent(module) { synchronizedLinkedHashSet() }.add(obj!!)
+    private fun putObjRelatedToAModule(module: SModule, obj: Any) =
+        objectsRelatedToAModule.computeIfAbsent(module.moduleReference) { synchronizedLinkedHashSet() }.add(obj)
 
-    operator fun get(node: SNode?) = nodeToModelixId[node]
+    operator fun get(node: SNode?) = nodeToModelixId[node?.reference]
 
-    operator fun get(model: SModel?) = modelToModelixId[model]
+    operator fun get(model: SModel?) = modelToModelixId[model?.reference]
 
     operator fun get(modelId: SModelId?) =
         modelToModelixId.filter { it.key.modelId == modelId }.map { it.value }.firstOrNull()
 
-    operator fun get(module: SModule?) = moduleToModelixId[module]
+    operator fun get(module: SModule?) = moduleToModelixId[module?.moduleReference]
 
     operator fun get(moduleId: SModuleId?) =
         moduleToModelixId.filter { it.key.moduleId == moduleId }.map { it.value }.firstOrNull()
@@ -138,13 +154,14 @@ class MpsToModelixMap : InjectableService {
     operator fun get(sourceModel: SModel, modelReference: SModelReference) =
         modelWithOutgoingModelReferenceToModelixId[ModelWithModelReference(sourceModel, modelReference)]
 
-    fun getNode(modelixId: Long?) = modelixIdToNode[modelixId]
+    fun getNode(modelixId: Long?): SNode? = modelixIdToNode[modelixId]?.resolve(mpsRepository)
 
-    fun getModel(modelixId: Long?) = modelixIdToModel[modelixId]
+    fun getModel(modelixId: Long?): SModel? = modelixIdToModel[modelixId]?.resolve(mpsRepository)
 
-    fun getModule(modelixId: Long?) = modelixIdToModule[modelixId]
+    fun getModule(modelixId: Long?): SModule? = modelixIdToModule[modelixId]?.resolve(mpsRepository)
 
-    fun getModule(moduleId: SModuleId) = objectsRelatedToAModule.keys.firstOrNull { it.moduleId == moduleId }
+    fun getModule(moduleId: SModuleId): SModule? =
+        objectsRelatedToAModule.keys.firstOrNull { it.moduleId == moduleId }?.resolve(mpsRepository)
 
     fun getOutgoingModelReference(modelixId: Long?) = modelixIdToModelWithOutgoingModelReference[modelixId]
 
@@ -153,42 +170,41 @@ class MpsToModelixMap : InjectableService {
     fun getOutgoingModuleReferenceFromModule(modelixId: Long?) = modelixIdToModuleWithOutgoingModuleReference[modelixId]
 
     fun remove(modelixId: Long) {
-        // is related to node
         modelixIdToNode.remove(modelixId)?.let { nodeToModelixId.remove(it) }
 
-        // is related to model
         modelixIdToModel.remove(modelixId)?.let {
             modelToModelixId.remove(it)
-            remove(it)
-        }
-        modelixIdToModelWithOutgoingModelReference.remove(modelixId)
-            ?.let { modelWithOutgoingModelReferenceToModelixId.remove(it) }
-        modelixIdToModelWithOutgoingModuleReference.remove(modelixId)
-            ?.let { modelWithOutgoingModuleReferenceToModelixId.remove(it) }
 
-        // is related to module
-        modelixIdToModule.remove(modelixId)?.let { remove(it) }
-        modelixIdToModuleWithOutgoingModuleReference.remove(modelixId)
-            ?.let { moduleWithOutgoingModuleReferenceToModelixId.remove(it) }
+            val model = it.resolve(mpsRepository)
+            remove(model)
+        }
+
+        modelixIdToModelWithOutgoingModelReference[modelixId]?.let { remove(it) }
+        modelixIdToModelWithOutgoingModuleReference[modelixId]?.let { remove(it) }
+
+        modelixIdToModule.remove(modelixId)?.let {
+            val module = it.resolve(mpsRepository)!!
+            remove(module)
+        }
+        modelixIdToModuleWithOutgoingModuleReference[modelixId]?.let { remove(it) }
     }
 
     fun remove(model: SModel) {
-        modelToModelixId.remove(model)?.let { modelixIdToModel.remove(it) }
-        objectsRelatedToAModel.remove(model)?.forEach {
+        val reference = model.reference
+        modelToModelixId.remove(reference)?.let { modelixIdToModel.remove(it) }
+        objectsRelatedToAModel.remove(reference)?.forEach {
             when (it) {
                 is SModuleReference -> {
                     val target = ModelWithModuleReference(model, it)
-                    modelWithOutgoingModuleReferenceToModelixId.remove(target)
-                        ?.let { id -> modelixIdToModelWithOutgoingModuleReference.remove(id) }
+                    remove(target)
                 }
 
                 is SModelReference -> {
                     val target = ModelWithModelReference(model, it)
-                    modelWithOutgoingModelReferenceToModelixId.remove(target)
-                        ?.let { id -> modelixIdToModelWithOutgoingModelReference.remove(id) }
+                    remove(target)
                 }
 
-                is SNode -> {
+                is SNodeReference -> {
                     nodeToModelixId.remove(it)?.let { modelixId -> modelixIdToNode.remove(modelixId) }
                 }
             }
@@ -196,16 +212,32 @@ class MpsToModelixMap : InjectableService {
     }
 
     fun remove(module: SModule) {
-        moduleToModelixId.remove(module)?.let { modelixIdToModule.remove(it) }
-        objectsRelatedToAModule.remove(module)?.forEach {
+        val reference = module.moduleReference
+        moduleToModelixId.remove(reference)?.let { modelixIdToModule.remove(it) }
+        objectsRelatedToAModule.remove(reference)?.forEach {
             if (it is SModuleReference) {
                 val target = ModuleWithModuleReference(module, it)
-                moduleWithOutgoingModuleReferenceToModelixId.remove(target)
-                    ?.let { id -> modelixIdToModuleWithOutgoingModuleReference.remove(id) }
-            } else if (it is SModel) {
-                remove(it)
+                remove(target)
+            } else if (it is SModelReference) {
+                val model = it.resolve(mpsRepository)
+                remove(model)
             }
         }
+    }
+
+    fun remove(outgoingModelReference: ModelWithModelReference) {
+        modelWithOutgoingModelReferenceToModelixId.remove(outgoingModelReference)
+            ?.let { id -> modelixIdToModelWithOutgoingModelReference.remove(id) }
+    }
+
+    fun remove(modelWithModuleReference: ModelWithModuleReference) {
+        modelWithOutgoingModuleReferenceToModelixId.remove(modelWithModuleReference)
+            ?.let { id -> modelixIdToModelWithOutgoingModuleReference.remove(id) }
+    }
+
+    fun remove(moduleWithModuleReference: ModuleWithModuleReference) {
+        moduleWithOutgoingModuleReferenceToModelixId.remove(moduleWithModuleReference)
+            ?.let { id -> modelixIdToModuleWithOutgoingModuleReference.remove(id) }
     }
 
     fun isMappedToMps(modelixId: Long?): Boolean {
@@ -235,8 +267,6 @@ class MpsToModelixMap : InjectableService {
 
     fun isMappedToModelix(node: SNode) = this[node] != null
 
-    fun isEmpty() = objectsRelatedToAModel.isEmpty() && objectsRelatedToAModule.isEmpty()
-
     override fun dispose() {
         nodeToModelixId.clear()
         modelixIdToNode.clear()
@@ -259,16 +289,31 @@ class MpsToModelixMap : InjectableService {
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-data class ModelWithModelReference(val source: SModel, val modelReference: SModelReference)
+data class ModelWithModelReference(
+    val sourceModelReference: SModelReference,
+    val modelReference: SModelReference,
+) {
+    constructor(source: SModel, modelReference: SModelReference) : this(source.reference, modelReference)
+}
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-data class ModelWithModuleReference(val source: SModel, val moduleReference: SModuleReference)
+data class ModelWithModuleReference(
+    val sourceModelReference: SModelReference,
+    val moduleReference: SModuleReference,
+) {
+    constructor(source: SModel, moduleReference: SModuleReference) : this(source.reference, moduleReference)
+}
 
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
-data class ModuleWithModuleReference(val source: SModule, val moduleReference: SModuleReference)
+data class ModuleWithModuleReference(
+    val sourceModuleReference: SModuleReference,
+    val moduleReference: SModuleReference,
+) {
+    constructor(source: SModule, moduleReference: SModuleReference) : this(source.moduleReference, moduleReference)
+}

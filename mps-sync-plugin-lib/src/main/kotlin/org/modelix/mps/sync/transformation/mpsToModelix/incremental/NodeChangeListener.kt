@@ -58,10 +58,6 @@ class NodeChangeListener(branch: IBranch, serviceLocator: ServiceLocator) : SNod
 
     override fun referenceChanged(event: SReferenceChangeEvent) {
         // TODO fix me: it does not work correctly, if event.newValue.targetNode points to a node that is in a different model, that has not been synced yet to model server...
-        synchronizer.setReference(
-            event.associationLink,
-            sourceNodeIdProducer = { it[event.node]!! },
-            targetNodeIdProducer = { nodesMap -> event.newValue?.targetNode?.let { nodesMap[it] } },
-        )
+        synchronizer.setReference(event.associationLink, event.node, event.newValue?.targetNode)
     }
 }

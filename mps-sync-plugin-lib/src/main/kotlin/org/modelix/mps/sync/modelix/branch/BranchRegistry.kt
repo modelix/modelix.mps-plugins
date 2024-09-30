@@ -16,9 +16,9 @@
 
 package org.modelix.mps.sync.modelix.branch
 
-import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.client2.ModelClientV2
@@ -38,8 +38,8 @@ class BranchRegistry : InjectableService {
 
     private lateinit var serviceLocator: ServiceLocator
 
-    private val mpsProject: MPSProject
-        get() = serviceLocator.mpsProject
+    private val mpsRepository: SRepository
+        get() = serviceLocator.mpsRepository
 
     var model: ReplicatedModel? = null
         private set
@@ -91,7 +91,7 @@ class BranchRegistry : InjectableService {
         this.client = client
 
         val repositoryChangeListener = RepositoryChangeListener(branch, serviceLocator)
-        mpsProject.repository.addRepositoryListener(repositoryChangeListener)
+        mpsRepository.addRepositoryListener(repositoryChangeListener)
         repoChangeListener = repositoryChangeListener
 
         return model!!
@@ -100,7 +100,7 @@ class BranchRegistry : InjectableService {
     override fun dispose() {
         val branch = getBranch() ?: return
         branch.removeListener(branchListener)
-        mpsProject.repository.removeRepositoryListener(repoChangeListener)
+        mpsRepository.removeRepositoryListener(repoChangeListener)
 
         model?.dispose()
 

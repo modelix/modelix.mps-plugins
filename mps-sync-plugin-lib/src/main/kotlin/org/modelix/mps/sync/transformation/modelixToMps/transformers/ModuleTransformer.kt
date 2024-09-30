@@ -37,6 +37,7 @@ import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModuleBinding
+import org.modelix.mps.sync.modelix.util.ModuleDependencyConstants
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.factories.SolutionProducer
 import org.modelix.mps.sync.mps.services.ServiceLocator
@@ -77,6 +78,7 @@ class ModuleTransformer(
     private val bindingsRegistry = serviceLocator.bindingsRegistry
     private val notifier = serviceLocator.wrappedNotifier
     private val mpsProject = serviceLocator.mpsProject
+    private val mpsRepository = serviceLocator.mpsRepository
 
     private val solutionProducer = SolutionProducer(mpsProject)
 
@@ -107,10 +109,10 @@ class ModuleTransformer(
                 // resolve references only after all dependent (and contained) modules and models have been transformed
                 if (isTransformationStartingModule) {
                     // resolve cross-model references (and node references)
-                    modelTransformer.resolveCrossModelReferences(mpsProject.repository)
+                    modelTransformer.resolveCrossModelReferences(mpsRepository)
                 }
                 flattenedBindings
-            }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.MODELIX_TO_MPS) { dependencyAndModelBindings ->
+            }.continueWith(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MODELIX_TO_MPS) { dependencyAndModelBindings ->
                 // register binding
                 val iNode = branch.getNode(nodeId)
                 val module = nodeMap.getModule(iNode.nodeIdAsLong()) as AbstractModule
@@ -159,11 +161,14 @@ class ModuleTransformer(
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val iNode = branch.getNode(nodeId)
             val targetModuleId = getTargetModuleIdFromModuleDependency(iNode)
+            val isTargetModuleReadOnly =
+                "true" == iNode.getPropertyValue(ModuleDependencyConstants.MODULE_DEPENDENCY_IS_READ_ONLY_PROPERTY)
 
             // decide, if we have to transform the target Module first, before transforming the Module Dependency
+            // however, if target module is read-only then we do not transform it (we expect it to exist in MPS)
             val future = CompletableFuture<Any?>()
             val targetModuleIsNotMapped = nodeMap.getModule(targetModuleId) == null
-            if (targetModuleIsNotMapped && fetchTargetModule) {
+            if (!isTargetModuleReadOnly && targetModuleIsNotMapped && fetchTargetModule) {
                 // find target module in modelix
                 val targetModule = branch.getRootNode().getChildren(ChildLinkFromName("modules")).firstOrNull {
                     val serializedId = it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id)
@@ -314,7 +319,7 @@ class ModuleTransformer(
     }
 
     fun outgoingModuleReferenceFromModuleDeleted(moduleWithModuleReference: ModuleWithModuleReference, nodeId: Long) {
-        val sourceModule = moduleWithModuleReference.source
+        val sourceModule = moduleWithModuleReference.sourceModuleReference.resolve(mpsRepository)
         if (sourceModule !is AbstractModule) {
             val message =
                 "Source Module ($sourceModule) is not an AbstractModule, therefore the outgoing Module Dependency reference cannot be removed. Corresponding Node ID is $nodeId."
@@ -327,6 +332,7 @@ class ModuleTransformer(
             sourceModule.moduleDescriptor?.dependencies?.firstOrNull { it.moduleRef == targetModuleReference }
         if (dependency != null) {
             sourceModule.removeDependency(dependency)
+            nodeMap.remove(moduleWithModuleReference)
         } else {
             val message =
                 "Outgoing dependency $targetModuleReference from Module $sourceModule is not found, therefore it cannot be deleted. Corresponding Node ID is $nodeId."

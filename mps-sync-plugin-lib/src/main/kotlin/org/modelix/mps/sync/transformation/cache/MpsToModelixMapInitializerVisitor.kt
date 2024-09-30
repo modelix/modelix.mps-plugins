@@ -10,6 +10,9 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
+import org.modelix.model.api.PNodeReference
+import org.modelix.model.mpsadapters.MPSArea
+import org.modelix.model.mpsadapters.MPSModelImportAsNode
 import org.modelix.mps.sync.modelix.tree.IBranchVisitor
 import org.modelix.mps.sync.modelix.util.getModel
 import org.modelix.mps.sync.modelix.util.getMpsNodeId
@@ -121,24 +124,40 @@ class MpsToModelixMapInitializerVisitor(
     }
 
     override suspend fun visitModelImport(sourceModel: INode, modelImport: INode) = runWithReadLocks {
+        val nodeId = modelImport.nodeIdAsLong()
         val model = getMpsModel(sourceModel)
         require(model is SModelBase) { "Model '${model.name}' (parent Module: ${model.module?.moduleName}) is not an SModelBase." }
 
-        val nodeId = modelImport.nodeIdAsLong()
-        val targetModel = modelImport.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)
-        val targetModelId = targetModel?.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)
-        requireNotNull(targetModelId) { "ID of Modelix Model referred by Modelix Model Import Node '$nodeId' is null." }
-        val modelId = PersistenceFacade.getInstance().createModelId(targetModelId)
+        val targetModelRef =
+            modelImport.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
+        val serializedModelRef = targetModelRef.serialize()
 
-        if (model.modelId == modelId) {
+        val targetIsAnINode = PNodeReference.tryDeserialize(serializedModelRef) != null
+        val (targetModelId, targetModelName) = if (targetIsAnINode) {
+            val targetModel =
+                modelImport.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)
+            val targetModelId = targetModel?.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)
+            requireNotNull(targetModelId) { "ID of Modelix Model referred by Modelix Model Import Node '$nodeId' is null." }
+            val modelId = PersistenceFacade.getInstance().createModelId(targetModelId)
+            val modelName = targetModel.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
+            Pair(modelId, modelName)
+        } else {
+            // target is an SModel in MPS
+            val modelixModelImport = MPSArea(repository).resolveNode(targetModelRef) as MPSModelImportAsNode?
+            requireNotNull(modelixModelImport) { "Model Import identified by Node $modelImport is not found." }
+            val targetModel = modelixModelImport.importedModel
+            val modelId = targetModel.modelId
+            val modelName = targetModel.name
+            Pair(modelId, modelName)
+        }
+
+        if (model.modelId == targetModelId) {
             logger.warn { "Ignoring Model Import from Model ${model.name} (parent Module: ${model.module?.moduleName}) to itself." }
             return@runWithReadLocks
         }
 
-        val targetModelImport = model.modelImports.firstOrNull { it.modelId == modelId }
+        val targetModelImport = model.modelImports.firstOrNull { it.modelId == targetModelId }
         requireNotNull(targetModelImport) {
-            val targetModelName =
-                targetModel.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
             "Model '${model.name}' (parent Module: ${model.module?.moduleName}) has no Model Import with ID '$targetModelId' and name '$targetModelName'."
         }
 
