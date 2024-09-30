@@ -148,12 +148,10 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val targetModule = dependency.targetModule.resolve(mpsRepository)
             requireNotNull(targetModule) { "Outgoing Dependency '${dependency.targetModule.moduleName}' of Module '${module.moduleName}' is not found." }
-
             val isMappedToMps = nodeMap[targetModule] != null
-            val targetModuleIsReadOnly = targetModule.isReadOnly
 
             // add the target module to the server if it does not exist there yet, and if it is not read-only
-            if (!isMappedToMps && !targetModuleIsReadOnly) {
+            if (!isMappedToMps && !targetModule.isReadOnly) {
                 require(targetModule is AbstractModule) {
                     val message =
                         "Dependency ($dependency)'s target Module ($targetModule) must be an AbstractModule. Dependency's source Module is ($module)."
