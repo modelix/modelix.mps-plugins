@@ -151,7 +151,8 @@ class SNodeFactory(
             } else {
                 // target node is an existing SNode
                 val area = MPSArea(mpsRepository)
-                val mpsNode = area.resolveNode(targetNodeReference) as MPSNode
+                val mpsNode = area.resolveNode(targetNodeReference) as MPSNode?
+                requireNotNull(mpsNode) { "SNode identified by Node $sourceNodeId is not found." }
                 source.setReferenceTarget(reference, mpsNode.node)
             }
         }

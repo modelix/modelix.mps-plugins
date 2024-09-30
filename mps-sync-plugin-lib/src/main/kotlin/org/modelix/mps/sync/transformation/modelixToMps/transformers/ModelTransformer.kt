@@ -178,7 +178,8 @@ class ModelTransformer(
                 )
             } else {
                 // target is an SModel in MPS
-                val modelixModelImport = MPSArea(mpsRepository).resolveNode(targetModelRef) as MPSModelImportAsNode
+                val modelixModelImport = MPSArea(mpsRepository).resolveNode(targetModelRef) as MPSModelImportAsNode?
+                requireNotNull(modelixModelImport) { "Model Import identified by Node $nodeId is not found." }
                 val modelImport = modelixModelImport.importedModel.reference
                 ModelImports(sourceModel).addModelImport(modelImport)
 

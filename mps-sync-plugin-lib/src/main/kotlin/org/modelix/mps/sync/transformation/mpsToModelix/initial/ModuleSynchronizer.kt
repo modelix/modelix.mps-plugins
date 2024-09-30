@@ -146,7 +146,9 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
 
     fun addDependency(module: SModule, dependency: SDependency) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
-            val targetModule = dependency.targetModule.resolve(mpsRepository)!!
+            val targetModule = dependency.targetModule.resolve(mpsRepository)
+            requireNotNull(targetModule) { "Outgoing Dependency '${dependency.targetModule.moduleName}' of Module '${module.moduleName}' is not found." }
+
             val isMappedToMps = nodeMap[targetModule] != null
             val targetModuleIsReadOnly = targetModule.isReadOnly
 
@@ -231,7 +233,8 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
                 dependency.scope.toString(),
             )
 
-            val targetModule = moduleReference.resolve(mpsRepository)!!
+            val targetModule = moduleReference.resolve(mpsRepository)
+            requireNotNull(targetModule) { "Outgoing Dependency '${dependency.targetModule.moduleName}' of Module '${module.moduleName}' is not found." }
             cloudDependency.setPropertyValue(
                 ModuleDependencyConstants.MODULE_DEPENDENCY_IS_READ_ONLY_PROPERTY,
                 targetModule.isReadOnly.toString(),

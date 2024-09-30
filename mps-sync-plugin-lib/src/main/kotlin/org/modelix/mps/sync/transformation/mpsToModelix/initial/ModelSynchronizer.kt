@@ -188,7 +188,7 @@ class ModelSynchronizer(
         }
 
     private fun addReadOnlyModelImportToCloud(source: SModel, targetModel: SModel) {
-        val modelixId = nodeMap[source]!!
+        val modelixId = requireNotNull(nodeMap[source]) { "SModel '$source' is not found in the synchronization map." }
         val cloudParentNode = branch.getNode(modelixId)
         val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
 
@@ -218,7 +218,7 @@ class ModelSynchronizer(
     }
 
     private fun addNormalModelImportToCloud(source: SModel, targetModel: SModel) {
-        val modelixId = nodeMap[source]!!
+        val modelixId = requireNotNull(nodeMap[source]) { "SModel '$source' is not found in the synchronization map." }
         val cloudParentNode = branch.getNode(modelixId)
         val childLink = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports
 

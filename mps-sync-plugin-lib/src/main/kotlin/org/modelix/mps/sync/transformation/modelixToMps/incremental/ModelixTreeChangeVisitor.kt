@@ -104,7 +104,8 @@ class ModelixTreeChangeVisitor(
                         nodeMap.getNode(targetNode.nodeIdAsLong())
                     } else {
                         val area = MPSArea(mpsRepository)
-                        val mpsNode = area.resolveNode(targetNodeReference) as MPSNode
+                        val mpsNode = area.resolveNode(targetNodeReference) as MPSNode?
+                        requireNotNull(mpsNode) { "SNode identified by Node $nodeId is not found." }
                         mpsNode.node
                     }
                 }
