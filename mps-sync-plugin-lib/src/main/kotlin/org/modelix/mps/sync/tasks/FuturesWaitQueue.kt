@@ -21,6 +21,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.services.InjectableService
 import org.modelix.mps.sync.mps.services.ServiceLocator
+import org.modelix.mps.sync.util.completeWithDefault
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
@@ -58,7 +59,7 @@ class FuturesWaitQueue : Runnable, InjectableService {
             if (collectResults) {
                 continuation.complete(Collections.emptyList<Any?>())
             } else {
-                continuation.complete(null)
+                continuation.completeWithDefault()
             }
             return
         }
