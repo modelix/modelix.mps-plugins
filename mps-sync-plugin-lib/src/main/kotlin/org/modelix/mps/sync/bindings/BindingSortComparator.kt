@@ -19,10 +19,24 @@ package org.modelix.mps.sync.bindings
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * This comparator is used to sort the [IBinding]s in the correct order.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class BindingSortComparator : Comparator<IBinding> {
+
     /**
-     * ModelBindings should come first, then ModuleBindings. If both bindings have the same type, then they are sorted lexicographically.
+     * Decides the order of two [IBinding]s: [ModelBinding]s should come first, then [ModuleBinding]s. If both bindings
+     * have the same type, then they are sorted lexicographically by their names.
+     *
+     * @param left one of the [IBinding]s to compare.
+     * @param right the other [IBinding] to compare to.
+     *
+     * @return if positive, then "left" should be before "right". If negative, then "right" should be before "left". If
+     * zero then the order does not matter.
      */
     override fun compare(left: IBinding, right: IBinding): Int {
         val leftName = left.name()
