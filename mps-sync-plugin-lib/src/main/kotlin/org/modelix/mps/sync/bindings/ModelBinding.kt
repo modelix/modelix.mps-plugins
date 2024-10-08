@@ -34,10 +34,10 @@ import java.util.concurrent.CompletableFuture
  * a [ModelChangeListener] and a [NodeChangeListener] registered in the [SModelBase]. These listeners play the changes
  * in to the model server so the local and remote states are kept in-sync.
  *
- * @property model the [SModelBase] to which this binding belongs.
- *
  * @param branch the modelix branch to where the changes will be synced to.
  * @param serviceLocator helps with initializing the private fields of this object.
+ *
+ * @property model the [SModelBase] to which this binding belongs.
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
