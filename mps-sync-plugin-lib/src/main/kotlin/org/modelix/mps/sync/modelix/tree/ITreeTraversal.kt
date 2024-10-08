@@ -30,7 +30,7 @@ class ITreeTraversal(val branch: IBranch) {
      * Calls the [visitor] to visit each node in the [branch] starting from the [IBranch.getRootNode]'s children until
      * the last node in the branch.
      *
-     * @param visitor the visitor that visits each node in the branch, starting from the root node's children
+     * @param visitor the visitor that visits each node in the branch, starting from the root node's children.
      */
     suspend fun visit(visitor: IBranchVisitor) {
         val childrenJobs = mutableListOf<Job>()
@@ -48,6 +48,13 @@ class ITreeTraversal(val branch: IBranch) {
         childrenJobs.joinAll()
     }
 
+    /**
+     * Calls the [visitor] to visit each node in the [branch] starting from the parameter node until the last node in
+     * the tree.
+     *
+     * @param node the node to start visiting the tree from.
+     * @param visitor the visitor that visits each node in the branch, starting from the root node's children.
+     */
     private suspend fun visit(node: INode, visitor: IBranchVisitor) {
         if (node.isModule()) {
             visitor.visitModule(node)
@@ -161,21 +168,21 @@ interface IBranchVisitor {
     /**
      * Visits a [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Module] node.
      *
-     * @param node the node to visit
+     * @param node the node to visit.
      */
     suspend fun visitModule(node: INode)
 
     /**
      * Visits a [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Model] node.
      *
-     * @param node the node to visit
+     * @param node the node to visit.
      */
     suspend fun visitModel(node: INode)
 
     /**
      * Visits a general node.
      *
-     * @param node the node to visit
+     * @param node the node to visit.
      */
     suspend fun visitNode(node: INode)
 
@@ -183,9 +190,9 @@ interface IBranchVisitor {
      * Visits a [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency] node.
      *
      * @param sourceModule the source [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Module] node from
-     * which the [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency] originates
+     * which the [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency] originates.
      *
-     * @param moduleDependency the node to visit
+     * @param moduleDependency the node to visit.
      */
     suspend fun visitModuleDependency(sourceModule: INode, moduleDependency: INode)
 
@@ -193,9 +200,9 @@ interface IBranchVisitor {
      * Visits a [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency] node.
      *
      * @param sourceModel the source [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Model] node from
-     * which the [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency] originates
+     * which the [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency] originates.
      *
-     * @param devKitDependency the node to visit
+     * @param devKitDependency the node to visit.
      */
     suspend fun visitDevKitDependency(sourceModel: INode, devKitDependency: INode)
 
@@ -203,9 +210,9 @@ interface IBranchVisitor {
      * Visits a [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency] node.
      *
      * @param sourceModel the source [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Model] node from
-     * which the [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency] originates
+     * which the [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency] originates.
      *
-     * @param languageDependency the node to visit
+     * @param languageDependency the node to visit.
      */
     suspend fun visitLanguageDependency(sourceModel: INode, languageDependency: INode)
 
@@ -213,9 +220,9 @@ interface IBranchVisitor {
      * Visits a [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModelReference] node.
      *
      * @param sourceModel the source [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Model] node from
-     * which the [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModelReference] originates
+     * which the [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModelReference] originates.
      *
-     * @param modelImport the node to visit
+     * @param modelImport the node to visit.
      */
     suspend fun visitModelImport(sourceModel: INode, modelImport: INode)
 }
