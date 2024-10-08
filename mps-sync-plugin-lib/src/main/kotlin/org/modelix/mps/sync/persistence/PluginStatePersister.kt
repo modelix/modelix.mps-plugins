@@ -23,6 +23,9 @@ class PluginStatePersister(providedFile: File, defaultFileName: String? = null) 
         const val DEFAULT_FILE_NAME = "modelixSyncPluginState.xml"
     }
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
     private val targetFile: File = if (providedFile.isDirectory) {

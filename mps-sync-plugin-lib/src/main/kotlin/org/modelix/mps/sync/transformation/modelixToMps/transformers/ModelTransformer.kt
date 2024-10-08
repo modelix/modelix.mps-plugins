@@ -72,12 +72,29 @@ class ModelTransformer(
     mpsLanguageRepository: MPSLanguageRepository,
 ) {
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * The lookup map (internal cache) between the MPS elements and the corresponding modelix Nodes.
+     */
     private val nodeMap = serviceLocator.nodeMap
+
+    /**
+     * The task queue of the sync plugin.
+     */
     private val syncQueue = serviceLocator.syncQueue
+
+    /**
+     * The Futures queue of the sync plugin.
+     */
     private val futuresWaitQueue = serviceLocator.futuresWaitQueue
 
+    /**
+     * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
+     */
     private val notifier = serviceLocator.wrappedNotifier
 
     /**
@@ -85,6 +102,9 @@ class ModelTransformer(
      */
     private val bindingsRegistry = serviceLocator.bindingsRegistry
 
+    /**
+     * The [jetbrains.mps.project.MPSProject] that is open in the active MPS window.
+     */
     private val mpsProject = serviceLocator.mpsProject
     private val mpsRepository = serviceLocator.mpsRepository
 

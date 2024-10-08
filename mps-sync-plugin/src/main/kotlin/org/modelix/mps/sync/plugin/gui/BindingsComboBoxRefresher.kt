@@ -35,8 +35,14 @@ class BindingsComboBoxRefresher(
     project: Project,
 ) : Thread(), Disposable {
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * The registry to store the [IBinding]s.
+     */
     private var bindingsRegistry = project.service<ServiceLocator>().bindingsRegistry
 
     private val bindingsComparator = BindingSortComparator()

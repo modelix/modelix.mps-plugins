@@ -21,6 +21,7 @@ import org.jetbrains.mps.openapi.module.SRepositoryListenerBase
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITree
+import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 
@@ -31,6 +32,10 @@ import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 class RepositoryChangeListener(branch: IBranch, serviceLocator: ServiceLocator) : SRepositoryListenerBase() {
 
     private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
+
+    /**
+     * The registry to store the [IBinding]s.
+     */
     private val bindingsRegistry = serviceLocator.bindingsRegistry
 
     private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)

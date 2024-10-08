@@ -53,7 +53,14 @@ class NodeSynchronizer(
     serviceLocator: ServiceLocator,
 ) {
 
+    /**
+     * The lookup map (internal cache) between the MPS elements and the corresponding modelix Nodes.
+     */
     private val nodeMap = serviceLocator.nodeMap
+
+    /**
+     * The task queue of the sync plugin.
+     */
     private val syncQueue = serviceLocator.syncQueue
 
     fun addNode(node: SNode) =

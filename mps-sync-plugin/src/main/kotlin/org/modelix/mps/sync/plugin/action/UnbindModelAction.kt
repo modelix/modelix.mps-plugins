@@ -33,6 +33,9 @@ object UnbindModelAction : AnAction("Unbind Model") {
 
     private val contextModel = DataKey.create<SModel>("MPS_Context_SModel")
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
     override fun actionPerformed(event: AnActionEvent) =

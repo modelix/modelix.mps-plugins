@@ -40,6 +40,9 @@ class ITreeToSTreeTransformer(
     serviceLocator: ServiceLocator,
 ) {
 
+    /**
+     * The task queue of the sync plugin.
+     */
     private val syncQueue = serviceLocator.syncQueue
     private val moduleTransformer = ModuleTransformer(branch, serviceLocator, mpsLanguageRepository)
 

@@ -39,6 +39,9 @@ import java.util.concurrent.ConcurrentLinkedQueue
 )
 class SyncQueue : InjectableService {
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
     private val threadPool = ApplicationManager.getApplication().getService(SharedThreadPool::class.java).threadPool
@@ -46,15 +49,24 @@ class SyncQueue : InjectableService {
     private val activeSyncThreadsWithSyncDirection = ConcurrentHashMap<Thread, SyncDirection>()
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
 
+    /**
+     * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
+     */
     private val notifier: WrappedNotifier
         get() = serviceLocator.wrappedNotifier
 
     private val branchRegistry: BranchRegistry
         get() = serviceLocator.branchRegistry
 
+    /**
+     * The [jetbrains.mps.project.MPSProject] that is open in the active MPS window.
+     */
     private val mpsProject: MPSProject
         get() = serviceLocator.mpsProject
 
+    /**
+     * The Futures queue of the sync plugin.
+     */
     private val futuresWaitQueue: FuturesWaitQueue
         get() = serviceLocator.futuresWaitQueue
 

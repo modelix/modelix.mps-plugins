@@ -61,7 +61,7 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch, serviceLocator:
     private val syncQueue = serviceLocator.syncQueue
 
     /**
-     * The futures queue of the sync plugin.
+     * The Futures queue of the sync plugin.
      */
     private val futuresWaitQueue = serviceLocator.futuresWaitQueue
 

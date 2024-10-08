@@ -83,6 +83,9 @@ class ModelSyncGuiFactory : ToolWindowFactory {
             private const val TEXTFIELD_WIDTH = 20
         }
 
+        /**
+         * Just a normal logger to log messages.
+         */
         private val logger = KotlinLogging.logger {}
         private val mutex = Mutex()
         private val dispatcher = Dispatchers.Default

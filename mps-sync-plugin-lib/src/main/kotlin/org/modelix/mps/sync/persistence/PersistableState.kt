@@ -56,6 +56,9 @@ data class PersistableState(
     var moduleIds: List<String> = listOf(),
 ) {
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
     /**

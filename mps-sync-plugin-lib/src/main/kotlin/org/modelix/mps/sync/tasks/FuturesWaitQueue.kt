@@ -35,12 +35,18 @@ import java.util.stream.Stream
 )
 class FuturesWaitQueue : Runnable, InjectableService {
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
     private val continuations = LinkedBlockingQueue<FutureWithPredecessors>()
     private val threadPool = Executors.newSingleThreadExecutor()
     private val pauseObject = Object()
 
+    /**
+     * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
+     */
     private lateinit var notifier: WrappedNotifier
 
     override fun initService(serviceLocator: ServiceLocator) {
