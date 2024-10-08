@@ -40,14 +40,23 @@ import java.net.URL
 )
 class SyncServiceImpl : ISyncService, InjectableService {
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
     private val networkDispatcher = Dispatchers.IO // rather IO-intensive tasks
     private val cpuDispatcher = Dispatchers.Default // rather CPU-intensive tasks
 
+    /**
+     * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
+     */
     private val notifier: WrappedNotifier
         get() = serviceLocator.wrappedNotifier
 
+    /**
+     * The registry to store the [IBinding]s.
+     */
     private val bindingsRegistry: BindingsRegistry
         get() = serviceLocator.bindingsRegistry
 
