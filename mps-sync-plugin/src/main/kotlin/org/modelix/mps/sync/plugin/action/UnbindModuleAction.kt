@@ -33,6 +33,9 @@ object UnbindModuleAction : AnAction("Unbind Module") {
 
     private val contextModule = DataKey.create<SModule>("MPS_Context_SModule")
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
     override fun actionPerformed(event: AnActionEvent) =

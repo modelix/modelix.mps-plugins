@@ -54,13 +54,34 @@ import java.util.concurrent.CompletableFuture
 )
 class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator: ServiceLocator) {
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * The lookup map (internal cache) between the MPS elements and the corresponding modelix Nodes.
+     */
     private val nodeMap = serviceLocator.nodeMap
+
+    /**
+     * The task queue of the sync plugin.
+     */
     private val syncQueue = serviceLocator.syncQueue
+
+    /**
+     * The Futures queue of the sync plugin.
+     */
     private val futuresWaitQueue = serviceLocator.futuresWaitQueue
 
+    /**
+     * The registry to store the [IBinding]s.
+     */
     private val bindingsRegistry = serviceLocator.bindingsRegistry
+
+    /**
+     * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
+     */
     private val notifier = serviceLocator.wrappedNotifier
     private val mpsRepository = serviceLocator.mpsRepository
 

@@ -53,8 +53,19 @@ class SNodeFactory(
     serviceLocator: ServiceLocator,
 ) {
 
+    /**
+     * The lookup map (internal cache) between the MPS elements and the corresponding modelix Nodes.
+     */
     private val nodeMap = serviceLocator.nodeMap
+
+    /**
+     * The task queue of the sync plugin.
+     */
     private val syncQueue = serviceLocator.syncQueue
+
+    /**
+     * The Futures queue of the sync plugin.
+     */
     private val futuresWaitQueue = serviceLocator.futuresWaitQueue
     private val mpsRepository = serviceLocator.mpsRepository
 
