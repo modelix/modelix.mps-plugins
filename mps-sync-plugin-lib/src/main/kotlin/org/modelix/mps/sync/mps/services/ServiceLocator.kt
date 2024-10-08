@@ -6,6 +6,8 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.ILanguageRepository
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.bindings.BindingsRegistry
@@ -31,6 +33,9 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 @Service(Service.Level.PROJECT)
 class ServiceLocator(val project: Project) : Disposable {
 
+    /**
+     * The entry class of the synchronization workflows.
+     */
     val syncService = SyncServiceImpl()
 
     /**
@@ -42,6 +47,10 @@ class ServiceLocator(val project: Project) : Disposable {
      * The registry to store the [IBinding]s.
      */
     val bindingsRegistry = BindingsRegistry()
+
+    /**
+     * A registry to store the modelix [IBranch] we are connected to.
+     */
     val branchRegistry = BranchRegistry()
 
     /**
@@ -53,6 +62,10 @@ class ServiceLocator(val project: Project) : Disposable {
      * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
      */
     val wrappedNotifier = WrappedNotifier()
+
+    /**
+     * Tracks the active [Project]'s lifecycle.
+     */
     val projectLifecycleTracker = ProjectLifecycleTracker()
 
     /**
@@ -64,12 +77,23 @@ class ServiceLocator(val project: Project) : Disposable {
      * The [jetbrains.mps.project.MPSProject] that is open in the active MPS window.
      */
     val mpsProject = project.toMpsProject()
+
+    /**
+     * The active [SRepository] to access the [org.jetbrains.mps.openapi.model.SModel]s and
+     * [org.jetbrains.mps.openapi.module.SModule]s in MPS.
+     */
     val mpsRepository: SRepository
         get() = mpsProject.repository
 
+    /**
+     * The [ILanguageRepository] that can resolve Concept UIDs of modelix nodes to Concepts in MPS.
+     */
     val languageRepository = ApplicationManager.getApplication()
         .getService(MPSLanguageRepositoryProvider::class.java).mpsLanguageRepository
 
+    /**
+     * The services that are registered in the service locator.
+     */
     private val services: Set<InjectableService> = setOf(
         syncService,
         syncQueue,
@@ -85,5 +109,10 @@ class ServiceLocator(val project: Project) : Disposable {
         services.forEach { it.initService(this) }
     }
 
+    /**
+     * Dispose the registered [services].
+     *
+     * @see [InjectableService.dispose].
+     */
     override fun dispose() = services.forEach(InjectableService::dispose)
 }

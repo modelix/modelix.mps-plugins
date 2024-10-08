@@ -10,6 +10,7 @@ import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.lazy.BranchReference
@@ -70,6 +71,9 @@ class SyncServiceImpl : ISyncService, InjectableService {
     private val mpsRepository: SRepository
         get() = serviceLocator.mpsRepository
 
+    /**
+     * The [ILanguageRepository] that can resolve Concept UIDs of modelix nodes to Concepts in MPS.
+     */
     private val languageRepository: MPSLanguageRepository
         get() = serviceLocator.languageRepository
 
