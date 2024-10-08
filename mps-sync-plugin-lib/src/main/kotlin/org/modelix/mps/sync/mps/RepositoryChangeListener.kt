@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.mps
 
+import com.intellij.openapi.project.Project
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.module.SRepositoryListenerBase
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -31,6 +32,9 @@ import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 )
 class RepositoryChangeListener(branch: IBranch, serviceLocator: ServiceLocator) : SRepositoryListenerBase() {
 
+    /**
+     * Tracks the active [Project]'s lifecycle.
+     */
     private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
 
     /**

@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.transformation.mpsToModelix.incremental
 
+import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.extapi.model.SModelDescriptorStub
 import mu.KotlinLogging
@@ -83,6 +84,10 @@ class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceL
      * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
      */
     private val notifier = serviceLocator.wrappedNotifier
+
+    /**
+     * Tracks the active [Project]'s lifecycle.
+     */
     private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
 
     private val moduleSynchronizer = ModuleSynchronizer(branch, serviceLocator)

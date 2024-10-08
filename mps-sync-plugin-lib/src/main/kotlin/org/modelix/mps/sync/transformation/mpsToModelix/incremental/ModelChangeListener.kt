@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.transformation.mpsToModelix.incremental
 
+import com.intellij.openapi.project.Project
 import jetbrains.mps.smodel.event.SModelChildEvent
 import jetbrains.mps.smodel.event.SModelDevKitEvent
 import jetbrains.mps.smodel.event.SModelImportEvent
@@ -47,6 +48,9 @@ class ModelChangeListener(
     serviceLocator: ServiceLocator,
 ) : SModelListener {
 
+    /**
+     * Tracks the active [Project]'s lifecycle.
+     */
     private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
 
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)

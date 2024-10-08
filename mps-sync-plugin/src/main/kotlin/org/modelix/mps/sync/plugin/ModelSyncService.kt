@@ -38,7 +38,6 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
-import mu.KLogger
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
@@ -63,12 +62,19 @@ import java.net.URL
 @Service(Service.Level.PROJECT)
 class ModelSyncService(project: Project) : IRebindModulesSyncService {
 
-    private val logger: KLogger = KotlinLogging.logger { }
+    /**
+     * Just a normal logger to log messages.
+     */
+    private val logger = KotlinLogging.logger {}
 
     /**
      * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
      */
     private val notifier: WrappedNotifier
+
+    /**
+     * The entry class of the synchronization workflows.
+     */
     private val syncService: ISyncService
 
     init {
