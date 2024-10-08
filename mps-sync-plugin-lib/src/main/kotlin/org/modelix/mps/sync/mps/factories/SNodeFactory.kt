@@ -23,6 +23,7 @@ import org.jetbrains.mps.openapi.language.SInterfaceConcept
 import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
+import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
@@ -67,6 +68,11 @@ class SNodeFactory(
      * The Futures queue of the sync plugin.
      */
     private val futuresWaitQueue = serviceLocator.futuresWaitQueue
+
+    /**
+     * The active [SRepository] to access the [org.jetbrains.mps.openapi.model.SModel]s and
+     * [org.jetbrains.mps.openapi.module.SModule]s in MPS.
+     */
     private val mpsRepository = serviceLocator.mpsRepository
 
     private val resolvableReferences = mutableListOf<ResolvableReference>()
