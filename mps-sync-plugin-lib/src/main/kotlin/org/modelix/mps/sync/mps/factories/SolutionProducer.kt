@@ -33,10 +33,27 @@ import jetbrains.mps.vfs.VFSManager
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.io.File
 
-// TODO hacky solution. A nicer one could be: https://github.com/JetBrains/MPS/blob/master/workbench/mps-platform/jetbrains.mps.ide.platform/source_gen/jetbrains/mps/project/modules/SolutionProducer.java
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * Factory class to create a [Solution] in MPS and persist it in the file system.
+ *
+ * TODO hacky solution. A nicer one could be the [SolutionProducer from JetBrains](https://github.com/JetBrains/MPS/blob/master/workbench/mps-platform/jetbrains.mps.ide.platform/source_gen/jetbrains/mps/project/modules/SolutionProducer.java).
+ *
+ * @property project the [MPSProject] in which we want to create the [Solution].
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class SolutionProducer(private val project: MPSProject) {
 
+    /**
+     * Creates or returns the [Solution] (if it already exists) with the given name and module ID.
+     *
+     * @param name the name of the [Solution].
+     * @param moduleId the ID of the [Solution].
+     *
+     * @return the [Solution] with the given name and module ID
+     */
     fun createOrGetModule(name: String, moduleId: ModuleId): Solution {
         val exportPath = project.projectFile.systemIndependentPath
 
@@ -81,14 +98,21 @@ class SolutionProducer(private val project: MPSProject) {
         return solution
     }
 
+    /**
+     * Deletes parameter folder if it exists, and recreates all its parent folders and itself after that.
+     *
+     * @param virtualDir the directory to be recreated.
+     */
     private fun ensureDirDeletionAndRecreation(virtualDir: IFile) {
         ensureDeletion(virtualDir)
         virtualDir.mkdirs()
     }
 
     /**
-     * We experienced issues with physical and virtual files being out of sync.
-     * This method ensure that files are deleted, recursively both on the virtual filesystem and the physical filesystem.
+     * We experienced issues with physical and virtual files being out of sync. This method ensure that files are
+     * deleted, recursively both on the virtual filesystem and the physical filesystem.
+     *
+     * @param virtualFile the file (either a directory or a file) to be deleted from the file system.
      */
     private fun ensureDeletion(virtualFile: IFile) {
         if (virtualFile.isDirectory) {

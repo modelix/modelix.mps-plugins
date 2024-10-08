@@ -44,6 +44,9 @@ import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
+/**
+ * Factory class to create an [SNode] in MPS.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -75,8 +78,21 @@ class SNodeFactory(
      */
     private val mpsRepository = serviceLocator.mpsRepository
 
+    /**
+     * Some references between MPS nodes cannot be resolved at the moment they are created (e.g. because the target node
+     * does not exist yet). In this collection we store such references.
+     */
     private val resolvableReferences = mutableListOf<ResolvableReference>()
 
+    /**
+     * Transform the parameter modelix node denoted by its ID to an [SNode] in MPS and do it recursively for all of its
+     * children.
+     *
+     * @param nodeId the modelix node ID of the node to transform.
+     * @param model the [SModel] that is the parent of the node.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed
+     */
     fun createNodeRecursively(nodeId: Long, model: SModel?): ContinuableSyncTask =
         createNode(nodeId, model)
             .continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
@@ -86,6 +102,14 @@ class SNodeFactory(
                 }
             }
 
+    /**
+     * Transform the parameter modelix node denoted by its ID to an [SNode] in MPS.
+     *
+     * @param nodeId the modelix node ID of the node to transform.
+     * @param model the [SModel] that is the parent of the node.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed
+     */
     fun createNode(nodeId: Long, model: SModel?): ContinuableSyncTask =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val iNode = branch.getNode(nodeId)
@@ -137,6 +161,12 @@ class SNodeFactory(
             prepareLinkReferences(iNode)
         }
 
+    /**
+     * Set all properties of target to the same values as they are in the source.
+     *
+     * @param source the modelix node from which we read the properties
+     * @param target the MPS node in which we set the properties
+     */
     private fun setProperties(source: INode, target: SNode) {
         target.concept.properties.forEach { sProperty ->
             val property = MPSProperty(sProperty)
@@ -145,6 +175,14 @@ class SNodeFactory(
         }
     }
 
+    /**
+     * Set all outgoing references of the MPS node that was created from the parameter modelix node. We go through each
+     * outgoing reference of the modelix node, search for the corresponding target node in MPS and establish the
+     * reference between the two nodes. If the outgoing reference cannot be resolved directly, then it is put in the
+     * [resolvableReferences] collection, and will be resolved later (see [resolveReferences]).
+     *
+     * @param iNode the modelix node that contains the outgoing references
+     */
     private fun prepareLinkReferences(iNode: INode) {
         val sourceNodeId = iNode.nodeIdAsLong()
         val source = nodeMap.getNode(sourceNodeId)!!
@@ -175,6 +213,10 @@ class SNodeFactory(
         }
     }
 
+    /**
+     * Resolves the references stored in [resolvableReferences]. I.e. creates the reference links between the source
+     * and target [SNode]s in MPS.
+     */
     fun resolveReferences() {
         resolvableReferences.forEach {
             val source = it.source
@@ -184,9 +226,21 @@ class SNodeFactory(
         }
     }
 
+    /**
+     * Clears the [resolveReferences] collection.
+     */
     fun clearResolvableReferences() = resolvableReferences.clear()
 }
 
+/**
+ * Represents a reference between two MPS nodes that could not be resolved at the time the reference was supposed to be
+ * created.
+ *
+ * @property source the source MPS nod.
+ * @property reference the outgoing reference link of the source MPS node
+ * @property targetNodeId modelix node ID of the target MPS node. The modelix node ID will be resolved to an MPS node in
+ * [SNodeFactory.resolveReferences].
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
