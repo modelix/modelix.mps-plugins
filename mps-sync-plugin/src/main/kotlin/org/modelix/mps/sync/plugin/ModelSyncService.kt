@@ -65,6 +65,9 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
 
     private val logger: KLogger = KotlinLogging.logger { }
 
+    /**
+     * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
+     */
     private val notifier: WrappedNotifier
     private val syncService: ISyncService
 

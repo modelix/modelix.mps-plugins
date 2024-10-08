@@ -6,6 +6,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.modelix.branch.BranchRegistry
@@ -31,15 +32,37 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 class ServiceLocator(val project: Project) : Disposable {
 
     val syncService = SyncServiceImpl()
+
+    /**
+     * The task queue of the sync plugin.
+     */
     val syncQueue = SyncQueue()
+
+    /**
+     * The registry to store the [IBinding]s.
+     */
     val bindingsRegistry = BindingsRegistry()
     val branchRegistry = BranchRegistry()
+
+    /**
+     * The lookup map (internal cache) between the MPS elements and the corresponding modelix Nodes.
+     */
     val nodeMap = MpsToModelixMap()
 
+    /**
+     * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
+     */
     val wrappedNotifier = WrappedNotifier()
     val projectLifecycleTracker = ProjectLifecycleTracker()
+
+    /**
+     * The Futures queue of the sync plugin.
+     */
     val futuresWaitQueue = FuturesWaitQueue()
 
+    /**
+     * The [jetbrains.mps.project.MPSProject] that is open in the active MPS window.
+     */
     val mpsProject = project.toMpsProject()
     val mpsRepository: SRepository
         get() = mpsProject.repository
