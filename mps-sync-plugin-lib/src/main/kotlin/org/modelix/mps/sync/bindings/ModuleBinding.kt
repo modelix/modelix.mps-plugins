@@ -34,10 +34,10 @@ import java.util.concurrent.CompletableFuture
  * having a [ModuleChangeListener] in the [AbstractModule]. These listener plays the changes in to the model server so
  * the local and remote states are kept in-sync.
  *
- * @property module the [AbstractModule] to which this binding belongs.
- *
  * @param branch the modelix branch to where the changes will be synced to.
  * @param serviceLocator helps with initializing the private fields of this object.
+ *
+ * @property module the [AbstractModule] to which this binding belongs.
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
