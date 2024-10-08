@@ -106,6 +106,11 @@ class ModelTransformer(
      * The [jetbrains.mps.project.MPSProject] that is open in the active MPS window.
      */
     private val mpsProject = serviceLocator.mpsProject
+
+    /**
+     * The active [SRepository] to access the [org.jetbrains.mps.openapi.model.SModel]s and
+     * [org.jetbrains.mps.openapi.module.SModule]s in MPS.
+     */
     private val mpsRepository = serviceLocator.mpsRepository
 
     private val nodeTransformer = NodeTransformer(branch, serviceLocator, mpsLanguageRepository)

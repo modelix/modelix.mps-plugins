@@ -24,6 +24,7 @@ import jetbrains.mps.project.Solution
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SDependency
 import org.jetbrains.mps.openapi.module.SModule
+import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ChildLinkFromName
@@ -83,6 +84,11 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
      * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
      */
     private val notifier = serviceLocator.wrappedNotifier
+
+    /**
+     * The active [SRepository] to access the [org.jetbrains.mps.openapi.model.SModel]s and
+     * [org.jetbrains.mps.openapi.module.SModule]s in MPS.
+     */
     private val mpsRepository = serviceLocator.mpsRepository
 
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator, true)

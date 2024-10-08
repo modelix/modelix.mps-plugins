@@ -70,6 +70,9 @@ class SyncQueue : InjectableService {
     private val futuresWaitQueue: FuturesWaitQueue
         get() = serviceLocator.futuresWaitQueue
 
+    /**
+     * A collector class to simplify injecting the commonly used services in the sync plugin.
+     */
     private lateinit var serviceLocator: ServiceLocator
 
     override fun initService(serviceLocator: ServiceLocator) {

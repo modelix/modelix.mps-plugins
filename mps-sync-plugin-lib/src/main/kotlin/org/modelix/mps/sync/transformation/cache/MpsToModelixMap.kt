@@ -66,9 +66,16 @@ class MpsToModelixMap : InjectableService {
     private val objectsRelatedToAModel = synchronizedMap<SModelReference, MutableSet<Any>>()
     private val objectsRelatedToAModule = synchronizedMap<SModuleReference, MutableSet<Any>>()
 
+    /**
+     * The active [SRepository] to access the [org.jetbrains.mps.openapi.model.SModel]s and
+     * [org.jetbrains.mps.openapi.module.SModule]s in MPS.
+     */
     private val mpsRepository: SRepository
         get() = serviceLocator.mpsRepository
 
+    /**
+     * A collector class to simplify injecting the commonly used services in the sync plugin.
+     */
     private lateinit var serviceLocator: ServiceLocator
 
     override fun initService(serviceLocator: ServiceLocator) {

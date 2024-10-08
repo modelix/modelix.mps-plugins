@@ -20,5 +20,9 @@ interface InjectableService : Disposable {
      * and whose [ServiceLocator.project] is the [Project] to whose lifecycle the Service is bound.
      */
     fun initService(serviceLocator: ServiceLocator) {}
+
+    /**
+     * Dispose the resources used by the Service.
+     */
     override fun dispose() {}
 }
