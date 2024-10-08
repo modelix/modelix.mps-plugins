@@ -10,13 +10,27 @@ import org.apache.log4j.Level
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import javax.swing.event.HyperlinkEvent
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * Shows a [balloon notification](https://jetbrains.github.io/ui/controls/balloon/) in MPS.
+ *
+ * @param groupName the notification group name. Defaults to "Modelix Sync Plugin".
+ *
+ * @property project the active [Project] in MPS to show the notification in.
+ * @property title the title of the notification. Defaults to "Modelix Sync Plugin".
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class BalloonNotifier(
     private val project: Project,
     private val title: String = "Modelix Sync Plugin",
     groupName: String = "Modelix Sync Plugin",
 ) : INotifier {
 
+    /**
+     * The group to which this notifier is registered.
+     */
     private val notificationGroup: NotificationGroup
 
     init {
@@ -34,6 +48,14 @@ class BalloonNotifier(
     override fun info(message: String, responseListener: UserResponseListener?) =
         showNotification(message, NotificationType.INFORMATION, responseListener)
 
+    /**
+     * Shows the balloon notification with the given severity. [UrlListenerToUserResponseAdapter] is used to call the
+     * response listener, if there is a hyperlink in the message, and the user clicked on it.
+     *
+     * @param message the message to be shown in the balloon.
+     * @param notificationType the type of the notification.
+     * @param responseListener the listener that waits for the user's reaction / response.
+     */
     private fun showNotification(
         message: String,
         notificationType: NotificationType,
@@ -46,7 +68,15 @@ class BalloonNotifier(
     }
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * Calls the [UserResponseListener] if the user clicked on a hyperlink in the message.
+ *
+ * @property userResponseListener the listener to be called if the user clicked on a hyperlink in the message.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 private class UrlListenerToUserResponseAdapter(
     private val userResponseListener: UserResponseListener?,
 ) : NotificationListener {

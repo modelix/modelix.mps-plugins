@@ -7,7 +7,16 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.awt.Color
 import javax.swing.JComponent
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * Show an alert dialog to the user with the given severity and content.
+ *
+ * @property project the active [Project] in MPS to show the dialog in.
+ * @property title the title of the alert dialog. Defaults to "Modelix Sync Plugin".
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class AlertNotifier(private val project: Project, private val title: String = "Modelix Sync Plugin") : INotifier {
 
     override fun error(message: String, responseListener: UserResponseListener?) {
@@ -22,6 +31,13 @@ class AlertNotifier(private val project: Project, private val title: String = "M
         showAlert(ModelixInfoDialog(project, title, message), responseListener)
     }
 
+    /**
+     * Show the alert dialog to the user. If the user accepts the dialog then response listener is called with
+     * [UserResponse.USER_ACCEPTED], otherwise with [UserResponse.USER_REJECTED].
+     *
+     * @param alert the alert dialog to show to the user
+     * @param responseListener the listener that waits for the user's reaction / response.
+     */
     private fun showAlert(alert: ModelixDialog, responseListener: UserResponseListener?) {
         val isAccepted = alert.showAndGet()
         val response = if (isAccepted) {
@@ -34,7 +50,18 @@ class AlertNotifier(private val project: Project, private val title: String = "M
     }
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * Shows a dialog to the user.
+ *
+ * @param project the active [Project] in MPS to show the dialog in.
+ * @param title the title of the dialog.
+ * @param message the message to be shown in the dialog. The text is left-aligned and has the parameter color.
+ * @param color the color of the message.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 private abstract class ModelixDialog(project: Project, title: String, message: String, color: Color) :
     DialogWrapper(project) {
 
@@ -52,14 +79,47 @@ private abstract class ModelixDialog(project: Project, title: String, message: S
     override fun createCenterPanel(): JComponent? = null
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * Shows an error dialog to the user.
+ *
+ * @param project the active [Project] in MPS to show the dialog in.
+ * @param title the title of the dialog.
+ * @param message the message to be shown in the dialog. The text is left-aligned and has the
+ * [com.intellij.util.ui.JBUI.CurrentTheme.NotificationError.foregroundColor] color.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 private class ModelixErrorDialog(project: Project, title: String, message: String) :
     ModelixDialog(project, title, message, MessageType.ERROR.titleForeground)
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * Shows a warning dialog to the user.
+ *
+ * @param project the active [Project] in MPS to show the dialog in.
+ * @param title the title of the dialog.
+ * @param message the message to be shown in the dialog. The text is left-aligned and has the
+ * [com.intellij.util.ui.JBUI.CurrentTheme.NotificationWarning.foregroundColor] color.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 private class ModelixWarningDialog(project: Project, title: String, message: String) :
     ModelixDialog(project, title, message, MessageType.WARNING.titleForeground)
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * Shows an info dialog to the user.
+ *
+ * @param project the active [Project] in MPS to show the dialog in.
+ * @param title the title of the dialog.
+ * @param message the message to be shown in the dialog. The text is left-aligned and has the
+ * [com.intellij.util.ui.JBUI.CurrentTheme.NotificationInfo.foregroundColor] color.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 private class ModelixInfoDialog(project: Project, title: String, message: String) :
     ModelixDialog(project, title, message, MessageType.INFO.titleForeground)
