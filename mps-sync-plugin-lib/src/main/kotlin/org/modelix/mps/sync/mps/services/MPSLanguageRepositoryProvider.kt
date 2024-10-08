@@ -7,6 +7,10 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 
+/**
+ * Registers an [MPSLanguageRepository] in the [ILanguageRepository] so that modelix can resolve the Concepts of the
+ * [org.modelix.model.api.INode]s based on their Concept UID to Concepts in MPS.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -14,6 +18,9 @@ import org.modelix.model.mpsadapters.MPSLanguageRepository
 @Service(Service.Level.APP)
 class MPSLanguageRepositoryProvider {
 
+    /**
+     * The [ILanguageRepository] that can resolve Concept UIDs of modelix nodes to Concepts in MPS.
+     */
     val mpsLanguageRepository: MPSLanguageRepository
 
     init {
