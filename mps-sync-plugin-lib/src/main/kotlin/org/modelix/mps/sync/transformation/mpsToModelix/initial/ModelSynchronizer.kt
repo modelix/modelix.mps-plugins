@@ -232,7 +232,7 @@ class ModelSynchronizer(
             return
         }
 
-        // warning: might be fragile, because we synchronize the ModelReference's fields by hand
+        // ⚠️ WARNING ⚠️: might be fragile, because we synchronize the ModelReference's fields by hand
         val cloudModelReference =
             cloudParentNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.ModelReference)
 
@@ -263,7 +263,7 @@ class ModelSynchronizer(
             return
         }
 
-        // warning: might be fragile, because we synchronize the ModelReference's fields by hand
+        // ⚠️ WARNING ⚠️: might be fragile, because we synchronize the ModelReference's fields by hand
         val cloudModelReference =
             cloudParentNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.ModelReference)
 
@@ -298,7 +298,7 @@ class ModelSynchronizer(
 
             nodeMap.put(model, languageModuleReference, cloudLanguageDependency.nodeIdAsLong())
 
-            // warning: might be fragile, because we synchronize the properties by hand
+            // ⚠️ WARNING ⚠️: might be fragile, because we synchronize the properties by hand
             cloudLanguageDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
                 targetLanguageName,
@@ -342,7 +342,7 @@ class ModelSynchronizer(
 
             nodeMap.put(model, devKit, cloudDevKitDependency.nodeIdAsLong())
 
-            // warning: might be fragile, because we synchronize the properties by hand
+            // ⚠️ WARNING ⚠️: might be fragile, because we synchronize the properties by hand
             cloudDevKitDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
                 devKitName,
