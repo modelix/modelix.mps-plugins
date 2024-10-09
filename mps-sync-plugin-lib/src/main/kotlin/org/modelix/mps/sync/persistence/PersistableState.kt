@@ -27,17 +27,26 @@ import org.modelix.mps.sync.mps.util.toMpsProject
  * and recreating that state by calling load(). Note that currently the bindings of the state will be added during
  * load(), but not included bindings will be disconnected.
  *
- * States will be automatically saved when a project is closed, and automatically loaded, when that project is
- * reopened. Technically, it should also be possible to create a state yourself in order to load it, although this
- * is not what they were made for.
+ * A [PersistableState] will be automatically create when a project is closed, and automatically loaded, when that
+ * project is reopened [1]. Technically, it should also be possible to create a state yourself in order to load it,
+ * although this is not what they were made for.
  *
- * WARNING:
+ * [1] At least if you use the [org.modelix.mps.sync.plugin.configuration.SyncPluginState] class. Otherwise, you have
+ * to take care of registering an event listener for the project open and close events. Alternatively, you can create
+ * an intelliJ / MPS Service and bind it to the project by adding the following annotation to the class, and accessing
+ * the class somewhere in your code:
+ *      - Annotation: @Service(Service.Level.PROJECT)
+ *      - Access example: project.service<YourClass>() // where project is a [com.intellij.openapi.project.Project]
+ *
+ * ⚠️ WARNING ⚠️:
  * About the State class:
  * - do not make it an inner class, otherwise deserialization will fail with an exception
+ *
  * About the State's fields:
- * - Mutable collections will not be persisted!!!
- * - Maps and Collections will only be persisted 2 layers deep (List<List<String>> works, but List<List<List<String>>> not)
- * - Pairs will not be persisted
+ *   - Mutable collections will not be persisted!!!
+ *   - Maps and Collections will only be persisted 2 layers deep: List<List<String>> works,
+ *     but List<List<List<String>>> does not
+ *   - Pairs will not be persisted
  *
  * @property clientUrl the URL of the model server to which we were connected
  * @property repositoryId the ID of the modelix repository to which we were connected
@@ -63,11 +72,11 @@ data class PersistableState(
 
     /**
      * Initializes the [PersistableState]'s fields with values fetched from the internal state of the modelix sync lib.
-     * The method overrides the values of the [this]' fields.
+     * The method overrides the values of the this' fields.
      *
-     * @param project the opened [Project]
+     * @param project the opened [Project].
      *
-     * @return this with initialized fields, or the original state if [BranchRegistry.model] is null
+     * @return this with initialized fields, or the original state if [BranchRegistry.model] is null.
      */
     fun fetchState(project: Project): PersistableState {
         val serviceLocator = project.service<ServiceLocator>()
@@ -103,10 +112,10 @@ data class PersistableState(
      * 3. connects to the branch ([PersistableState.branchName])
      * 4. creates bindings for the synchronized modules ([PersistableState.moduleIds])
      *
-     * @param syncService the interface to the modelix sync lib to restore its state
-     * @param project the opened [Project]
+     * @param syncService the interface to the modelix sync lib to restore its state.
+     * @param project the opened [Project].
      *
-     * @return some context statistics about the restored state
+     * @return some context statistics about the restored state.
      */
     fun restoreState(syncService: IRebindModulesSyncService, project: Project): RestoredStateContext? {
         var client: ModelClientV2? = null
@@ -186,9 +195,9 @@ data class PersistableState(
 /**
  * Some context after the [PersistableState] has restored the sync plugin's internal state.
  *
- * @property modelClient the client that is connected to the model server
- * @property branchReference the branch in the repository to which we are connected
- * @property modules the MPS modules for which we established the bindings
+ * @property modelClient the client that is connected to the model server.
+ * @property branchReference the branch in the repository to which we are connected.
+ * @property modules the MPS modules for which we established the bindings.
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
