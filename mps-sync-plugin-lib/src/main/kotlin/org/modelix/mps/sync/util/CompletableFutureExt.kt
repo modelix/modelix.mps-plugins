@@ -19,7 +19,19 @@ package org.modelix.mps.sync.util
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.util.concurrent.CompletableFuture
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * An extension method to glue / bind two [CompletableFuture]s together. If this [CompletableFuture] future completes,
+ * then [other] will also complete with the same result. If this [CompletableFuture] fails with a [Throwable], then
+ * [other] will fail with the same [Throwable].
+ *
+ * @param other the other [CompletableFuture] to which we glue this [CompletableFuture].
+ *
+ * @return this.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 fun CompletableFuture<Any?>.bindTo(other: CompletableFuture<Any?>): CompletableFuture<Any?> {
     this.handle { result, throwable ->
         if (throwable != null) {
@@ -31,7 +43,15 @@ fun CompletableFuture<Any?>.bindTo(other: CompletableFuture<Any?>): CompletableF
     return this
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * Completes this with null.
+ *
+ * @return this.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 fun CompletableFuture<Any?>.completeWithDefault(): CompletableFuture<Any?> {
     this.complete(null)
     return this
