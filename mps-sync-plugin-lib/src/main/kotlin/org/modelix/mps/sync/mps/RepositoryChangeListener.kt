@@ -26,6 +26,13 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 
+/**
+ * A change listener to listen to [org.jetbrains.mps.openapi.module.SRepository] events that are relevant for the
+ * MPS <-> modelix model server synchronization.
+ *
+ * @param branch the branch we are conencted to on the model server.
+ * @param serviceLocator a collector class to simplify injecting the commonly used services in the sync plugin.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -42,8 +49,19 @@ class RepositoryChangeListener(branch: IBranch, serviceLocator: ServiceLocator) 
      */
     private val bindingsRegistry = serviceLocator.bindingsRegistry
 
+    /**
+     * Synchronizes an [org.jetbrains.mps.openapi.model.SNode] to an [org.modelix.model.api.INode] on the model server.
+     */
     private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 
+    /**
+     * Listens to the module removed event of MPS. If a module is removed, and the module is synchronized to the model
+     * server, then we have to removed from the model server and deactivate its binding.
+     *
+     * @param module a reference to the module that is removed.
+     *
+     * @see [SRepositoryListenerBase.moduleRemoved].
+     */
     override fun moduleRemoved(module: SModuleReference) {
         if (projectLifecycleTracker.projectClosing) {
             return
