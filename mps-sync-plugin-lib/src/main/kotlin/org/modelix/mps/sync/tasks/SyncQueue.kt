@@ -20,6 +20,7 @@ import com.intellij.openapi.application.ApplicationManager
 import jetbrains.mps.project.MPSProject
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.model.api.IBranch
 import org.modelix.mps.sync.modelix.branch.BranchRegistry
 import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.services.InjectableService
@@ -29,6 +30,7 @@ import org.modelix.mps.sync.transformation.exceptions.ModelixToMpsSynchronizatio
 import org.modelix.mps.sync.transformation.exceptions.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.transformation.exceptions.SynchronizationException
 import org.modelix.mps.sync.transformation.exceptions.pleaseCheckLogs
+import org.modelix.mps.sync.transformation.modelixToMps.incremental.ModelixTreeChangeVisitor
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -44,9 +46,23 @@ class SyncQueue : InjectableService {
      */
     private val logger = KotlinLogging.logger {}
 
-    private val threadPool = ApplicationManager.getApplication().getService(SharedThreadPool::class.java).threadPool
+    /**
+     * An application-level shared fixed size thread pool. We run the [tasks] in this thread pool.
+     */
+    private val threadPool = ApplicationManager.getApplication().getService(SharedThreadPool::class.java)
 
+    /**
+     * Keeps track of the active [SyncDirection] for each [Thread] that is running a [SyncTask]. Per [Thread] only one
+     * [SyncTask] is allowed and each [SyncTask] has only one [SyncDirection].
+     *
+     * This tracking is necessary, because we want to avoid the table tennis ("ping-pong") effect between modelix model
+     * server and MPS if a change on either side occurs. For details see [enqueue].
+     */
     private val activeSyncThreadsWithSyncDirection = ConcurrentHashMap<Thread, SyncDirection>()
+
+    /**
+     * The queue of [SyncTask]s we want to execute.
+     */
     private val tasks = ConcurrentLinkedQueue<SyncTask>()
 
     /**
@@ -55,6 +71,9 @@ class SyncQueue : InjectableService {
     private val notifier: WrappedNotifier
         get() = serviceLocator.wrappedNotifier
 
+    /**
+     * A registry to store the modelix [IBranch] we are connected to.
+     */
     private val branchRegistry: BranchRegistry
         get() = serviceLocator.branchRegistry
 
@@ -79,6 +98,15 @@ class SyncQueue : InjectableService {
         this.serviceLocator = serviceLocator
     }
 
+    /**
+     * Creates a [SyncTask] from the parameters and adds it to the [tasks] queue.
+     *
+     * @param requiredLocks the locks used by the [SyncTask].
+     * @param syncDirection the synchronization direction of the [SyncTask].
+     * @param action the action to do in the [SyncTask].
+     *
+     * @return a [ContinuableSyncTask] so that we can chain [SyncTask]s after each other.
+     */
     fun enqueue(
         requiredLocks: LinkedHashSet<SyncLock>,
         syncDirection: SyncDirection,
@@ -89,17 +117,20 @@ class SyncQueue : InjectableService {
         return ContinuableSyncTask(task, this, futuresWaitQueue)
     }
 
+    /**
+     * Enqueues the [task] into the [tasks] queue.
+     *
+     * The method does not enqueue the Task if it is initiated on a Thread that is running a synchronization and the
+     * sync direction is the opposite of what is running on the thread already. This might be a symptom of a
+     * "table tennis" (ping-pong) effect in which a change in MPS triggers a change in modelix which triggers a change
+     * in MPS again via the *ChangeListener and [ModelixTreeChangeVisitor] chains registered in MPS and in modelix,
+     * respectively.
+     *
+     * Because the SyncTasks are executed on separate threads by the ExecutorService (see SyncTaskExecutors),
+     * there is a very little chance of missing an intended change on other side. With other words: there is very
+     * little chance that it makes sense that on the same thread two SyncTasks occur.
+     */
     fun enqueue(task: SyncTask) {
-        /*
-         * Do not schedule Task if it is initiated on a Thread that is  running a synchronization and the sync direction
-         * is the opposite of what is running on the thread already. This might be a symptom of a "table tennis"
-         * (ping-pong) effect in which a change in MPS triggers a change in Modelix which triggers a change in MPS again
-         * via the *ChangeListener and ModelixTreeChangeVisitor chains registered in MPS and in Modelix, respectively.
-         *
-         * Because the SyncTasks are executed on separate threads by the ExecutorService (see SyncTaskExecutors),
-         * there is a very little chance of missing an intended change on other side. With other words: there is very
-         * little chance that it makes sense that on the same thread two SyncTasks occur.
-         */
         val taskSyncDirection = task.syncDirection
         val runningSyncDirection = activeSyncThreadsWithSyncDirection[Thread.currentThread()]
 
@@ -114,6 +145,11 @@ class SyncQueue : InjectableService {
         }
     }
 
+    /**
+     * Enqueues the [task] into the [tasks] queue and schedules its flush so the [task] will get executed.
+     *
+     * @param task the [SyncTask] to enqueue and execute.
+     */
     private fun enqueueAndFlush(task: SyncTask) {
         tasks.add(task)
         try {
@@ -128,6 +164,9 @@ class SyncQueue : InjectableService {
         }
     }
 
+    /**
+     * Schedules a flush on the [tasks] queue.
+     */
     private fun scheduleFlush() {
         threadPool.submit {
             try {
@@ -140,6 +179,9 @@ class SyncQueue : InjectableService {
         }
     }
 
+    /**
+     * Flushes the [tasks] queue. I.e. polls the queue and runs the task until there is no task left.
+     */
     private fun doFlush() {
         while (!tasks.isEmpty()) {
             val task = tasks.poll() ?: return
@@ -147,6 +189,12 @@ class SyncQueue : InjectableService {
         }
     }
 
+    /**
+     * Runs the [task] with the required synchronization [locks].
+     *
+     * @param locks the synchronization locks to acquire when running the [task].
+     * @param task the task to run.
+     */
     private fun runWithLocks(locks: LinkedHashSet<SyncLock>, task: SyncTask) {
         val taskResult = task.result
 
@@ -194,6 +242,12 @@ class SyncQueue : InjectableService {
         }
     }
 
+    /**
+     * Runs the [runnable] with the given [lock].
+     *
+     * @param lock the lock to acquire before running the [runnable].
+     * @param runnable the action to run with the lock.
+     */
     private fun runWithLock(lock: SyncLock, runnable: () -> Unit) {
         when (lock) {
             SyncLock.MPS_WRITE -> mpsProject.modelAccess.executeCommandInEDT(runnable)
@@ -204,6 +258,12 @@ class SyncQueue : InjectableService {
         }
     }
 
+    /**
+     * @param error the error to wrap into the [SynchronizationException]
+     *
+     * @return [SynchronizationException] if the first item of the stack trace inside the [error] is a class from the
+     * "mpsToModelix" or "modelixToMps" packages. Otherwise, it returns null.
+     */
     private fun wrapErrorIntoSynchronizationException(error: Throwable): SynchronizationException? {
         if (error is SynchronizationException) {
             return error
@@ -220,8 +280,19 @@ class SyncQueue : InjectableService {
         }
     }
 
+    /**
+     * @throws IllegalStateException if the branch is null.
+     *
+     * @see [BranchRegistry.getBranch].
+     */
+    @Throws(IllegalStateException::class)
     private fun getModelixBranch() = branchRegistry.getBranch() ?: throw IllegalStateException("Branch is null.")
 }
 
-// List.headTail does not work in some MPS versions (e.g. 2020.3.6), therefore we reimplemented the method
+/**
+ * List.headTail does not work in some MPS versions (e.g. 2020.3.6), therefore we reimplemented the method.
+ *
+ * @return a [Pair] whose first element is the first item of the [Iterable], the second item is the rest of the
+ * [Iterable].
+ */
 private fun <T> Iterable<T>.customHeadTail(): Pair<T, List<T>> = this.first() to this.drop(1)

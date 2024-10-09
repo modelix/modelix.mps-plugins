@@ -29,6 +29,16 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.stream.Collectors
 import java.util.stream.Stream
 
+/**
+ * A helper class that lets you build asynchronous fork-join like structures, where each fork (predecessor) is
+ * represented by a [CompletableFuture] for which the join is waiting. The join (continuation) is also represented
+ * by a [CompletableFuture]. See [run] for details about how the join is waiting for the completion of the predecessors,
+ * and what happens to it depending on the result of the predecessors.
+ *
+ * This class is strongly related to the execution of [SyncTask] and [ContinuableSyncTask] classes, because it offers
+ * an asynchronous way to wait for the results of other tasks, without blocking the current thread and holding too many
+ * locks, let them be MPS read/write locks or read/write modelix transactions. Therefore, it avoids deadlocks too.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -40,8 +50,25 @@ class FuturesWaitQueue : Runnable, InjectableService {
      */
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * The queue of continuations to be processed.
+     *
+     * @see [FutureWithPredecessors].
+     */
     private val continuations = LinkedBlockingQueue<FutureWithPredecessors>()
+
+    /**
+     * The thread pool on which this object (Runnable) is running.
+     *
+     * Alternatively, the class could have inherited from [Thread] and we could use its [Thread.start] and
+     * [Thread.interrupt] methods to start and stop the execution.
+     */
     private val threadPool = Executors.newSingleThreadExecutor()
+
+    /**
+     * An object to wait for. It is used so the [run] method does not quit, neither is the CPU "burning" in an endless
+     * while(true) loop, if [continuations] is empty.
+     */
     private val pauseObject = Object()
 
     /**
@@ -55,6 +82,20 @@ class FuturesWaitQueue : Runnable, InjectableService {
         threadPool.submit(this)
     }
 
+    /**
+     * Adds a new continuation with several predecessors to the queue. If the predecessors complete (abort) then the
+     * continuation completes (aborts, respectively).
+     *
+     * @param continuation the [CompletableFuture] to continue with if the predecessors finished.
+     * @param predecessors the [CompletableFuture]s for which we are waiting for.
+     * @param fillContinuation if true, then the continuation will be completed by the result of the predecessors. See
+     * the collectResults parameter about how we compact the results if there is more than one predecessor.
+     * @param collectResults if true and there is more than one predecessor, then their results will be put in a List,
+     * and this List will complete the continuation. Otherwise, we will use the result of the first predecessor to
+     * complete the continuation.
+     *
+     * @see [run] for details.
+     */
     fun add(
         continuation: CompletableFuture<Any?>,
         predecessors: Set<CompletableFuture<Any?>>,
@@ -83,6 +124,33 @@ class FuturesWaitQueue : Runnable, InjectableService {
         threadPool.shutdownNow()
     }
 
+    /**
+     * Until interrupted, it goes through each item of the [continuations] queue. It takes the first item and checks
+     * the state of the predecessor [CompletableFuture]s:
+     *
+     *   - if any of them failed (completed exceptionally), then it fails the continuation with the same [Throwable] as
+     *   the first predecessor that failed.
+     *
+     *   - if any of them was cancelled, then it cancels the continuation too.
+     *
+     *   - if all of them completed without exception, then:
+     *
+     *       - it unwraps the predecessors. Those predecessors whose results is a [CompletableFuture] will be replaced
+     *       by their results. Those predecessors whose results are not a [CompletableFuture] will be kept as is. This
+     *       new construct will be put back to the end of the [continuations] queue with the same continuation as
+     *       before. With other words: we recursively unwrap the results until we find a non-[CompletableFuture] result.
+     *
+     *       - if the results of all predecessors are not [CompletableFuture]s, then if we have to use the results of
+     *       the predecessors ([FillableFuture.shallBeFilled] is true), then we complete the continuation as follows.
+     *       If we have to collect all results of the predecessors ([FillableFuture.shallCollectResults] is true), then
+     *       these results will be put in a List and this List will complete the continuation. Otherwise, we will take
+     *       the result of the first predecessor and complete the conntinuation with this value.
+     *
+     *       - if we do not have to use the results of the predecessors, then we complete the continuation with null
+     *
+     * If the queue's executor thread gets interrupted or any Exception occurs while processing the queue, then we
+     * complete all continuations exceptionally with the Throwable that occurred.
+     */
     override fun run() {
         val executorThread = Thread.currentThread()
         try {
@@ -96,7 +164,7 @@ class FuturesWaitQueue : Runnable, InjectableService {
                     val predecessors = futureWithPredecessors.predecessors
 
                     val fillableFuture = futureWithPredecessors.future
-                    val continuation = fillableFuture.future
+                    val continuation = fillableFuture.continuation
 
                     val failedPredecessor =
                         predecessors.firstOrNull { predecessor -> predecessor.isCompletedExceptionally }
@@ -172,16 +240,22 @@ class FuturesWaitQueue : Runnable, InjectableService {
                 val message = "${javaClass.simpleName} is shutting down, because of an Exception. Cause: ${t.message}"
                 notifier.notifyAndLogError(message, t, logger)
             }
-            continuations.forEach { it.future.future.completeExceptionally(t) }
+            continuations.forEach { it.future.continuation.completeExceptionally(t) }
         }
     }
 
+    /**
+     * Notifies the thread if it is waiting for the [pauseObject], so that the [continuations] can be processed.
+     */
     private fun notifyThread() {
         synchronized(pauseObject) {
             pauseObject.notifyAll()
         }
     }
 
+    /**
+     * Enters the monitor of [pauseObject] to wait for a [notifyThread] call.
+     */
     private fun waitForNotification() {
         synchronized(pauseObject) {
             pauseObject.wait()
@@ -189,18 +263,32 @@ class FuturesWaitQueue : Runnable, InjectableService {
     }
 }
 
+/**
+ * A data class to keep the predecessors ("forks") and the continuation ("join") of a computation chain together.
+ *
+ * @param predecessors the previous computations for whose results we are waiting for.
+ * @param future the continuation computation we want to do after the predecessors finished.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
 data class FutureWithPredecessors(val predecessors: Set<CompletableFuture<Any?>>, val future: FillableFuture)
 
+/**
+ * The continuation with some control parameters.
+ *
+ * @param continuation the continuation computation we want to do.
+ * @param shallBeFilled if true, then the results of the predecessors will complete the continuation.
+ * @param shallCollectResults if true, then the results of the predecessors will be put in a List, otherwise we will
+ * use the result of the first predecessor to complete the continuation.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
 data class FillableFuture(
-    val future: CompletableFuture<Any?>,
+    val continuation: CompletableFuture<Any?>,
     val shallBeFilled: Boolean = false,
     val shallCollectResults: Boolean = false,
 )

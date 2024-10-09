@@ -61,6 +61,9 @@ class SyncServiceImpl : ISyncService, InjectableService {
     private val bindingsRegistry: BindingsRegistry
         get() = serviceLocator.bindingsRegistry
 
+    /**
+     * A registry to store the modelix [IBranch] we are connected to.
+     */
     private val branchRegistry: BranchRegistry
         get() = serviceLocator.branchRegistry
 

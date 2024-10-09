@@ -17,8 +17,20 @@
 package org.modelix.mps.sync.tasks
 
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.tasks.SyncDirection.MODELIX_TO_MPS
+import org.modelix.mps.sync.tasks.SyncDirection.MPS_TO_MODELIX
+import org.modelix.mps.sync.tasks.SyncDirection.NONE
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * Specifies the direction of the [SyncTask]:
+ *   - [MODELIX_TO_MPS]: a synchronization task from the model server to MPS.
+ *   - [MPS_TO_MODELIX]: a synchronization task from MPS to the model server.
+ *   - [NONE]: a synchronization task that does something else.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 enum class SyncDirection {
     MODELIX_TO_MPS,
     MPS_TO_MODELIX,

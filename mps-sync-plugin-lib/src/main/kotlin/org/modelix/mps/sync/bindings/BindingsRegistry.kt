@@ -240,9 +240,9 @@ data class BindingState(
 
 /**
  * The possible lifecycle states of an [IBinding]:
- *  - ADD: the [IBinding] is added to the [BindingsRegistry]
- *  - REMOVE: the [IBinding] is removed from the [BindingsRegistry]
- *  - ACTIVATE: the [IBinding] is activated, i.e. its [IBinding.activate] has been called
+ *   - [ADD]: the [IBinding] is added to the [BindingsRegistry]
+ *   - [REMOVE]: the [IBinding] is removed from the [BindingsRegistry]
+ *   - [ACTIVATE]: the [IBinding] is activated, i.e. its [IBinding.activate] has been called
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
