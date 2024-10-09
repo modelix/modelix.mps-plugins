@@ -7,9 +7,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
+import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.lazy.BranchReference
@@ -40,26 +43,47 @@ import java.net.URL
 )
 class SyncServiceImpl : ISyncService, InjectableService {
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
     private val networkDispatcher = Dispatchers.IO // rather IO-intensive tasks
     private val cpuDispatcher = Dispatchers.Default // rather CPU-intensive tasks
 
+    /**
+     * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
+     */
     private val notifier: WrappedNotifier
         get() = serviceLocator.wrappedNotifier
 
+    /**
+     * The registry to store the [IBinding]s.
+     */
     private val bindingsRegistry: BindingsRegistry
         get() = serviceLocator.bindingsRegistry
 
+    /**
+     * A registry to store the modelix [IBranch] we are connected to.
+     */
     private val branchRegistry: BranchRegistry
         get() = serviceLocator.branchRegistry
 
+    /**
+     * The active [SRepository] to access the [SModel]s and [SModule]s in MPS.
+     */
     private val mpsRepository: SRepository
         get() = serviceLocator.mpsRepository
 
+    /**
+     * The [ILanguageRepository] that can resolve Concept UIDs of modelix nodes to Concepts in MPS.
+     */
     private val languageRepository: MPSLanguageRepository
         get() = serviceLocator.languageRepository
 
+    /**
+     * A collector class to simplify injecting the commonly used services in the sync plugin.
+     */
     private lateinit var serviceLocator: ServiceLocator
 
     override fun initService(serviceLocator: ServiceLocator) {
@@ -99,7 +123,7 @@ class SyncServiceImpl : ISyncService, InjectableService {
     override fun getActiveBranch(): IBranch? = branchRegistry.getBranch()
 
     /**
-     * WARNING: this is a long-running blocking call.
+     * ⚠️ WARNING ⚠️: this is a long-running blocking call.
      */
     override fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch =
         runBlocking(networkDispatcher) {
@@ -129,7 +153,7 @@ class SyncServiceImpl : ISyncService, InjectableService {
     }
 
     /**
-     * WARNING:
+     * ⚠️ WARNING ⚠️:
      * 1. This is a long-running blocking call.
      * 2. Do not call this method from the main / EDT Thread, otherwise it will not be able to write to MPS!!!
      */
@@ -152,7 +176,7 @@ class SyncServiceImpl : ISyncService, InjectableService {
     }
 
     /**
-     * WARNING: this is a long-running blocking call.
+     * ⚠️ WARNING ⚠️: this is a long-running blocking call.
      */
     override fun rebindModules(
         client: ModelClientV2,
@@ -208,12 +232,12 @@ class SyncServiceImpl : ISyncService, InjectableService {
     }
 
     /**
-     * WARNING: this is a long-running blocking call.
+     * ⚠️ WARNING ⚠️: this is a long-running blocking call.
      */
     override fun bindModuleFromMps(module: AbstractModule, branch: IBranch): Iterable<IBinding> {
         logger.info { "Binding Module '${module.moduleName}' to the server." }
 
-        // warning: blocking call
+        // ⚠️ WARNING ⚠️: blocking call
         @Suppress("UNCHECKED_CAST")
         val bindings = ModuleSynchronizer(branch, serviceLocator)
             .addModule(module, true)
@@ -237,15 +261,15 @@ class SyncServiceImpl : ISyncService, InjectableService {
     }
 
     /**
-     * WARNING: this is a long-running blocking call.
+     * ⚠️ WARNING ⚠️: this is a long-running blocking call.
      */
     override fun bindModelFromMps(model: SModelBase, branch: IBranch): IBinding {
         logger.info { "Binding Model '${model.name}' to the server." }
 
         val synchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)
-        // synchronize model. Warning: blocking call
+        // synchronize model. ⚠️ WARNING ⚠️: blocking call
         val binding = synchronizer.addModel(model).getResult().get() as IBinding
-        // wait until the model imports are synced. Warning: blocking call
+        // wait until the model imports are synced. ⚠️ WARNING ⚠️: blocking call
         synchronizer.resolveModelImportsInTask().getResult().get()
 
         if (binding !is EmptyBinding) {

@@ -19,12 +19,15 @@ package org.modelix.mps.sync.transformation.modelixToMps.transformers
 import jetbrains.mps.model.ModelDeleteHelper
 import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
+import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.project.structure.modules.SolutionDescriptor
 import mu.KotlinLogging
+import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
+import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
@@ -69,15 +72,44 @@ class ModuleTransformer(
         }
     }
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * The lookup map (internal cache) between the MPS elements and the corresponding modelix Nodes.
+     */
     private val nodeMap = serviceLocator.nodeMap
+
+    /**
+     * The task queue of the sync plugin.
+     */
     private val syncQueue = serviceLocator.syncQueue
+
+    /**
+     * The Futures queue of the sync plugin.
+     */
     private val futuresWaitQueue = serviceLocator.futuresWaitQueue
 
+    /**
+     * The registry to store the [IBinding]s.
+     */
     private val bindingsRegistry = serviceLocator.bindingsRegistry
+
+    /**
+     * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
+     */
     private val notifier = serviceLocator.wrappedNotifier
+
+    /**
+     * The [MPSProject] that is open in the active MPS window.
+     */
     private val mpsProject = serviceLocator.mpsProject
+
+    /**
+     * The active [SRepository] to access the [SModel]s and [SModule]s in MPS.
+     */
     private val mpsRepository = serviceLocator.mpsRepository
 
     private val solutionProducer = SolutionProducer(mpsProject)

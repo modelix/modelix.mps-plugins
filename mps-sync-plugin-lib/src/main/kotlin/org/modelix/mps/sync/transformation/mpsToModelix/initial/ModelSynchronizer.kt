@@ -21,6 +21,7 @@ import mu.KotlinLogging
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
+import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
@@ -54,15 +55,39 @@ class ModelSynchronizer(
     postponeReferenceResolution: Boolean = false,
 ) {
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * The lookup map (internal cache) between the MPS elements and the corresponding modelix Nodes.
+     */
     private val nodeMap = serviceLocator.nodeMap
+
+    /**
+     * The task queue of the sync plugin.
+     */
     private val syncQueue = serviceLocator.syncQueue
+
+    /**
+     * The Futures queue of the sync plugin.
+     */
     private val futuresWaitQueue = serviceLocator.futuresWaitQueue
 
+    /**
+     * The registry to store the [IBinding]s.
+     */
     private val bindingsRegistry = serviceLocator.bindingsRegistry
+
+    /**
+     * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
+     */
     private val notifier = serviceLocator.wrappedNotifier
 
+    /**
+     * Synchronizes an [SNode] to an [INode] on the model server.
+     */
     private val nodeSynchronizer = if (postponeReferenceResolution) {
         NodeSynchronizer(branch, synchronizedLinkedHashSet(), serviceLocator)
     } else {
@@ -208,7 +233,7 @@ class ModelSynchronizer(
             return
         }
 
-        // warning: might be fragile, because we synchronize the ModelReference's fields by hand
+        // ⚠️ WARNING ⚠️: might be fragile, because we synchronize the ModelReference's fields by hand
         val cloudModelReference =
             cloudParentNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.ModelReference)
 
@@ -239,7 +264,7 @@ class ModelSynchronizer(
             return
         }
 
-        // warning: might be fragile, because we synchronize the ModelReference's fields by hand
+        // ⚠️ WARNING ⚠️: might be fragile, because we synchronize the ModelReference's fields by hand
         val cloudModelReference =
             cloudParentNode.addNewChild(childLink, -1, BuiltinLanguages.MPSRepositoryConcepts.ModelReference)
 
@@ -274,7 +299,7 @@ class ModelSynchronizer(
 
             nodeMap.put(model, languageModuleReference, cloudLanguageDependency.nodeIdAsLong())
 
-            // warning: might be fragile, because we synchronize the properties by hand
+            // ⚠️ WARNING ⚠️: might be fragile, because we synchronize the properties by hand
             cloudLanguageDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
                 targetLanguageName,
@@ -318,7 +343,7 @@ class ModelSynchronizer(
 
             nodeMap.put(model, devKit, cloudDevKitDependency.nodeIdAsLong())
 
-            // warning: might be fragile, because we synchronize the properties by hand
+            // ⚠️ WARNING ⚠️: might be fragile, because we synchronize the properties by hand
             cloudDevKitDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name,
                 devKitName,

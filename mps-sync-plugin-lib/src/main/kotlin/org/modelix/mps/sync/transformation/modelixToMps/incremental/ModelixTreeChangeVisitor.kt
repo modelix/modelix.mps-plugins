@@ -18,6 +18,9 @@ package org.modelix.mps.sync.transformation.modelixToMps.incremental
 
 import jetbrains.mps.project.AbstractModule
 import mu.KotlinLogging
+import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.module.SModule
+import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITreeChangeVisitorEx
@@ -53,11 +56,29 @@ class ModelixTreeChangeVisitor(
     languageRepository: MPSLanguageRepository,
 ) : ITreeChangeVisitorEx {
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * The lookup map (internal cache) between the MPS elements and the corresponding modelix Nodes.
+     */
     private val nodeMap = serviceLocator.nodeMap
+
+    /**
+     * The task queue of the sync plugin.
+     */
     private val syncQueue = serviceLocator.syncQueue
+
+    /**
+     * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
+     */
     private val notifier = serviceLocator.wrappedNotifier
+
+    /**
+     * The active [SRepository] to access the [SModel]s and [SModule]s in MPS.
+     */
     private val mpsRepository = serviceLocator.mpsRepository
 
     private val nodeTransformer = NodeTransformer(branch, serviceLocator, languageRepository)
@@ -204,7 +225,8 @@ class ModelixTreeChangeVisitor(
                 return@enqueue null
             }
 
-            val message = "A removal case for Node ($nodeId) was missed. It can be ignored, if the Node's parent is deleted."
+            val message =
+                "A removal case for Node ($nodeId) was missed. It can be ignored, if the Node's parent is deleted."
             notifier.notifyAndLogWarning(message, logger)
 
             null

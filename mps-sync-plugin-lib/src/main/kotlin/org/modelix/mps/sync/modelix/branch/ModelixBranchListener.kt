@@ -24,6 +24,13 @@ import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.transformation.modelixToMps.incremental.ModelixTreeChangeVisitor
 
+/**
+ * The change listener that is called by modelix if the content of the branch changes on the model server.
+ *
+ * @param branch the branch whose content we are observing.
+ * @param serviceLocator a collector class to simplify injecting the commonly used services in the sync plugin.
+ * @param languageRepository the [MPSLanguageRepository] to be used to resolve Concepts.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -34,6 +41,10 @@ class ModelixBranchListener(
     languageRepository: MPSLanguageRepository,
 ) : IBranchListener {
 
+    /**
+     * The visitor that is called if there is a difference between the remote version of the branch (that is on the
+     * model server) and the local version (that is running in MPS).
+     */
     private val visitor = ModelixTreeChangeVisitor(branch, serviceLocator, languageRepository)
 
     override fun treeChanged(oldTree: ITree?, newTree: ITree) {

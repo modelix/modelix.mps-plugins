@@ -22,8 +22,10 @@ import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.Solution
 import mu.KotlinLogging
+import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SDependency
 import org.jetbrains.mps.openapi.module.SModule
+import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ChildLinkFromName
@@ -54,16 +56,44 @@ import java.util.concurrent.CompletableFuture
 )
 class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator: ServiceLocator) {
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * The lookup map (internal cache) between the MPS elements and the corresponding modelix Nodes.
+     */
     private val nodeMap = serviceLocator.nodeMap
+
+    /**
+     * The task queue of the sync plugin.
+     */
     private val syncQueue = serviceLocator.syncQueue
+
+    /**
+     * The Futures queue of the sync plugin.
+     */
     private val futuresWaitQueue = serviceLocator.futuresWaitQueue
 
+    /**
+     * The registry to store the [IBinding]s.
+     */
     private val bindingsRegistry = serviceLocator.bindingsRegistry
+
+    /**
+     * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
+     */
     private val notifier = serviceLocator.wrappedNotifier
+
+    /**
+     * The active [SRepository] to access the [SModel]s and [SModule]s in MPS.
+     */
     private val mpsRepository = serviceLocator.mpsRepository
 
+    /**
+     * Synchronizes an [SModel] and its related elements (e.g. dependencies, imports) to [INode]s on the model server.
+     */
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator, true)
 
     fun addModule(
@@ -190,7 +220,7 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
 
             nodeMap.put(module, moduleReference, cloudDependency.nodeIdAsLong())
 
-            // warning: might be fragile, because we synchronize the ModuleDependency's properties by hand
+            // ⚠️ WARNING ⚠️: might be fragile, because we synchronize the ModuleDependency's properties by hand
             cloudDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport,
                 dependency.isReexport.toString(),

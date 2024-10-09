@@ -16,18 +16,21 @@
 
 package org.modelix.mps.sync.transformation.mpsToModelix.incremental
 
+import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.extapi.model.SModelDescriptorStub
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
+import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SDependency
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleListener
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
@@ -54,18 +57,54 @@ import java.util.concurrent.CompletableFuture
 )
 class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceLocator) : SModuleListener {
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * The lookup map (internal cache) between the MPS elements and the corresponding modelix Nodes.
+     */
     private val nodeMap = serviceLocator.nodeMap
+
+    /**
+     * The task queue of the sync plugin.
+     */
     private val syncQueue = serviceLocator.syncQueue
+
+    /**
+     * The Futures queue of the sync plugin.
+     */
     private val futuresWaitQueue = serviceLocator.futuresWaitQueue
 
+    /**
+     * The registry to store the [IBinding]s.
+     */
     private val bindingsRegistry = serviceLocator.bindingsRegistry
+
+    /**
+     * A notifier that can notify the user about certain messages in a nicer way than just simply logging the message.
+     */
     private val notifier = serviceLocator.wrappedNotifier
+
+    /**
+     * Tracks the active [Project]'s lifecycle.
+     */
     private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
 
+    /**
+     * Synchronizes an [SModule] and its related elements (e.g. dependencies, imports) to [INode]s on the model server.
+     */
     private val moduleSynchronizer = ModuleSynchronizer(branch, serviceLocator)
+
+    /**
+     * Synchronizes an [SModel] and its related elements (e.g. dependencies, imports) to [INode]s on the model server.
+     */
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)
+
+    /**
+     * Synchronizes an [SNode] to an [INode] on the model server.
+     */
     private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 
     private val moduleChangeSyncInProgress = synchronizedLinkedHashSet<SModule>()

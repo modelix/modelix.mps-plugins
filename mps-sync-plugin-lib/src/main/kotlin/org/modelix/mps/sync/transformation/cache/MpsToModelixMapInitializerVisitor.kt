@@ -29,6 +29,9 @@ class MpsToModelixMapInitializerVisitor(
     private val branch: IBranch,
 ) : IBranchVisitor {
 
+    /**
+     * Just a normal logger to log messages.
+     */
     private val logger = KotlinLogging.logger {}
 
     override suspend fun visitModule(node: INode) = runWithReadLocks {

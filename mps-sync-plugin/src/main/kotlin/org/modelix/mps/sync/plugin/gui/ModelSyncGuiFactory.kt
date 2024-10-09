@@ -85,6 +85,9 @@ class ModelSyncGuiFactory : ToolWindowFactory {
                 "By disconnecting, the synchronized modules and models will be removed locally."
         }
 
+        /**
+         * Just a normal logger to log messages.
+         */
         private val logger = KotlinLogging.logger {}
         private val mutex = Mutex()
         private val dispatcher = Dispatchers.Default

@@ -5,7 +5,12 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import org.modelix.kotlin.utils.UnstableModelixFeature
-import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency
+import org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency
+import org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Model
+import org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModelReference
+import org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Module
+import org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.getRootNode
@@ -30,7 +35,7 @@ class ITreeTraversal(val branch: IBranch) {
      * Calls the [visitor] to visit each node in the [branch] starting from the [IBranch.getRootNode]'s children until
      * the last node in the branch.
      *
-     * @param visitor the visitor that visits each node in the branch, starting from the root node's children
+     * @param visitor the visitor that visits each node in the branch, starting from the root node's children.
      */
     suspend fun visit(visitor: IBranchVisitor) {
         val childrenJobs = mutableListOf<Job>()
@@ -48,6 +53,13 @@ class ITreeTraversal(val branch: IBranch) {
         childrenJobs.joinAll()
     }
 
+    /**
+     * Calls the [visitor] to visit each node in the [branch] starting from the parameter [node] until the last node in
+     * the tree.
+     *
+     * @param node the node to start visiting the tree from.
+     * @param visitor the visitor that visits each node in the branch, starting from the root node's children.
+     */
     private suspend fun visit(node: INode, visitor: IBranchVisitor) {
         if (node.isModule()) {
             visitor.visitModule(node)
@@ -56,7 +68,7 @@ class ITreeTraversal(val branch: IBranch) {
             coroutineScope {
                 branch.runRead {
                     dependenciesJobs.addAll(
-                        node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies).map {
+                        node.getChildren(Module.dependencies).map {
                             launch {
                                 visitor.visitModuleDependency(node, it)
                             }
@@ -70,7 +82,7 @@ class ITreeTraversal(val branch: IBranch) {
             coroutineScope {
                 branch.runRead {
                     modelsJobs.addAll(
-                        node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models).map {
+                        node.getChildren(Module.models).map {
                             launch {
                                 visit(it, visitor)
                             }
@@ -86,7 +98,7 @@ class ITreeTraversal(val branch: IBranch) {
             coroutineScope {
                 branch.runRead {
                     modelImportJobs.addAll(
-                        node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports).map {
+                        node.getChildren(Model.modelImports).map {
                             launch {
                                 visitor.visitModelImport(node, it)
                             }
@@ -100,7 +112,7 @@ class ITreeTraversal(val branch: IBranch) {
             coroutineScope {
                 branch.runRead {
                     usedLanguagesJobs.addAll(
-                        node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages).map {
+                        node.getChildren(Model.usedLanguages).map {
                             launch {
                                 if (it.isDevKitDependency()) {
                                     // visit devkit dependency
@@ -125,7 +137,7 @@ class ITreeTraversal(val branch: IBranch) {
             coroutineScope {
                 branch.runRead {
                     rootNodesJobs.addAll(
-                        node.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes).map {
+                        node.getChildren(Model.rootNodes).map {
                             launch {
                                 visit(it, visitor)
                             }
@@ -159,63 +171,59 @@ class ITreeTraversal(val branch: IBranch) {
  * */
 interface IBranchVisitor {
     /**
-     * Visits a [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Module] node.
+     * Visits a [Module] node.
      *
-     * @param node the node to visit
+     * @param node the node to visit.
      */
     suspend fun visitModule(node: INode)
 
     /**
-     * Visits a [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Model] node.
+     * Visits a [Model] node.
      *
-     * @param node the node to visit
+     * @param node the node to visit.
      */
     suspend fun visitModel(node: INode)
 
     /**
      * Visits a general node.
      *
-     * @param node the node to visit
+     * @param node the node to visit.
      */
     suspend fun visitNode(node: INode)
 
     /**
-     * Visits a [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency] node.
+     * Visits a [ModuleDependency] node.
      *
-     * @param sourceModule the source [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Module] node from
-     * which the [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency] originates
+     * @param sourceModule the source [Module] node from which the [ModuleDependency] originates.
      *
-     * @param moduleDependency the node to visit
+     * @param moduleDependency the node to visit.
      */
     suspend fun visitModuleDependency(sourceModule: INode, moduleDependency: INode)
 
     /**
-     * Visits a [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency] node.
+     * Visits a [DevkitDependency] node.
      *
-     * @param sourceModel the source [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Model] node from
-     * which the [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency] originates
+     * @param sourceModel the source [Model] node from which the [DevkitDependency] originates.
      *
-     * @param devKitDependency the node to visit
+     * @param devKitDependency the node to visit.
      */
     suspend fun visitDevKitDependency(sourceModel: INode, devKitDependency: INode)
 
     /**
-     * Visits a [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency] node.
+     * Visits a [LanguageDependency] node.
      *
-     * @param sourceModel the source [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Model] node from
-     * which the [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency] originates
+     * @param sourceModel the source [Model] node from which the [LanguageDependency] originates.
      *
-     * @param languageDependency the node to visit
+     * @param languageDependency the node to visit.
      */
     suspend fun visitLanguageDependency(sourceModel: INode, languageDependency: INode)
 
     /**
-     * Visits a [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModelReference] node.
+     * Visits a [ModelReference] node.
      *
-     * @param sourceModel the source [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Model] node from
-     * which the [org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModelReference] originates
+     * @param sourceModel the source [Model] node from which the [ModelReference] originates.
      *
-     * @param modelImport the node to visit
+     * @param modelImport the node to visit.
      */
     suspend fun visitModelImport(sourceModel: INode, modelImport: INode)
 }

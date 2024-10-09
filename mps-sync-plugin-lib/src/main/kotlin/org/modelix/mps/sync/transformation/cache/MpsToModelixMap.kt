@@ -32,12 +32,10 @@ import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.synchronizedMap
 
 /**
- * WARNING:
+ * ⚠️ WARNING ⚠️:
  * - use with caution, otherwise this cache may cause memory leaks
  * - if you add a new Map as a field in the class, then please also add it to the [remove], [isMappedToMps],
  * [isMappedToModelix], [clear] methods below.
- * - if you want to persist the new field into a file, then add it to the [MpsToModelixMap.Serializer.serialize] and
- * [MpsToModelixMap.Serializer.deserialize] methods below.
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -66,9 +64,15 @@ class MpsToModelixMap : InjectableService {
     private val objectsRelatedToAModel = synchronizedMap<SModelReference, MutableSet<Any>>()
     private val objectsRelatedToAModule = synchronizedMap<SModuleReference, MutableSet<Any>>()
 
+    /**
+     * The active [SRepository] to access the [SModel]s and [SModule]s in MPS.
+     */
     private val mpsRepository: SRepository
         get() = serviceLocator.mpsRepository
 
+    /**
+     * A collector class to simplify injecting the commonly used services in the sync plugin.
+     */
     private lateinit var serviceLocator: ServiceLocator
 
     override fun initService(serviceLocator: ServiceLocator) {

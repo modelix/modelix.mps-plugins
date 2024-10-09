@@ -16,6 +16,7 @@
 
 package org.modelix.mps.sync.transformation.mpsToModelix.incremental
 
+import com.intellij.openapi.project.Project
 import jetbrains.mps.smodel.event.SModelChildEvent
 import jetbrains.mps.smodel.event.SModelDevKitEvent
 import jetbrains.mps.smodel.event.SModelImportEvent
@@ -27,9 +28,11 @@ import jetbrains.mps.smodel.event.SModelRenamedEvent
 import jetbrains.mps.smodel.event.SModelRootEvent
 import jetbrains.mps.smodel.loading.ModelLoadingState
 import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.tasks.SyncDirection
@@ -47,9 +50,19 @@ class ModelChangeListener(
     serviceLocator: ServiceLocator,
 ) : SModelListener {
 
+    /**
+     * Tracks the active [Project]'s lifecycle.
+     */
     private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
 
+    /**
+     * Synchronizes an [SModel] and its related elements (e.g. dependencies, imports) [INode]s on the model server.
+     */
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)
+
+    /**
+     * Synchronizes an [SNode] to an [INode] on the model server.
+     */
     private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 
     override fun importAdded(event: SModelImportEvent) {
