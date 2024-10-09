@@ -61,7 +61,7 @@ class SyncLockComparator : Comparator<SyncLock> {
      * @param left one of the locks to compare.
      * @param right the other lock to compare.
      *
-     * @return if positive, then "left" should be before "right". If negative, then "right" should be before "left". If
+     * @return if positive, then [left] should be before [right]. If negative, then [right] should be before [left]. If
      * zero then the order does not matter.
      */
     override fun compare(left: SyncLock, right: SyncLock) =

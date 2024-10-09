@@ -49,8 +49,8 @@ class BalloonNotifier(
         showNotification(message, NotificationType.INFORMATION, responseListener)
 
     /**
-     * Shows the balloon notification with the given severity. [UrlListenerToUserResponseAdapter] is used to call the
-     * response listener, if there is a hyperlink in the message, and the user clicked on it.
+     * Shows the balloon notification with the given severity ([notificationType]). [UrlListenerToUserResponseAdapter]
+     * is used to call the [responseListener], if there is a hyperlink in the [message], and the user clicked on it.
      *
      * @param message the message to be shown in the balloon.
      * @param notificationType the type of the notification.

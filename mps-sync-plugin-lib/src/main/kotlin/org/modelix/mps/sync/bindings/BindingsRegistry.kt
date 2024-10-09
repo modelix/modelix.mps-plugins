@@ -22,6 +22,9 @@ import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
+import org.modelix.mps.sync.bindings.BindingLifecycleState.ACTIVATE
+import org.modelix.mps.sync.bindings.BindingLifecycleState.ADD
+import org.modelix.mps.sync.bindings.BindingLifecycleState.REMOVE
 import org.modelix.mps.sync.mps.services.InjectableService
 import org.modelix.mps.sync.util.completeWithDefault
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
@@ -61,7 +64,8 @@ class BindingsRegistry : InjectableService {
     val changedBindings = LinkedBlockingQueue<BindingState>()
 
     /**
-     * Adds a [ModelBinding] to the registry, and puts it in [changedBindings] with the [BindingLifecycleState.ADD] state.
+     * Adds a [ModelBinding] to the registry, and puts it in [changedBindings] with the [BindingLifecycleState.ADD]
+     * state.
      *
      * @param binding the [ModelBinding] to be put in the registry.
      */
@@ -71,7 +75,8 @@ class BindingsRegistry : InjectableService {
     }
 
     /**
-     * Adds a [ModuleBinding] to the registry, and puts it in [changedBindings] with the [BindingLifecycleState.ADD] state.
+     * Adds a [ModuleBinding] to the registry, and puts it in [changedBindings] with the [BindingLifecycleState.ADD]
+     * state.
      *
      * @param binding the [ModuleBinding] to be put in the registry.
      */
