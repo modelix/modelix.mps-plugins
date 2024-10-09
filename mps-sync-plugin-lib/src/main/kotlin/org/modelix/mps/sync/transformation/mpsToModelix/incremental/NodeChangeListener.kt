@@ -33,6 +33,9 @@ import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 )
 class NodeChangeListener(branch: IBranch, serviceLocator: ServiceLocator) : SNodeChangeListener {
 
+    /**
+     * Synchronizes an [org.jetbrains.mps.openapi.model.SNode] to an [org.modelix.model.api.INode] on the model server.
+     */
     private val synchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 
     override fun nodeAdded(event: SNodeAddEvent) {
