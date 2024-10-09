@@ -58,9 +58,9 @@ fun interface UserResponseListener {
 
 /**
  * The possible responses of the user:
- *  - USER_ACCEPTED: the user accepted the message.
- *  - USER_REJECTED: the user rejected the message.
- *  - UNSPECIFIED: the user reacted in another way to the message.
+ *   - [USER_ACCEPTED]: the user accepted the message.
+ *   - [USER_REJECTED]: the user rejected the message.
+ *   - [UNSPECIFIED]: the user reacted in another way to the message.
  */
 enum class UserResponse {
     USER_ACCEPTED,
