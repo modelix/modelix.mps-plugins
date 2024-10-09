@@ -17,8 +17,24 @@
 package org.modelix.mps.sync.tasks
 
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.tasks.SyncLock.MODELIX_READ
+import org.modelix.mps.sync.tasks.SyncLock.MODELIX_WRITE
+import org.modelix.mps.sync.tasks.SyncLock.MPS_READ
+import org.modelix.mps.sync.tasks.SyncLock.MPS_WRITE
+import org.modelix.mps.sync.tasks.SyncLock.NONE
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * Represents a lock that is used by a [SyncTask] during synchronization:
+ *   - [MPS_WRITE]: we need a write lock in MPS.
+ *   - [MPS_READ]: we need a read lock in MPS.
+ *   - [MODELIX_WRITE]: we need a write lock (transaction) in modelix.
+ *   - [MODELIX_READ]: we need a read lock (transaction) in modelix.
+ *   - [NONE]: we do not need any locks.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 enum class SyncLock {
     MPS_WRITE,
     MPS_READ,
@@ -27,46 +43,60 @@ enum class SyncLock {
     NONE,
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-class SnycLockComparator : Comparator<SyncLock> {
+/**
+ * A comparator that can be used to sort the different [SyncLock]s in a collection.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
+class SyncLockComparator : Comparator<SyncLock> {
 
     /**
-     * Order of locks is important, because MPS executes the action on a separate thread, where the Modelix transactions might not be available.
-     * Lock priority order: MPS_WRITE > MPS_READ > MODELIX_WRITE > MODELIX_READ > CUSTOM
+     * Order of locks is important, because MPS executes the action on a separate thread, where the modelix
+     * transactions might not be available.
+     *
+     * Lock priority order: [MPS_WRITE] > [MPS_READ] > [MODELIX_WRITE] > [MODELIX_READ] > [NONE]
+     *
+     * @param left one of the locks to compare.
+     * @param right the other lock to compare.
+     *
+     * @return if positive, then "left" should be before "right". If negative, then "right" should be before "left". If
+     * zero then the order does not matter.
      */
-    override fun compare(p0: SyncLock, p1: SyncLock) =
-        if (p0 == SyncLock.MPS_WRITE) {
-            if (p0 == p1) {
+    override fun compare(left: SyncLock, right: SyncLock) =
+        if (left == MPS_WRITE) {
+            if (left == right) {
                 0
             } else {
                 -1
             }
-        } else if (p0 == SyncLock.MPS_READ) {
-            if (p1 == SyncLock.MPS_WRITE) {
+        } else if (left == MPS_READ) {
+            if (right == MPS_WRITE) {
                 1
-            } else if (p0 == p1) {
+            } else if (left == right) {
                 0
             } else {
                 -1
             }
-        } else if (p0 == SyncLock.MODELIX_WRITE) {
-            if (p1 == SyncLock.MPS_READ || p1 == SyncLock.MPS_WRITE) {
+        } else if (left == MODELIX_WRITE) {
+            if (right == MPS_READ || right == MPS_WRITE) {
                 1
-            } else if (p0 == p1) {
+            } else if (left == right) {
                 0
             } else {
                 -1
             }
-        } else if (p0 == SyncLock.MODELIX_READ) {
-            if (p1 == SyncLock.NONE) {
+        } else if (left == MODELIX_READ) {
+            if (right == NONE) {
                 -1
-            } else if (p0 == p1) {
+            } else if (left == right) {
                 0
             } else {
                 1
             }
-        } else if (p0 == SyncLock.NONE) {
-            if (p0 == p1) {
+        } else if (left == NONE) {
+            if (left == right) {
                 0
             } else {
                 1
