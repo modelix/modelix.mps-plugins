@@ -52,7 +52,7 @@ class SolutionProducer(private val project: MPSProject) {
      * @param name the name of the [Solution].
      * @param moduleId the ID of the [Solution].
      *
-     * @return the [Solution] with the given name and module ID
+     * @return the [Solution] with the given name and module ID.
      */
     fun createOrGetModule(name: String, moduleId: ModuleId): Solution {
         val exportPath = project.projectFile.systemIndependentPath
@@ -99,7 +99,7 @@ class SolutionProducer(private val project: MPSProject) {
     }
 
     /**
-     * Deletes parameter folder if it exists, and recreates all its parent folders and itself after that.
+     * Deletes parameter [virtualDir] folder if it exists, and recreates all its parent folders and itself after that.
      *
      * @param virtualDir the directory to be recreated.
      */

@@ -28,12 +28,12 @@ class WrappedNotifier : InjectableService {
     }
 
     /**
-     * First, it logs the message and the error via the parameter logger, then it notifies the [notifier] with the
-     * message as an error.
+     * First, it logs the [message] and the [error] via the parameter [logger], then it notifies the [notifier] with the
+     * [message] as an error.
      *
      * @param message the text to show to the user.
      * @param error the cause of the message.
-     * @param logger to log the error and the message.
+     * @param logger to log the [error] and the [message].
      */
     fun notifyAndLogError(message: String, error: Throwable, logger: KLogger) {
         logger.error(error) { message }
@@ -41,11 +41,11 @@ class WrappedNotifier : InjectableService {
     }
 
     /**
-     * First, it logs the message via the parameter logger, then it notifies the [notifier] with the message as a
+     * First, it logs the [message] via the parameter [logger], then it notifies the [notifier] with the [message] as a
      * warning.
      *
      * @param message the text to show to the user.
-     * @param logger to log the message as a warning.
+     * @param logger to log the [message] as a warning.
      */
     fun notifyAndLogWarning(message: String, logger: KLogger) {
         logger.warn { message }
@@ -53,10 +53,11 @@ class WrappedNotifier : InjectableService {
     }
 
     /**
-     * First, it logs the message via the parameter logger, then it notifies the [notifier] with the message as an info.
+     * First, it logs the [message] via the parameter [logger], then it notifies the [notifier] with the [message] as an
+     * info.
      *
      * @param message the text to show to the user.
-     * @param logger to log the message as an info.
+     * @param logger to log the [message] as an info.
      */
     fun notifyAndLogInfo(message: String, logger: KLogger) {
         logger.info { message }

@@ -16,6 +16,6 @@ internal fun Project.toMpsProject(): MPSProject =
  *
  * @param action the callback to execute.
  *
- * @see [SRepository.runReadAction]
+ * @see [SRepository.runReadAction].
  */
 internal fun MPSProject.runReadAction(action: (SRepository) -> Unit) = this.repository.runReadAction(action)
