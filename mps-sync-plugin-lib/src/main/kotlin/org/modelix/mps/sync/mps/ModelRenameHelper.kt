@@ -18,7 +18,6 @@ package org.modelix.mps.sync.mps
 
 import jetbrains.mps.extapi.model.EditableSModelBase
 import jetbrains.mps.extapi.persistence.FileDataSource
-import jetbrains.mps.ide.refactoring.RenameModelDialog
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.refactoring.Renamer
@@ -67,7 +66,7 @@ class ModelRenameHelper(private val model: EditableSModelBase, private val mpsPr
     /**
      * Rename the model to a new name.
      *
-     * The code is adopted from [RenameModelDialog.renameModel].
+     * The code is adopted from [jetbrains.mps.ide.refactoring.RenameModelDialog.renameModel].
      *
      * @param newModelName the new name of the model.
      * @param changeFile if true, then the [SModelListener.modelFileChanged] method will be called after the model's
