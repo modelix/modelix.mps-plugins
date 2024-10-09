@@ -92,6 +92,10 @@ class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceL
 
     private val moduleSynchronizer = ModuleSynchronizer(branch, serviceLocator)
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)
+
+    /**
+     * Synchronizes an [org.jetbrains.mps.openapi.model.SNode] to an [org.modelix.model.api.INode] on the model server.
+     */
     private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 
     private val moduleChangeSyncInProgress = synchronizedLinkedHashSet<SModule>()
