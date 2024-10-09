@@ -119,7 +119,7 @@ class SyncServiceImpl : ISyncService, InjectableService {
     override fun getActiveBranch(): IBranch? = branchRegistry.getBranch()
 
     /**
-     * WARNING: this is a long-running blocking call.
+     * ⚠️ WARNING ⚠️: this is a long-running blocking call.
      */
     override fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch =
         runBlocking(networkDispatcher) {
@@ -149,7 +149,7 @@ class SyncServiceImpl : ISyncService, InjectableService {
     }
 
     /**
-     * WARNING:
+     * ⚠️ WARNING ⚠️:
      * 1. This is a long-running blocking call.
      * 2. Do not call this method from the main / EDT Thread, otherwise it will not be able to write to MPS!!!
      */
@@ -172,7 +172,7 @@ class SyncServiceImpl : ISyncService, InjectableService {
     }
 
     /**
-     * WARNING: this is a long-running blocking call.
+     * ⚠️ WARNING ⚠️: this is a long-running blocking call.
      */
     override fun rebindModules(
         client: ModelClientV2,
@@ -228,12 +228,12 @@ class SyncServiceImpl : ISyncService, InjectableService {
     }
 
     /**
-     * WARNING: this is a long-running blocking call.
+     * ⚠️ WARNING ⚠️: this is a long-running blocking call.
      */
     override fun bindModuleFromMps(module: AbstractModule, branch: IBranch): Iterable<IBinding> {
         logger.info { "Binding Module '${module.moduleName}' to the server." }
 
-        // warning: blocking call
+        // ⚠️ WARNING ⚠️: blocking call
         @Suppress("UNCHECKED_CAST")
         val bindings = ModuleSynchronizer(branch, serviceLocator)
             .addModule(module, true)
@@ -257,15 +257,15 @@ class SyncServiceImpl : ISyncService, InjectableService {
     }
 
     /**
-     * WARNING: this is a long-running blocking call.
+     * ⚠️ WARNING ⚠️: this is a long-running blocking call.
      */
     override fun bindModelFromMps(model: SModelBase, branch: IBranch): IBinding {
         logger.info { "Binding Model '${model.name}' to the server." }
 
         val synchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)
-        // synchronize model. Warning: blocking call
+        // synchronize model. ⚠️ WARNING ⚠️: blocking call
         val binding = synchronizer.addModel(model).getResult().get() as IBinding
-        // wait until the model imports are synced. Warning: blocking call
+        // wait until the model imports are synced. ⚠️ WARNING ⚠️: blocking call
         synchronizer.resolveModelImportsInTask().getResult().get()
 
         if (binding !is EmptyBinding) {

@@ -221,7 +221,7 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
 
             nodeMap.put(module, moduleReference, cloudDependency.nodeIdAsLong())
 
-            // warning: might be fragile, because we synchronize the ModuleDependency's properties by hand
+            // ⚠️ WARNING ⚠️: might be fragile, because we synchronize the ModuleDependency's properties by hand
             cloudDependency.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport,
                 dependency.isReexport.toString(),

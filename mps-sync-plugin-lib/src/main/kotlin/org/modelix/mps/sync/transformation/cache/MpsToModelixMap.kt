@@ -32,7 +32,7 @@ import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.synchronizedMap
 
 /**
- * WARNING:
+ * ⚠️ WARNING ⚠️:
  * - use with caution, otherwise this cache may cause memory leaks
  * - if you add a new Map as a field in the class, then please also add it to the [remove], [isMappedToMps],
  * [isMappedToModelix], [clear] methods below.
