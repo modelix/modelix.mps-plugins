@@ -23,7 +23,7 @@ import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
 
 /**
- * Checks if the parameter DevKit module reference is an [SModelDescriptorStub]. If so, then it adds the reference to
+ * Checks if the parameter [devKitModuleReference] is an [SModelDescriptorStub]. If so, then it adds the reference to
  * the model as a DevKit. Otherwise, it throws an exception.
  *
  * @param devKitModuleReference the DevKit module reference to be added to the model.
@@ -41,7 +41,7 @@ internal fun SModel.addDevKit(devKitModuleReference: SModuleReference) {
 }
 
 /**
- * Checks if the parameter DevKit module reference is an [SModelDescriptorStub]. If so, then it removes the reference
+ * Checks if the parameter [devKitModuleReference] is an [SModelDescriptorStub]. If so, then it removes the reference
  * from the model's DevKit dependencies. Otherwise, it throws an exception.
  *
  * @param devKitModuleReference the DevKit module reference to be removed from the model.
@@ -59,8 +59,8 @@ internal fun SModel.deleteDevKit(devKitModuleReference: SModuleReference) {
 }
 
 /**
- * Checks if the parameter [SLanguage] is an [SModelDescriptorStub]. If so, then it adds the language with the given
- * version to the model as a language import. Otherwise, it throws an exception.
+ * Checks if the parameter [sLanguage] is an [SModelDescriptorStub]. If so, then it adds the language with the given
+ * [version] to the model as a language import. Otherwise, it throws an exception.
  *
  * @param sLanguage the language import to be added to the model.
  * @param version the version number of the language.
@@ -78,7 +78,7 @@ internal fun SModel.addLanguageImport(sLanguage: SLanguage, version: Int) {
 }
 
 /**
- * Checks if the parameter [SLanguage] is an [SModelDescriptorStub]. If so, then it removes the language import from
+ * Checks if the parameter [sLanguage] is an [SModelDescriptorStub]. If so, then it removes the language import from
  * the model. Otherwise, it throws an exception.
  *
  * @param sLanguage the language import to be removed from the model.

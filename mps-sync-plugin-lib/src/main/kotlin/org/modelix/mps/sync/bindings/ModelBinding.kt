@@ -128,9 +128,9 @@ class ModelBinding(val model: SModelBase, branch: IBranch, serviceLocator: Servi
      *   3. the [model] is removed from the server or its files are deleted locally (or not),
      *   4. the [model] is removed from the [nodeMap].
      *
-     * After deactivation, the parameter 'callback' is run.
+     * After deactivation, the parameter [callback] is run.
      *
-     * @param removeFromServer if true, then the corresponding [module] will be removed from the model server.
+     * @param removeFromServer if true, then the corresponding [model] will be removed from the model server.
      * @param callback some action to run after the deactivation of the [ModelBinding].
      *
      * @return a [CompletableFuture] so caller of this method does not have to wait for the completion of the method.

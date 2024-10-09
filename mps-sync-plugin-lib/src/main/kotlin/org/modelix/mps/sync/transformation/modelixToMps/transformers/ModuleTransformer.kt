@@ -19,10 +19,12 @@ package org.modelix.mps.sync.transformation.modelixToMps.transformers
 import jetbrains.mps.model.ModelDeleteHelper
 import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
+import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.project.structure.modules.SolutionDescriptor
 import mu.KotlinLogging
+import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SRepository
@@ -101,13 +103,12 @@ class ModuleTransformer(
     private val notifier = serviceLocator.wrappedNotifier
 
     /**
-     * The [jetbrains.mps.project.MPSProject] that is open in the active MPS window.
+     * The [MPSProject] that is open in the active MPS window.
      */
     private val mpsProject = serviceLocator.mpsProject
 
     /**
-     * The active [SRepository] to access the [org.jetbrains.mps.openapi.model.SModel]s and
-     * [org.jetbrains.mps.openapi.module.SModule]s in MPS.
+     * The active [SRepository] to access the [SModel]s and [SModule]s in MPS.
      */
     private val mpsRepository = serviceLocator.mpsRepository
 

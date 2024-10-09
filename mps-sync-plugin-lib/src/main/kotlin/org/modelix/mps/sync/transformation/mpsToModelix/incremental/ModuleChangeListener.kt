@@ -23,12 +23,14 @@ import mu.KotlinLogging
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
+import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SDependency
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleListener
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
@@ -91,19 +93,17 @@ class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceL
     private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
 
     /**
-     * Synchronizes an [org.jetbrains.mps.openapi.module.SModule] and its related elements (e.g. dependencies, imports)
-     * to [org.modelix.model.api.INode]s on the model server.
+     * Synchronizes an [SModule] and its related elements (e.g. dependencies, imports) to [INode]s on the model server.
      */
     private val moduleSynchronizer = ModuleSynchronizer(branch, serviceLocator)
 
     /**
-     * Synchronizes an [org.jetbrains.mps.openapi.model.SModel] and its related elements (e.g. dependencies, imports)
-     * to [org.modelix.model.api.INode]s on the model server.
+     * Synchronizes an [SModel] and its related elements (e.g. dependencies, imports) to [INode]s on the model server.
      */
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)
 
     /**
-     * Synchronizes an [org.jetbrains.mps.openapi.model.SNode] to an [org.modelix.model.api.INode] on the model server.
+     * Synchronizes an [SNode] to an [INode] on the model server.
      */
     private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 

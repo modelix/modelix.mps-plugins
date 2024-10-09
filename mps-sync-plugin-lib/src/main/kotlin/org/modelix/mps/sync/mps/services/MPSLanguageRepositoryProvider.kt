@@ -5,11 +5,12 @@ import jetbrains.mps.ide.MPSCoreComponents
 import jetbrains.mps.smodel.MPSModuleRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.ILanguageRepository
+import org.modelix.model.api.INode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 
 /**
  * Registers an [MPSLanguageRepository] in the [ILanguageRepository] so that modelix can resolve the Concepts of the
- * [org.modelix.model.api.INode]s based on their Concept UID to Concepts in MPS.
+ * [INode]s based on their Concept UID to Concepts in MPS.
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",

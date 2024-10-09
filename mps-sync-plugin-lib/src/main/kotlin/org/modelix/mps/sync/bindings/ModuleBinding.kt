@@ -131,7 +131,7 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch, serviceLocator:
      *   4. the [module] is removed from the server or its files are deleted locally (or not),
      *   5. the [module] is removed from the [nodeMap].
      *
-     *  After deactivation, the parameter 'callback' is run.
+     *  After deactivation, the parameter [callback] is run.
      *
      * @param removeFromServer if true, then the corresponding [module] will be removed from the model server.
      * @param callback some action to run after the deactivation of the [ModuleBinding].
