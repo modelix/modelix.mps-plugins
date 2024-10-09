@@ -90,7 +90,16 @@ class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceL
      */
     private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
 
+    /**
+     * Synchronizes an [org.jetbrains.mps.openapi.module.SModule] and its related elements (e.g. dependencies, imports)
+     * to [org.modelix.model.api.INode]s on the model server.
+     */
     private val moduleSynchronizer = ModuleSynchronizer(branch, serviceLocator)
+
+    /**
+     * Synchronizes an [org.jetbrains.mps.openapi.model.SModel] and its related elements (e.g. dependencies, imports)
+     * to [org.modelix.model.api.INode]s on the model server.
+     */
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)
 
     /**
