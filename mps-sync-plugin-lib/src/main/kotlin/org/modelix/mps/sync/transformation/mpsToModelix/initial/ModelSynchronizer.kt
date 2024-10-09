@@ -84,6 +84,9 @@ class ModelSynchronizer(
      */
     private val notifier = serviceLocator.wrappedNotifier
 
+    /**
+     * Synchronizes an [org.jetbrains.mps.openapi.model.SNode] to an [org.modelix.model.api.INode] on the model server.
+     */
     private val nodeSynchronizer = if (postponeReferenceResolution) {
         NodeSynchronizer(branch, synchronizedLinkedHashSet(), serviceLocator)
     } else {

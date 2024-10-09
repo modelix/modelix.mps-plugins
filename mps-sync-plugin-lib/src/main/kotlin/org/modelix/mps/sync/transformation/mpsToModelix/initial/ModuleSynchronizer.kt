@@ -91,6 +91,10 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
      */
     private val mpsRepository = serviceLocator.mpsRepository
 
+    /**
+     * Synchronizes an [org.jetbrains.mps.openapi.model.SModel] and its related elements (e.g. dependencies, imports)
+     * to [org.modelix.model.api.INode]s on the model server.
+     */
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator, true)
 
     fun addModule(
