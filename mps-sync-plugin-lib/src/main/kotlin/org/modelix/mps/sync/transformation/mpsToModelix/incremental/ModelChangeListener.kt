@@ -54,6 +54,10 @@ class ModelChangeListener(
     private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
 
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)
+
+    /**
+     * Synchronizes an [org.jetbrains.mps.openapi.model.SNode] to an [org.modelix.model.api.INode] on the model server.
+     */
     private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 
     override fun importAdded(event: SModelImportEvent) {

@@ -26,30 +26,61 @@ import org.jetbrains.mps.openapi.model.SModelName
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 
+/**
+ * Utility class to rename or change the stereotype of a model.
+ *
+ * @property model the model whose name or stereotype we would like to change.
+ * @property mpsProject the active [MPSProject].
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
 class ModelRenameHelper(private val model: EditableSModelBase, private val mpsProject: MPSProject) {
 
+    /**
+     * Just a normal logger to log messages.
+     */
     val logger = KotlinLogging.logger {}
 
+    /**
+     * Change the stereotype of the model.
+     *
+     * @param stereotype the stereotype to be used.
+     */
     fun changeStereotype(stereotype: String?) {
         val oldName = model.reference.name.withoutStereotype()
         val newName = SModelName(oldName.value, stereotype)
         rename(newName, false)
     }
 
+    /**
+     * Rename the model to a new name.
+     *
+     * @param modelName the new name of the model to be used.
+     */
     fun renameModel(modelName: String) = rename(SModelName(modelName), model.source is FileDataSource)
 
-    // adopted from jetbrains.mps.ide.refactoring.RenameModelDialog.renameModel
+    /**
+     * Rename the model to a new name.
+     *
+     * The code is adopted from [jetbrains.mps.ide.refactoring.RenameModelDialog.renameModel].
+     *
+     * @param newModelName the new name of the model.
+     * @param changeFile if true, then the [jetbrains.mps.smodel.event.SModelListener.modelFileChanged] method will be
+     * called after the model's file is renamed.
+     */
     private fun rename(newModelName: SModelName, changeFile: Boolean) {
         model.rename(newModelName.value, changeFile)
         updateModelAndModuleReferences()
         model.repository.saveAll()
     }
 
-    // adopted from Renamer.updateModelAndModuleReferences(project) in MPS 2023.2
+    /**
+     * Updates the model and module references so they point to the correct model.
+     *
+     * The code is adopted from [jetbrains.mps.refactoring.Renamer.updateModelAndModuleReferences].
+     */
     private fun updateModelAndModuleReferences() {
         mpsProject.modelAccess.checkWriteAccess()
         val var1: Iterator<*> = mpsProject.projectModulesWithGenerators.iterator()
