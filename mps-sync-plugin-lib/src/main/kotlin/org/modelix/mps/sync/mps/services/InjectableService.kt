@@ -14,9 +14,9 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 )
 interface InjectableService : Disposable {
     /**
-     * Use this method to initialize those fields of the class that get their instances from [ServiceLocator].
+     * Use this method to initialize those fields of the class that get their instances from the [serviceLocator].
      *
-     * @param serviceLocator the service locator from which we can ask for an instance of specific [InjectableService],
+     * @param serviceLocator the [ServiceLocator] from which we can ask for an instance of specific [InjectableService],
      * and whose [ServiceLocator.project] is the [Project] to whose lifecycle the Service is bound.
      */
     fun initService(serviceLocator: ServiceLocator) {}

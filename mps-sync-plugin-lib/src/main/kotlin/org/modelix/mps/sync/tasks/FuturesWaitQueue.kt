@@ -83,16 +83,16 @@ class FuturesWaitQueue : Runnable, InjectableService {
     }
 
     /**
-     * Adds a new continuation with several predecessors to the queue. If the predecessors complete (abort) then the
-     * continuation completes (aborts, respectively).
+     * Adds a new [continuation] with several [predecessors] to the queue. If the [predecessors] complete (abort) then
+     * the [continuation] completes (aborts, respectively).
      *
      * @param continuation the [CompletableFuture] to continue with if the predecessors finished.
      * @param predecessors the [CompletableFuture]s for which we are waiting for.
-     * @param fillContinuation if true, then the continuation will be completed by the result of the predecessors. See
-     * the collectResults parameter about how we compact the results if there is more than one predecessor.
+     * @param fillContinuation if true, then the continuation will be completed by the result of the [predecessors]. See
+     * the [collectResults] parameter about how we compact the results if there is more than one predecessor.
      * @param collectResults if true and there is more than one predecessor, then their results will be put in a List,
-     * and this List will complete the continuation. Otherwise, we will use the result of the first predecessor to
-     * complete the continuation.
+     * and this List will complete the [continuation]. Otherwise, we will use the result of the first predecessor to
+     * complete the [continuation].
      *
      * @see [run] for details.
      */
@@ -144,7 +144,7 @@ class FuturesWaitQueue : Runnable, InjectableService {
      *       the predecessors ([FillableFuture.shallBeFilled] is true), then we complete the continuation as follows.
      *       If we have to collect all results of the predecessors ([FillableFuture.shallCollectResults] is true), then
      *       these results will be put in a List and this List will complete the continuation. Otherwise, we will take
-     *       the result of the first predecessor and complete the conntinuation with this value.
+     *       the result of the first predecessor and complete the continuation with this value.
      *
      *       - if we do not have to use the results of the predecessors, then we complete the continuation with null
      *
@@ -264,7 +264,7 @@ class FuturesWaitQueue : Runnable, InjectableService {
 }
 
 /**
- * A data class to keep the predecessors ("forks") and the continuation ("join") of a computation chain together.
+ * A data class to keep the [predecessors] ("forks") and the continuation ("join") of a computation chain together.
  *
  * @param predecessors the previous computations for whose results we are waiting for.
  * @param future the continuation computation we want to do after the predecessors finished.
@@ -276,12 +276,12 @@ class FuturesWaitQueue : Runnable, InjectableService {
 data class FutureWithPredecessors(val predecessors: Set<CompletableFuture<Any?>>, val future: FillableFuture)
 
 /**
- * The continuation with some control parameters.
+ * The [continuation] with some control parameters.
  *
  * @param continuation the continuation computation we want to do.
- * @param shallBeFilled if true, then the results of the predecessors will complete the continuation.
+ * @param shallBeFilled if true, then the results of the predecessors will complete the [continuation].
  * @param shallCollectResults if true, then the results of the predecessors will be put in a List, otherwise we will
- * use the result of the first predecessor to complete the continuation.
+ * use the result of the first predecessor to complete the [continuation].
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",

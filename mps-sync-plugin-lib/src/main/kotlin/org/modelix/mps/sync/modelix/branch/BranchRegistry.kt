@@ -18,9 +18,12 @@ package org.modelix.mps.sync.modelix.branch
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.lazy.BranchReference
@@ -32,7 +35,7 @@ import org.modelix.mps.sync.mps.services.ServiceLocator
 
 /**
  * A registry to store the modelix [IBranch] we are connected to and the [ReplicatedModel] built from the content of it.
- * This can be used to access the most recent content of the branch as a tree of [org.modelix.model.api.INode]s.
+ * This can be used to access the most recent content of the branch as a tree of [INode]s.
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -46,8 +49,7 @@ class BranchRegistry : InjectableService {
     private lateinit var serviceLocator: ServiceLocator
 
     /**
-     * The active [SRepository] to access the [org.jetbrains.mps.openapi.model.SModel]s and
-     * [org.jetbrains.mps.openapi.module.SModule]s in MPS.
+     * The active [SRepository] to access the [SModel]s and [SModule]s in MPS.
      */
     private val mpsRepository: SRepository
         get() = serviceLocator.mpsRepository
@@ -99,7 +101,7 @@ class BranchRegistry : InjectableService {
     }
 
     /**
-     * Connect to the branch identified by its [BranchReference] and return the branch's content as a [ReplicatedModel].
+     * Connect to the branch identified by [branchReference] and return the branch's content as a [ReplicatedModel].
      *
      * The branch's state depends on [ReplicatedModelInitContext.initialVersion] which tells the version of the branch
      * to use as a base. I.e. we assume that the modules and models running MPS are at
@@ -178,7 +180,7 @@ class BranchRegistry : InjectableService {
     }
 
     /**
-     * Registers a [ModelixBranchListener] to the branch with the [MPSLanguageRepository] as a language repository.
+     * Registers a [ModelixBranchListener] to the [branch] with the [languageRepository].
      *
      * @param branch the branch to which we register the [ModelixBranchListener] change listener.
      * @param languageRepository the [MPSLanguageRepository] to be used in the branch change listener.

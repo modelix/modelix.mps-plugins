@@ -21,6 +21,7 @@ import mu.KotlinLogging
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
+import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
@@ -85,7 +86,7 @@ class ModelSynchronizer(
     private val notifier = serviceLocator.wrappedNotifier
 
     /**
-     * Synchronizes an [org.jetbrains.mps.openapi.model.SNode] to an [org.modelix.model.api.INode] on the model server.
+     * Synchronizes an [SNode] to an [INode] on the model server.
      */
     private val nodeSynchronizer = if (postponeReferenceResolution) {
         NodeSynchronizer(branch, synchronizedLinkedHashSet(), serviceLocator)

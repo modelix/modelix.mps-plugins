@@ -18,8 +18,11 @@ package org.modelix.mps.sync.mps
 
 import jetbrains.mps.extapi.model.EditableSModelBase
 import jetbrains.mps.extapi.persistence.FileDataSource
+import jetbrains.mps.ide.refactoring.RenameModelDialog
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
+import jetbrains.mps.refactoring.Renamer
+import jetbrains.mps.smodel.event.SModelListener
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelName
@@ -64,11 +67,11 @@ class ModelRenameHelper(private val model: EditableSModelBase, private val mpsPr
     /**
      * Rename the model to a new name.
      *
-     * The code is adopted from [jetbrains.mps.ide.refactoring.RenameModelDialog.renameModel].
+     * The code is adopted from [RenameModelDialog.renameModel].
      *
      * @param newModelName the new name of the model.
-     * @param changeFile if true, then the [jetbrains.mps.smodel.event.SModelListener.modelFileChanged] method will be
-     * called after the model's file is renamed.
+     * @param changeFile if true, then the [SModelListener.modelFileChanged] method will be called after the model's
+     * file is renamed.
      */
     private fun rename(newModelName: SModelName, changeFile: Boolean) {
         model.rename(newModelName.value, changeFile)
@@ -79,7 +82,7 @@ class ModelRenameHelper(private val model: EditableSModelBase, private val mpsPr
     /**
      * Updates the model and module references so they point to the correct model.
      *
-     * The code is adopted from [jetbrains.mps.refactoring.Renamer.updateModelAndModuleReferences].
+     * The code is adopted from [Renamer.updateModelAndModuleReferences].
      */
     private fun updateModelAndModuleReferences() {
         mpsProject.modelAccess.checkWriteAccess()

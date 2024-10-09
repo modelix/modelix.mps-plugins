@@ -35,8 +35,8 @@ class BindingSortComparator : Comparator<IBinding> {
      * @param left one of the [IBinding]s to compare.
      * @param right the other [IBinding] to compare to.
      *
-     * @return if positive, then "left" should be before "right". If negative, then "right" should be before "left". If
-     * zero then the order does not matter.
+     * @return if positive, then [left] should be before [right]. If negative, then [right] should be before [left]. If
+     * zero, then the order does not matter.
      */
     override fun compare(left: IBinding, right: IBinding): Int {
         val leftName = left.name()

@@ -32,7 +32,7 @@ class SharedThreadPool : Disposable {
         get() = threadPool.isShutdown
 
     /**
-     * Submit a [Runnable] to the [threadPool] for execution.
+     * Submit a [task] to the [threadPool] for execution.
      *
      * @param task the [Runnable] to run in the [threadPool].
      *

@@ -17,18 +17,21 @@
 package org.modelix.mps.sync.mps
 
 import com.intellij.openapi.project.Project
+import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModuleReference
+import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.module.SRepositoryListenerBase
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 
 /**
- * A change listener to listen to [org.jetbrains.mps.openapi.module.SRepository] events that are relevant for the
- * MPS <-> modelix model server synchronization.
+ * A change listener to listen to [SRepository] events that are relevant for the MPS <-> modelix model server
+ * synchronization.
  *
  * @param branch the branch we are conencted to on the model server.
  * @param serviceLocator a collector class to simplify injecting the commonly used services in the sync plugin.
@@ -50,7 +53,7 @@ class RepositoryChangeListener(branch: IBranch, serviceLocator: ServiceLocator) 
     private val bindingsRegistry = serviceLocator.bindingsRegistry
 
     /**
-     * Synchronizes an [org.jetbrains.mps.openapi.model.SNode] to an [org.modelix.model.api.INode] on the model server.
+     * Synchronizes an [SNode] to an [INode] on the model server.
      */
     private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 

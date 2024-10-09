@@ -108,8 +108,7 @@ class ModelTransformer(
     private val mpsProject = serviceLocator.mpsProject
 
     /**
-     * The active [SRepository] to access the [org.jetbrains.mps.openapi.model.SModel]s and
-     * [org.jetbrains.mps.openapi.module.SModule]s in MPS.
+     * The active [SRepository] to access the [SModel]s and [SModule]s in MPS.
      */
     private val mpsRepository = serviceLocator.mpsRepository
 
@@ -211,12 +210,14 @@ class ModelTransformer(
             val iNode = branch.getNode(nodeId)
             val sourceModel = nodeMap.getModel(iNode.getModel()?.nodeIdAsLong())!!
 
-            val targetModelRef = iNode.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
+            val targetModelRef =
+                iNode.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
             val serializedModelRef = targetModelRef.serialize()
 
             val targetIsAnINode = PNodeReference.tryDeserialize(serializedModelRef) != null
             if (targetIsAnINode) {
-                val targetModel = iNode.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
+                val targetModel =
+                    iNode.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)!!
                 val targetId = targetModel.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)!!
                 // target iNode is probably not transformed yet, therefore delaying the model import resolution
                 resolvableModelImports.add(

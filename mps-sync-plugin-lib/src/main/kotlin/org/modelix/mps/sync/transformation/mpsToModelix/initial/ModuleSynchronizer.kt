@@ -22,6 +22,7 @@ import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.Solution
 import mu.KotlinLogging
+import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SDependency
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
@@ -86,14 +87,12 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
     private val notifier = serviceLocator.wrappedNotifier
 
     /**
-     * The active [SRepository] to access the [org.jetbrains.mps.openapi.model.SModel]s and
-     * [org.jetbrains.mps.openapi.module.SModule]s in MPS.
+     * The active [SRepository] to access the [SModel]s and [SModule]s in MPS.
      */
     private val mpsRepository = serviceLocator.mpsRepository
 
     /**
-     * Synchronizes an [org.jetbrains.mps.openapi.model.SModel] and its related elements (e.g. dependencies, imports)
-     * to [org.modelix.model.api.INode]s on the model server.
+     * Synchronizes an [SModel] and its related elements (e.g. dependencies, imports) to [INode]s on the model server.
      */
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator, true)
 

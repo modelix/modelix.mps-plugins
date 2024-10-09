@@ -36,8 +36,6 @@ import org.modelix.mps.sync.util.synchronizedMap
  * - use with caution, otherwise this cache may cause memory leaks
  * - if you add a new Map as a field in the class, then please also add it to the [remove], [isMappedToMps],
  * [isMappedToModelix], [clear] methods below.
- * - if you want to persist the new field into a file, then add it to the [MpsToModelixMap.Serializer.serialize] and
- * [MpsToModelixMap.Serializer.deserialize] methods below.
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -67,8 +65,7 @@ class MpsToModelixMap : InjectableService {
     private val objectsRelatedToAModule = synchronizedMap<SModuleReference, MutableSet<Any>>()
 
     /**
-     * The active [SRepository] to access the [org.jetbrains.mps.openapi.model.SModel]s and
-     * [org.jetbrains.mps.openapi.module.SModule]s in MPS.
+     * The active [SRepository] to access the [SModel]s and [SModule]s in MPS.
      */
     private val mpsRepository: SRepository
         get() = serviceLocator.mpsRepository

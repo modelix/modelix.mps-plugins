@@ -28,9 +28,11 @@ import jetbrains.mps.smodel.event.SModelRenamedEvent
 import jetbrains.mps.smodel.event.SModelRootEvent
 import jetbrains.mps.smodel.loading.ModelLoadingState
 import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.model.SNode
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.tasks.SyncDirection
@@ -54,13 +56,12 @@ class ModelChangeListener(
     private val projectLifecycleTracker = serviceLocator.projectLifecycleTracker
 
     /**
-     * Synchronizes an [org.jetbrains.mps.openapi.model.SModel] and its related elements (e.g. dependencies, imports)
-     * to [org.modelix.model.api.INode]s on the model server.
+     * Synchronizes an [SModel] and its related elements (e.g. dependencies, imports) [INode]s on the model server.
      */
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator = serviceLocator)
 
     /**
-     * Synchronizes an [org.jetbrains.mps.openapi.model.SNode] to an [org.modelix.model.api.INode] on the model server.
+     * Synchronizes an [SNode] to an [INode] on the model server.
      */
     private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 

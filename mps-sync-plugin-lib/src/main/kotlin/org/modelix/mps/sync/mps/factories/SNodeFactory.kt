@@ -23,6 +23,7 @@ import org.jetbrains.mps.openapi.language.SInterfaceConcept
 import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
+import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -42,6 +43,7 @@ import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
+import org.modelix.mps.sync.tasks.SyncTask
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
 /**
@@ -73,8 +75,7 @@ class SNodeFactory(
     private val futuresWaitQueue = serviceLocator.futuresWaitQueue
 
     /**
-     * The active [SRepository] to access the [org.jetbrains.mps.openapi.model.SModel]s and
-     * [org.jetbrains.mps.openapi.module.SModule]s in MPS.
+     * The active [SRepository] to access the [SModel]s and [SModule]s in MPS.
      */
     private val mpsRepository = serviceLocator.mpsRepository
 
@@ -108,7 +109,7 @@ class SNodeFactory(
      * @param nodeId the modelix node ID of the node to transform.
      * @param model the [SModel] that is the parent of the node.
      *
-     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed
+     * @return a [ContinuableSyncTask] so that we can chain [SyncTask]s after each other.
      */
     fun createNode(nodeId: Long, model: SModel?): ContinuableSyncTask =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
@@ -162,10 +163,10 @@ class SNodeFactory(
         }
 
     /**
-     * Set all properties of target to the same values as they are in the source.
+     * Set all properties of [target] to the same values as they are in the [source].
      *
-     * @param source the modelix node from which we read the properties
-     * @param target the MPS node in which we set the properties
+     * @param source the modelix node from which we read the properties.
+     * @param target the MPS node in which we set the properties.
      */
     private fun setProperties(source: INode, target: SNode) {
         target.concept.properties.forEach { sProperty ->
@@ -176,8 +177,8 @@ class SNodeFactory(
     }
 
     /**
-     * Set all outgoing references of the MPS node that was created from the parameter modelix node. We go through each
-     * outgoing reference of the modelix node, search for the corresponding target node in MPS and establish the
+     * Set all outgoing references of the MPS node that was created from the parameter modelix [iNode]. We go through
+     * each outgoing reference of the modelix [iNode], search for the corresponding target node in MPS and establish the
      * reference between the two nodes. If the outgoing reference cannot be resolved directly, then it is put in the
      * [resolvableReferences] collection, and will be resolved later (see [resolveReferences]).
      *
@@ -236,8 +237,8 @@ class SNodeFactory(
  * Represents a reference between two MPS nodes that could not be resolved at the time the reference was supposed to be
  * created.
  *
- * @property source the source MPS nod.
- * @property reference the outgoing reference link of the source MPS node
+ * @property source the source MPS node.
+ * @property reference the outgoing reference link of the source MPS node.
  * @property targetNodeId modelix node ID of the target MPS node. The modelix node ID will be resolved to an MPS node in
  * [SNodeFactory.resolveReferences].
  */

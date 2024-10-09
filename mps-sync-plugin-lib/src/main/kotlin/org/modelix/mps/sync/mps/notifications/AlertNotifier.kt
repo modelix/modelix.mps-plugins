@@ -3,6 +3,9 @@ package org.modelix.mps.sync.mps.notifications
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.MessageType
+import com.intellij.util.ui.JBUI.CurrentTheme.NotificationError
+import com.intellij.util.ui.JBUI.CurrentTheme.NotificationInfo
+import com.intellij.util.ui.JBUI.CurrentTheme.NotificationWarning
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.awt.Color
 import javax.swing.JComponent
@@ -32,10 +35,10 @@ class AlertNotifier(private val project: Project, private val title: String = "M
     }
 
     /**
-     * Show the alert dialog to the user. If the user accepts the dialog then response listener is called with
+     * Show the [alert] dialog to the user. If the user accepts the dialog then the [responseListener] is called with
      * [UserResponse.USER_ACCEPTED], otherwise with [UserResponse.USER_REJECTED].
      *
-     * @param alert the alert dialog to show to the user
+     * @param alert the alert dialog to show to the user.
      * @param responseListener the listener that waits for the user's reaction / response.
      */
     private fun showAlert(alert: ModelixDialog, responseListener: UserResponseListener?) {
@@ -85,7 +88,7 @@ private abstract class ModelixDialog(project: Project, title: String, message: S
  * @param project the active [Project] in MPS to show the dialog in.
  * @param title the title of the dialog.
  * @param message the message to be shown in the dialog. The text is left-aligned and has the
- * [com.intellij.util.ui.JBUI.CurrentTheme.NotificationError.foregroundColor] color.
+ * [NotificationError.foregroundColor] color.
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -100,7 +103,7 @@ private class ModelixErrorDialog(project: Project, title: String, message: Strin
  * @param project the active [Project] in MPS to show the dialog in.
  * @param title the title of the dialog.
  * @param message the message to be shown in the dialog. The text is left-aligned and has the
- * [com.intellij.util.ui.JBUI.CurrentTheme.NotificationWarning.foregroundColor] color.
+ * [NotificationWarning.foregroundColor] color.
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -115,7 +118,7 @@ private class ModelixWarningDialog(project: Project, title: String, message: Str
  * @param project the active [Project] in MPS to show the dialog in.
  * @param title the title of the dialog.
  * @param message the message to be shown in the dialog. The text is left-aligned and has the
- * [com.intellij.util.ui.JBUI.CurrentTheme.NotificationInfo.foregroundColor] color.
+ * [NotificationInfo.foregroundColor] color.
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",

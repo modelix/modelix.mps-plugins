@@ -20,9 +20,11 @@ import org.jetbrains.mps.openapi.event.SNodeAddEvent
 import org.jetbrains.mps.openapi.event.SNodeRemoveEvent
 import org.jetbrains.mps.openapi.event.SPropertyChangeEvent
 import org.jetbrains.mps.openapi.event.SReferenceChangeEvent
+import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.model.SNodeChangeListener
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.INode
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
@@ -34,7 +36,7 @@ import org.modelix.mps.sync.transformation.mpsToModelix.initial.NodeSynchronizer
 class NodeChangeListener(branch: IBranch, serviceLocator: ServiceLocator) : SNodeChangeListener {
 
     /**
-     * Synchronizes an [org.jetbrains.mps.openapi.model.SNode] to an [org.modelix.model.api.INode] on the model server.
+     * Synchronizes an [SNode] to an [INode] on the model server.
      */
     private val synchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 

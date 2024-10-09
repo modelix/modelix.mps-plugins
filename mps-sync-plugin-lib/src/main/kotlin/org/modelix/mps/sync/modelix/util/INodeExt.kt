@@ -21,6 +21,12 @@ import org.jetbrains.mps.openapi.model.SNodeId
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency
+import org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Model
+import org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModelReference
+import org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.Module
+import org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency
+import org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency
 import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.isSubConceptOf
@@ -46,7 +52,7 @@ fun INode.nodeIdAsLong(): Long =
     }
 
 /**
- * @return true if the node's concept is [BuiltinLanguages.MPSRepositoryConcepts.Module].
+ * @return true if the node's concept is [Module].
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -54,12 +60,12 @@ fun INode.nodeIdAsLong(): Long =
 )
 fun INode.isModule(): Boolean {
     val concept = this.concept ?: return false
-    val moduleConceptRef = BuiltinLanguages.MPSRepositoryConcepts.Module.getReference()
+    val moduleConceptRef = Module.getReference()
     return concept.isSubConceptOf(moduleConceptRef)
 }
 
 /**
- * @return true if the node's concept is [BuiltinLanguages.MPSRepositoryConcepts.Model].
+ * @return true if the node's concept is [Model].
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -67,12 +73,12 @@ fun INode.isModule(): Boolean {
 )
 fun INode.isModel(): Boolean {
     val concept = this.concept ?: return false
-    val modelConceptRef = BuiltinLanguages.MPSRepositoryConcepts.Model.getReference()
+    val modelConceptRef = Model.getReference()
     return concept.isSubConceptOf(modelConceptRef)
 }
 
 /**
- * @return true if the node's concept is [BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency].
+ * @return true if the node's concept is [DevkitDependency].
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -80,12 +86,12 @@ fun INode.isModel(): Boolean {
 )
 fun INode.isDevKitDependency(): Boolean {
     val concept = this.concept ?: return false
-    val devKitDepConceptRef = BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency.getReference()
+    val devKitDepConceptRef = DevkitDependency.getReference()
     return concept.isSubConceptOf(devKitDepConceptRef)
 }
 
 /**
- * @return true if the node's concept is [BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency].
+ * @return true if the node's concept is [SingleLanguageDependency].
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -93,13 +99,13 @@ fun INode.isDevKitDependency(): Boolean {
 )
 fun INode.isSingleLanguageDependency(): Boolean {
     val concept = this.concept ?: return false
-    val languageDepConceptRef = BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.getReference()
+    val languageDepConceptRef = SingleLanguageDependency.getReference()
     return concept.isSubConceptOf(languageDepConceptRef)
 }
 
 /**
- * @return true if the node's concept is [BuiltinLanguages.MPSRepositoryConcepts.ModelReference] and the node's
- * containment link to its parent is [BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports].
+ * @return true if the node's concept is [ModelReference] and the node's containment link to its parent is
+ * [Model.modelImports].
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -107,14 +113,14 @@ fun INode.isSingleLanguageDependency(): Boolean {
 )
 fun INode.isModelImport(): Boolean {
     val concept = this.concept ?: return false
-    val modelReferenceConceptRef = BuiltinLanguages.MPSRepositoryConcepts.ModelReference.getReference()
+    val modelReferenceConceptRef = ModelReference.getReference()
     val isModelReference = concept.isSubConceptOf(modelReferenceConceptRef)
-    val isModelImportRole = BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports == this.getContainmentLink()
+    val isModelImportRole = Model.modelImports == this.getContainmentLink()
     return isModelReference && isModelImportRole
 }
 
 /**
- * @return true if the node's concept is [BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency].
+ * @return true if the node's concept is [ModuleDependency].
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -122,7 +128,7 @@ fun INode.isModelImport(): Boolean {
 )
 fun INode.isModuleDependency(): Boolean {
     val concept = this.concept ?: return false
-    val moduleDepConceptRef = BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.getReference()
+    val moduleDepConceptRef = ModuleDependency.getReference()
     return concept.isSubConceptOf(moduleDepConceptRef)
 }
 
@@ -137,8 +143,8 @@ fun INode.isModuleDependency(): Boolean {
 fun INode.getModel(): INode? = findNode { it.isModel() }
 
 /**
- * @return itself if the node is a [BuiltinLanguages.MPSRepositoryConcepts.Module]. Otherwise, it goes up in the
- * containment hierarchy until the Module is found. If no Module is found then it returns null.
+ * @return itself if the node is a [Module]. Otherwise, it goes up in the containment hierarchy until the Module is
+ * found. If no Module is found then it returns null.
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
@@ -174,13 +180,14 @@ fun INode.getMpsNodeId(): SNodeId {
 }
 
 /**
- * Finds the first [INode] in the containment hierarchy starting from "this" node, for which the parameter criterion is
- * true.
+ * Finds the first [INode] in the containment hierarchy starting from "this" node, for which the parameter [criterion]
+ * is true.
  *
  * @param criterion the criterion to test on the node.
  *
- * @return itself if criterion is true for the node. Otherwise, it checks the criterion on the parent node recursively
- * until it becomes true or no more parent node exists. If there is no more parent node, then it returns null.
+ * @return itself if [criterion] is true for the node. Otherwise, it checks the [criterion] on the parent node
+ * recursively until it becomes true or no more parent node exists. If there is no more parent node, then it returns
+ * null.
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",

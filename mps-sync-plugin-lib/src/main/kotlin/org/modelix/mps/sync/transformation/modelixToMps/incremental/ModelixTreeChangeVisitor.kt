@@ -18,6 +18,8 @@ package org.modelix.mps.sync.transformation.modelixToMps.incremental
 
 import jetbrains.mps.project.AbstractModule
 import mu.KotlinLogging
+import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
@@ -75,8 +77,7 @@ class ModelixTreeChangeVisitor(
     private val notifier = serviceLocator.wrappedNotifier
 
     /**
-     * The active [SRepository] to access the [org.jetbrains.mps.openapi.model.SModel]s and
-     * [org.jetbrains.mps.openapi.module.SModule]s in MPS.
+     * The active [SRepository] to access the [SModel]s and [SModule]s in MPS.
      */
     private val mpsRepository = serviceLocator.mpsRepository
 
@@ -224,7 +225,8 @@ class ModelixTreeChangeVisitor(
                 return@enqueue null
             }
 
-            val message = "A removal case for Node ($nodeId) was missed. It can be ignored, if the Node's parent is deleted."
+            val message =
+                "A removal case for Node ($nodeId) was missed. It can be ignored, if the Node's parent is deleted."
             notifier.notifyAndLogWarning(message, logger)
 
             null

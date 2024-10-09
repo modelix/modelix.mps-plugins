@@ -35,6 +35,9 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 
+/**
+ * A queue for executing [SyncTask] with its required locks asynchronously on a [threadPool].
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -78,7 +81,7 @@ class SyncQueue : InjectableService {
         get() = serviceLocator.branchRegistry
 
     /**
-     * The [jetbrains.mps.project.MPSProject] that is open in the active MPS window.
+     * The [MPSProject] that is open in the active MPS window.
      */
     private val mpsProject: MPSProject
         get() = serviceLocator.mpsProject
@@ -120,15 +123,15 @@ class SyncQueue : InjectableService {
     /**
      * Enqueues the [task] into the [tasks] queue.
      *
-     * The method does not enqueue the Task if it is initiated on a Thread that is running a synchronization and the
-     * sync direction is the opposite of what is running on the thread already. This might be a symptom of a
+     * The method does not enqueue the [task] if it is initiated on a [Thread] that is running a synchronization and the
+     * sync direction is the opposite of what is running on the [Thread] already. This might be a symptom of a
      * "table tennis" (ping-pong) effect in which a change in MPS triggers a change in modelix which triggers a change
      * in MPS again via the *ChangeListener and [ModelixTreeChangeVisitor] chains registered in MPS and in modelix,
      * respectively.
      *
-     * Because the SyncTasks are executed on separate threads by the ExecutorService (see SyncTaskExecutors),
-     * there is a very little chance of missing an intended change on other side. With other words: there is very
-     * little chance that it makes sense that on the same thread two SyncTasks occur.
+     * Because the [SyncTask]s are executed on separate [Thread]s by the [ExecutorService], there is a very little
+     * chance of missing an intended change on other side. With other words: there is very little chance that it makes
+     * sense that on the same [Thread] two [SyncTask]s occur.
      */
     fun enqueue(task: SyncTask) {
         val taskSyncDirection = task.syncDirection
