@@ -47,8 +47,8 @@ class BranchRegistry : InjectableService {
     private var client: ModelClientV2? = null
     private var branchReference: BranchReference? = null
 
-    private lateinit var branchListener: ModelixBranchListener
-    private lateinit var repoChangeListener: RepositoryChangeListener
+    private var branchListener: ModelixBranchListener? = null
+    private var repoChangeListener: RepositoryChangeListener? = null
 
     override fun initService(serviceLocator: ServiceLocator) {
         this.serviceLocator = serviceLocator
@@ -98,11 +98,22 @@ class BranchRegistry : InjectableService {
     }
 
     override fun dispose() {
-        val branch = getBranch() ?: return
-        branch.removeListener(branchListener)
-        mpsRepository.removeRepositoryListener(repoChangeListener)
+        try {
+            val branch = getBranch()
+            if (branch != null && branchListener != null) {
+                branch.removeListener(branchListener!!)
+            }
+        } catch (ignored: Exception) {
+            // getBranch() may throw IllegalStateException exception if ReplicatedModel has not started yet
+        }
 
-        model?.dispose()
+        try {
+            model?.dispose()
+        } catch (ignored: Exception) {
+            // so that the other parts of the dispose() call are not affected
+        }
+
+        repoChangeListener?.let { mpsRepository.removeRepositoryListener(it) }
 
         model = null
         branchReference = null
@@ -111,7 +122,7 @@ class BranchRegistry : InjectableService {
 
     private fun registerBranchListener(branch: IBranch, languageRepository: MPSLanguageRepository) {
         branchListener = ModelixBranchListener(branch, serviceLocator, languageRepository)
-        branch.addListener(branchListener)
+        branch.addListener(branchListener!!)
     }
 }
 
