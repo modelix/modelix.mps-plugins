@@ -81,8 +81,6 @@ class ModelSyncGuiFactory : ToolWindowFactory {
         companion object {
             private const val COMBOBOX_CHANGED_COMMAND = "comboBoxChanged"
             private const val TEXTFIELD_WIDTH = 20
-            private const val DISCONNECT_REMOVES_LOCAL_COPIES =
-                "By disconnecting, the synchronized modules and models will be removed locally."
         }
 
         private val logger = KotlinLogging.logger {}
@@ -365,16 +363,7 @@ class ModelSyncGuiFactory : ToolWindowFactory {
             }
 
             if (connectionsModel.size > 0) {
-                if (bindingsModel.size == 0) {
-                    disconnectAction()
-                    return
-                }
-
-                AlertNotifier(activeProject).warning(DISCONNECT_REMOVES_LOCAL_COPIES) { response ->
-                    if (UserResponse.USER_ACCEPTED == response) {
-                        disconnectAction()
-                    }
-                }
+                disconnectAction()
             }
         }
 
@@ -392,16 +381,7 @@ class ModelSyncGuiFactory : ToolWindowFactory {
             }
 
             if (activeBranch != null) {
-                if (bindingsModel.size == 0) {
-                    disconnectAction()
-                    return
-                }
-
-                AlertNotifier(activeProject).warning(DISCONNECT_REMOVES_LOCAL_COPIES) { response ->
-                    if (UserResponse.USER_ACCEPTED == response) {
-                        disconnectAction()
-                    }
-                }
+                disconnectAction()
             }
         }
 

@@ -16,7 +16,6 @@
 
 package org.modelix.mps.sync.bindings
 
-import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
@@ -44,7 +43,6 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch, serviceLocator:
 
     private val bindingsRegistry = serviceLocator.bindingsRegistry
     private val notifier = serviceLocator.wrappedNotifier
-    private val mpsProject = serviceLocator.mpsProject
 
     private val changeListener = ModuleChangeListener(branch, serviceLocator)
 
@@ -53,9 +51,6 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch, serviceLocator:
 
     @Volatile
     private var isActivated = false
-
-    @Volatile
-    private var moduleDeletedLocally = false
 
     @Synchronized
     override fun activate(callback: Runnable?) {
@@ -110,31 +105,6 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch, serviceLocator:
                  */
                 bindingsRegistry.removeModuleBinding(this)
                 isActivated = false
-            }
-        }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MPS_TO_MODELIX) {
-            synchronized(this) {
-                // delete module
-                try {
-                    if (!removeFromServer && !moduleDeletedLocally) {
-                        /*
-                         * if we just delete it locally, then we have to call ModuleDeleteHelper manually.
-                         * otherwise, MPS will call us via the event-handler chain starting from
-                         * ModuleDeleteHelper.deleteModules --> RepositoryChangeListener -->
-                         * moduleListener.deactivate(removeFromServer = true)
-                         */
-                        ModuleDeleteHelper(mpsProject).deleteModules(listOf(module), false, true)
-                        moduleDeletedLocally = true
-                    }
-                } catch (ex: Exception) {
-                    logger.error(ex) { "Exception occurred while deactivating ${name()}." }
-                    /*
-                     * if any error occurs, then we put the binding back to let the rest of the application know that
-                     * it exists
-                     */
-                    bindingsRegistry.addModuleBinding(this)
-                    activate()
-                    throw ex
-                }
             }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
             nodeMap.remove(module)
