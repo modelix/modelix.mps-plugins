@@ -174,18 +174,13 @@ class MpsToModelixMap : InjectableService {
 
         modelixIdToModel.remove(modelixId)?.let {
             modelToModelixId.remove(it)
-
-            val model = it.resolve(mpsRepository)
-            remove(model)
+            it.resolve(mpsRepository)?.let { model -> remove(model) }
         }
 
         modelixIdToModelWithOutgoingModelReference[modelixId]?.let { remove(it) }
         modelixIdToModelWithOutgoingModuleReference[modelixId]?.let { remove(it) }
 
-        modelixIdToModule.remove(modelixId)?.let {
-            val module = it.resolve(mpsRepository)!!
-            remove(module)
-        }
+        modelixIdToModule.remove(modelixId)?.let { it.resolve(mpsRepository)?.let { module -> remove(module) } }
         modelixIdToModuleWithOutgoingModuleReference[modelixId]?.let { remove(it) }
     }
 
@@ -219,8 +214,7 @@ class MpsToModelixMap : InjectableService {
                 val target = ModuleWithModuleReference(module, it)
                 remove(target)
             } else if (it is SModelReference) {
-                val model = it.resolve(mpsRepository)
-                remove(model)
+                it.resolve(mpsRepository)?.let { model -> remove(model) }
             }
         }
     }
