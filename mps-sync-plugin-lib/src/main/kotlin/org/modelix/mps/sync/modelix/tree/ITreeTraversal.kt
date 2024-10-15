@@ -168,7 +168,7 @@ class ITreeTraversal(val branch: IBranch) {
 
 /**
  * A visitor that can visit different kinds of [INode]s in an [IBranch].
- * */
+ */
 interface IBranchVisitor {
     /**
      * Visits a [Module] node.

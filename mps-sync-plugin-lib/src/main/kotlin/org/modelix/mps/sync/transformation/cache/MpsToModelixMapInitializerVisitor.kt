@@ -19,6 +19,14 @@ import org.modelix.mps.sync.modelix.util.getMpsNodeId
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.util.runReadAction
 
+/**
+ * A visitor that can visit different kinds of [INode]s in an [IBranch] to establish the initial mapping between the
+ * MPS elements and the corresponding modelix nodes.
+ *
+ * @property cache the lookup map (internal cache) between the MPS elements and the corresponding modelix Nodes.
+ * @property repository the active [SRepository] to access the [SModel]s and [SModule]s in MPS.
+ * @property branch the modelix branch we are connected to.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -167,6 +175,11 @@ class MpsToModelixMapInitializerVisitor(
         cache.put(model, targetModelImport, nodeId)
     }
 
+    /**
+     * @param modelNode the modelix node.
+     *
+     * @return the MPS Model ([SModel]) that is represented by the [modelNode] in modelix.
+     */
     private fun getMpsModel(modelNode: INode): SModel {
         val modelixModelId = modelNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id)
         requireNotNull(modelixModelId) {
@@ -179,6 +192,11 @@ class MpsToModelixMapInitializerVisitor(
         return model
     }
 
+    /**
+     * @param moduleNode the modelix node.
+     *
+     * @return the MPS Module ([SModule]) that is represented by the [moduleNode] in modelix.
+     */
     private fun getMpsModule(moduleNode: INode): SModule {
         val modelixModuleId = moduleNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id)
         requireNotNull(modelixModuleId) {
@@ -191,5 +209,10 @@ class MpsToModelixMapInitializerVisitor(
         return module
     }
 
+    /**
+     * Runs the [action] as a read action in the [repository].
+     *
+     * @param action the action to execute.
+     */
     private fun runWithReadLocks(action: () -> Unit) = repository.runReadAction { branch.runRead { action() } }
 }
