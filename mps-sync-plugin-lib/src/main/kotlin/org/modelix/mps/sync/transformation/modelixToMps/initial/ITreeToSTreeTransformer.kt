@@ -16,9 +16,14 @@
 
 package org.modelix.mps.sync.transformation.modelixToMps.initial
 
+import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.ILanguageRepository
+import org.modelix.model.api.INode
+import org.modelix.model.api.ITree
 import org.modelix.model.api.getRootNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.mps.sync.IBinding
@@ -30,6 +35,15 @@ import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import java.util.concurrent.CompletableFuture
 
+/**
+ * Transforms a modelix [ITree] with its [INode]s to the corresponding MPS elements.
+ *
+ * @param mpsLanguageRepository the [ILanguageRepository] that can resolve Concept UIDs of modelix nodes to Concepts in
+ * MPS.
+ * @param serviceLocator a collector class to simplify injecting the commonly used services in the sync plugin.
+ *
+ * @property branch the modelix branch we are connected to.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -50,6 +64,16 @@ class ITreeToSTreeTransformer(
      */
     private val moduleTransformer = ModuleTransformer(branch, serviceLocator, mpsLanguageRepository)
 
+    /**
+     * Transforms a Module, identified by [moduleId] UUID from its modelix node representation to an MPS Module.
+     * Moreover, all contained children Models, Nodes, Model Imports, Language / DevKit Dependencies, Module
+     * Dependencies and the dependant Modules, Models (and their Nodes, etc.) will be transitively transformed.
+     * With other words: all Modules, Models, Nodes that are reachable starting from this Module.
+     *
+     * @param moduleId the Module that should be used as a starting point for the transformation.
+     *
+     * @return the [IBinding]s that are established for the transformed [SModule]s and [SModel]s.
+     */
     fun transform(moduleId: String): Iterable<IBinding> {
         val result = syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.NONE) {
             val moduleNode = branch.getRootNode().allChildren.firstOrNull {
