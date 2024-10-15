@@ -114,6 +114,9 @@ class ModuleTransformer(
 
     private val solutionProducer = SolutionProducer(mpsProject)
 
+    /**
+     * The MPS Model to modelix node transformer.
+     */
     private val modelTransformer = ModelTransformer(branch, serviceLocator, mpsLanguageRepository)
 
     fun transformToModuleCompletely(nodeId: Long, isTransformationStartingModule: Boolean = false) =

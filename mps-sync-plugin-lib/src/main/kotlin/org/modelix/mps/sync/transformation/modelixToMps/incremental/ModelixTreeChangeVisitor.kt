@@ -23,6 +23,7 @@ import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.PropertyFromName
@@ -41,11 +42,23 @@ import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
+import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
 import org.modelix.mps.sync.transformation.exceptions.ModelixToMpsSynchronizationException
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModelTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.ModuleTransformer
 import org.modelix.mps.sync.transformation.modelixToMps.transformers.NodeTransformer
 
+/**
+ * The change listener that is called, when a change on the modelix branch (on the model server or local) occurred. This
+ * change will be played into MPS in a way that the modelix elements are transformed to MPS elements by the
+ * corresponding transformer methods.
+ *
+ * @param serviceLocator a collector class to simplify injecting the commonly used services in the sync plugin.
+ * @param languageRepository the [ILanguageRepository] that can resolve Concept UIDs of modelix nodes to Concepts in
+ * MPS.
+ *
+ * @property branch the modelix branch we are connected to.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -81,10 +94,31 @@ class ModelixTreeChangeVisitor(
      */
     private val mpsRepository = serviceLocator.mpsRepository
 
+    /**
+     * The MPS Node to modelix node transformer.
+     */
     private val nodeTransformer = NodeTransformer(branch, serviceLocator, languageRepository)
+
+    /**
+     * The MPS Model to modelix node transformer.
+     */
     private val modelTransformer = ModelTransformer(branch, serviceLocator, languageRepository)
+
+    /**
+     * The MPS Module to modelix node transformer.
+     */
     private val moduleTransformer = ModuleTransformer(branch, serviceLocator, languageRepository)
 
+    /**
+     * Transforms a reference changed event to the corresponding changes in MPS. This event handler is called, if a
+     * modelix node's outgoing ReferenceLink is changed (i.e., it is set to a target reference or to null).
+     *
+     * A change in the modelix node's outgoing reference will be transformed to a change in an MPS node's outgoing
+     * reference (i.e., the reference target is set to another MPS node or to null).
+     *
+     * @param nodeId the identifier of the modelix node.
+     * @param role the name or ID of the ReferenceLink inside the modelix node.
+     */
     override fun referenceChanged(nodeId: Long, role: String) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val sNode = nodeMap.getNode(nodeId)
@@ -141,6 +175,16 @@ class ModelixTreeChangeVisitor(
         }
     }
 
+    /**
+     * Transforms a property changed event to the corresponding changes in MPS. This event handler is called, if a
+     * modelix node's property is changed (i.e., it is set to a value or to null).
+     *
+     * A change in the modelix node's property will be transformed to a change in an MPS Node's / Model's / Module's
+     * property, depending on which MPS element the modelix node represents.
+     *
+     * @param nodeId the identifier of the modelix node.
+     * @param role the name or ID of the property inside the modelix node.
+     */
     override fun propertyChanged(nodeId: Long, role: String) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
@@ -181,6 +225,13 @@ class ModelixTreeChangeVisitor(
         }
     }
 
+    /**
+     * Transforms a modelix node deletion event to an MPS element deletion event. Depending on which MPS element the
+     * modelix node represents (based on the [MpsToModelixMap] mapping table), the deletion of that element in MPS will
+     * happen.
+     *
+     * @param nodeId the identifier of the modelix node.
+     */
     override fun nodeRemoved(nodeId: Long) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
@@ -233,6 +284,12 @@ class ModelixTreeChangeVisitor(
         }
     }
 
+    /**
+     * Transforms a modelix node creation event to the creation of new MPS elements. Depending on the modelix node's
+     * concept, different elements will be created in MPS.
+     *
+     * @param nodeId the identifier of the modelix node.
+     */
     override fun nodeAdded(nodeId: Long) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val isMapped = nodeMap.isMappedToMps(nodeId)
@@ -269,10 +326,18 @@ class ModelixTreeChangeVisitor(
     }
 
     /**
-     * TODO rethink if we have to limit childrenChanged operation further
-     * it is expected to be called after the nodeAdded methods and thereby we have to resolve the modelImports and references
-     * However, this method can be also called before/after the nodeDeleted operation. Where, however it does not make sense to resolve the references...
-     * (Moreover, there is no guarantee in which order the method of this class will be called, due to the undefined order of changes after the Diff calculation.)
+     * Transforms a child changed event in modelix. This event occurs if the children of a modelix node, identified by
+     * its [nodeId] identifier, have changed.
+     *
+     * TODO Rethink if we have to limit childrenChanged operation further. It is expected to be called after the
+     * [nodeAdded] method and thereby we have to resolve the modelImports and references (see body of this method).
+     * However, this method can be also called before/after the [nodeRemoved] operation. Where it does not make sense
+     * to resolve the references...
+     * Moreover, there is no guarantee in which order the method of this class will be called, due to the undefined
+     * order of changes after the Diff calculation.
+     *
+     * @param nodeId the identifier of the modelix node.
+     * @param role the name or ID of the ChildLink inside the modelix node.
      */
     override fun childrenChanged(nodeId: Long, role: String?) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
@@ -282,6 +347,15 @@ class ModelixTreeChangeVisitor(
         }
     }
 
+    /**
+     * Transforms a containment changed event in modelix to the corresponding changes in MPS. The containment change
+     * event occurs, if the modelix node, identified by [nodeId], is moved to a new parent node.
+     *
+     * In MPS, it means moving the corresponding MPS element to a new parent MPS Node / MPS Model or MPS Module,
+     * depending on which element the modelix node was mapped to.
+     *
+     * @param nodeId the identifier of the modelix node.
+     */
     override fun containmentChanged(nodeId: Long) {
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val nodeIsMapped = nodeMap.isMappedToMps(nodeId)
@@ -333,8 +407,18 @@ class ModelixTreeChangeVisitor(
         }
     }
 
+    /**
+     * @param nodeId the identifier of the modelix node.
+     *
+     * @return the modelix node (identified by [nodeId]) from the [branch].
+     */
     private fun getNode(nodeId: Long) = branch.getNode(nodeId)
 
+    /**
+     * Notifies the user about the error [message] and logs this message via the [logger] too.
+     *
+     * @param message the error to notify the user about.
+     */
     private fun notifyAndLogError(message: String) {
         val exception = ModelixToMpsSynchronizationException(message)
         notifier.notifyAndLogError(message, exception, logger)

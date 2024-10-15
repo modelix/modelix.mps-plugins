@@ -112,6 +112,9 @@ class ModelTransformer(
      */
     private val mpsRepository = serviceLocator.mpsRepository
 
+    /**
+     * The MPS Node to modelix node transformer.
+     */
     private val nodeTransformer = NodeTransformer(branch, serviceLocator, mpsLanguageRepository)
 
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()

@@ -44,6 +44,10 @@ class ITreeToSTreeTransformer(
      * The task queue of the sync plugin.
      */
     private val syncQueue = serviceLocator.syncQueue
+
+    /**
+     * The MPS Module to modelix node transformer.
+     */
     private val moduleTransformer = ModuleTransformer(branch, serviceLocator, mpsLanguageRepository)
 
     fun transform(moduleId: String): Iterable<IBinding> {
