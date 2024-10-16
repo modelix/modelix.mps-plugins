@@ -363,7 +363,7 @@ class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceL
      * @param module the [SModule] that we were syncing.
      * @param func the action that we want to execute with the [input] parameter.
      *
-     * @throws [Throwable] if an error occurred while executing [func] with the [input] parameter.
+     * @throws Throwable if an error occurred while executing [func] with the [input] parameter.
      *
      * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
      */
@@ -405,7 +405,7 @@ class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceL
      * @param module the [SModule] that we were syncing.
      * @param throwable the cause of the error the occurred.
      *
-     * @throws rethrows [throwable] if it is not null.
+     * @throws throwable if it is not null.
      *
      * @see [moduleChangeSyncInProgress].
      * @see [MpsToModelixSynchronizationException].

@@ -171,7 +171,7 @@ class NodeSynchronizer(
      * @param childLink the containment link via which [cloudParentNode] is the parent node.
      * @param node the [SNode] for which we want to know if it is synced to modelix.
      *
-     * @throws [NodeAlreadySynchronizedException] if [node] is already synced as a child node of [cloudParentNode] to
+     * @throws NodeAlreadySynchronizedException if [node] is already synced as a child node of [cloudParentNode] to
      * modelix.
      */
     @Throws(NodeAlreadySynchronizedException::class)
