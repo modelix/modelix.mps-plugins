@@ -147,7 +147,9 @@ class ModelSynchronizer(
      * @param model the [SModel] to be added to the model server.
      *
      * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed. The result of
-     * this task is a [ModelBinding].
+     * this task is a [ModelBinding] that was created for the synchronized [model]. If [model] was already synchronized,
+     * or it is a Descriptor Model, then an [EmptyBinding] is returned. (Descriptor Models are not synchronized to the
+     * model server.)
      */
     fun addModel(model: SModelBase) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
