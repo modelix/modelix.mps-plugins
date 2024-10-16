@@ -29,6 +29,7 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IChildLink
+import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSLanguageRepository
@@ -50,6 +51,17 @@ import org.modelix.mps.sync.transformation.exceptions.ModelixToMpsSynchronizatio
 import java.util.UUID
 import kotlin.reflect.KFunction2
 
+/**
+ * Transforms a modelix [INode] that represents an MPS Node to the corresponding [SNode]. Besides, it transforms the
+ * changes that occurred to its properties or references on the modelix side to the corresponding changes on the MPS
+ * side.
+ *
+ * @param serviceLocator a collector class to simplify injecting the commonly used services in the sync plugin.
+ * @param mpsLanguageRepository the [ILanguageRepository] that can resolve Concept UIDs of modelix nodes to Concepts in
+ * MPS.
+ *
+ * @property branch the modelix branch we are connected to.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -81,13 +93,26 @@ class NodeTransformer(
     private val notifier = serviceLocator.wrappedNotifier
 
     /**
-     * The active [SRepository] to access the [org.jetbrains.mps.openapi.model.SModel]s and
-     * [org.jetbrains.mps.openapi.module.SModule]s in MPS.
+     * The active [SRepository] to access the [SModel]s and [SModule]s in MPS.
      */
     private val mpsRepository = serviceLocator.mpsRepository
 
+    /**
+     * Creates a new [SNode] in MPS.
+     */
     private val nodeFactory = SNodeFactory(mpsLanguageRepository, branch, serviceLocator)
 
+    /**
+     * Transforms the modelix [iNode] to an element in MPS, depending on its Concept: Language / DevKit Dependency or a
+     * normal [SNode].
+     *
+     * The transformed elements are automatically added to the project in MPS and are not returned by the transformation
+     * methods.
+     *
+     * @param iNode the modelix node that should be transformed.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     */
     fun transformToNode(iNode: INode): ContinuableSyncTask {
         val nodeId = iNode.nodeIdAsLong()
         return if (iNode.isDevKitDependency()) {
@@ -99,6 +124,18 @@ class NodeTransformer(
         }
     }
 
+    /**
+     * Transforms a modelix node, identified by its [nodeId], to [SNode]s recursively, i.e. all it children [SNode]s are
+     * transformed completely with all of their properties and references.
+     *
+     * The transformed elements are automatically added to the project in MPS and are not returned by the transformation
+     * methods.
+     *
+     * @param nodeId the identifier of the modelix node that should be transformed to an [SNode].
+     * @param nodeFactoryMethod the factory method used to create an [SNode]. Defaults to [SNodeFactory.createNode].
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     */
     fun transformNode(
         nodeId: Long,
         nodeFactoryMethod: KFunction2<Long, SModel?, ContinuableSyncTask> = nodeFactory::createNode,
@@ -120,6 +157,16 @@ class NodeTransformer(
         }
     }
 
+    /**
+     * Transforms a modelix [iNode] to Language / DevKit Dependency, depending on the Concept of the node.
+     *
+     * The transformed elements are automatically added to the project in MPS and are not returned by the transformation
+     * methods.
+     *
+     * @param iNode the modelix node to be transformed.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     */
     fun transformLanguageOrDevKitDependency(iNode: INode): ContinuableSyncTask {
         val nodeId = iNode.nodeIdAsLong()
         return if (iNode.isDevKitDependency()) {
@@ -134,6 +181,16 @@ class NodeTransformer(
         }
     }
 
+    /**
+     * Transforms a modelix node, identified by its [nodeId], to a Language Dependency.
+     *
+     * The transformed elements are automatically added to the project in MPS and are not returned by the transformation
+     * methods.
+     *
+     * @param nodeId the identifier of the modelix node that should be transformed to a Language Dependency.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     */
     fun transformLanguageDependency(nodeId: Long) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val iNode = branch.getNode(nodeId)
@@ -166,6 +223,16 @@ class NodeTransformer(
             }
         }
 
+    /**
+     * Transforms a modelix node, identified by its [nodeId], to a DevKit Dependency.
+     *
+     * The transformed elements are automatically added to the project in MPS and are not returned by the transformation
+     * methods.
+     *
+     * @param nodeId the identifier of the modelix node that should be transformed to a DevKit Dependency.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     */
     fun transformDevKitDependency(nodeId: Long) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_WRITE, SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) {
             val iNode = branch.getNode(nodeId)
@@ -194,16 +261,39 @@ class NodeTransformer(
             }
         }
 
+    /**
+     * Resolves the references between the [SNode]s.
+     *
+     * @see [SNodeFactory.resolveReferences].
+     * @see [SNodeFactory.clearResolvableReferences].
+     */
     fun resolveReferences() {
         nodeFactory.resolveReferences()
         nodeFactory.clearResolvableReferences()
     }
 
+    /**
+     * Handles a node removed event in modelix. If a node that represents an [SNode] is deleted in modelix, then it
+     * should be also removed in MPS.
+     *
+     * @param sNode the [SNode] that should be removed in MPS.
+     * @param nodeId the identifier of the modelix node that represents the [SNode] that was deleted.
+     */
     fun nodeDeleted(sNode: SNode, nodeId: Long) {
         sNode.delete()
         nodeMap.remove(nodeId)
     }
 
+    /**
+     * Handles a property change event in modelix, that should be played into MPS. This event occurs if a property of
+     * a modelix node changed, and this property represents an [SNode] in MPS.
+     *
+     * @param sNode the []] whose property changed.
+     * @param role the name or UID of the property.
+     * @param nodeId the identifier of the modelix node that represents the [SNode] and whose property changed.
+     * @param newValue the new value of the property.
+     * @param usesRoleIds shows if [role] is a human-readable name or a UID.
+     */
     fun nodePropertyChanged(sNode: SNode, role: String, nodeId: Long, newValue: String?, usesRoleIds: Boolean) {
         val sProperty =
             sNode.concept.properties.find {
@@ -251,6 +341,16 @@ class NodeTransformer(
         notifyAndLogError(message)
     }
 
+    /**
+     * Handles a parent changed event in modelix, that should be played into MPS. This event occurs if a modelix node,
+     * that represents an [SNode], is moved to a new parent node, that represents an [SModel].
+     *
+     * @param sNode the [SNode] who was moved to a new parent.
+     * @param newParent the new parent of [sNode].
+     * @param containmentLink the [IChildLink] that determines what is the name of the ChildLink in [newParent] via
+     * which [sNode] will be added to [newParent] as a child.
+     * @param nodeId the identifier of the modelix node that represents the [SNode] that was moved to a new parent.
+     */
     private fun nodeMovedToNewParentNode(sNode: SNode, newParent: SNode, containmentLink: IChildLink, nodeId: Long) {
         val oldParent = sNode.parent
         if (oldParent == newParent) {
@@ -274,6 +374,15 @@ class NodeTransformer(
         newParent.addChild(containment, sNode)
     }
 
+    /**
+     * Handles a parent changed event in modelix, that should be played into MPS. This event occurs if a modelix node,
+     * that represents an [SNode], is moved to a new parent node, that represents an [SModel].
+     *
+     * In this case, the new parent is an [SModel], because the [SNode] was a root [SNode] in its old parent.
+     *
+     * @param sNode the [SNode] who was moved to a new parent.
+     * @param newParentModel the new parent [SModel] of the [sNode].
+     */
     private fun nodeMovedToNewParentModel(sNode: SNode, newParentModel: SModel) {
         val parentModel = sNode.model
         if (parentModel == newParentModel) {
@@ -288,11 +397,21 @@ class NodeTransformer(
         newParentModel.addRootNode(sNode)
     }
 
+    /**
+     * @param iNode the modelix node that represents a Language Dependency.
+     *
+     * @return the Language [SModule] in MPS, that is represented by the [iNode].
+     */
     private fun getDependentModule(iNode: INode): SModule {
         val uuid = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid)!!
         return mpsRepository.getModule(ModuleId.regular(UUID.fromString(uuid)))!!
     }
 
+    /**
+     * Notifies the user about the error [message] and logs this message via the [logger] too.
+     *
+     * @param message the error to notify the user about.
+     */
     private fun notifyAndLogError(message: String) {
         val exception = ModelixToMpsSynchronizationException(message)
         notifier.notifyAndLogError(message, exception, logger)
