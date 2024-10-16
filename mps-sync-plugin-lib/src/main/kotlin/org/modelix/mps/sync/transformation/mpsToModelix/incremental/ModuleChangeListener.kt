@@ -19,6 +19,7 @@ package org.modelix.mps.sync.transformation.mpsToModelix.incremental
 import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.extapi.model.SModelDescriptorStub
+import jetbrains.mps.smodel.event.SModelListener
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
@@ -27,6 +28,7 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SDependency
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleListener
+import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IBranch
@@ -34,8 +36,11 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
+import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.descriptorSuffix
+import org.modelix.mps.sync.mps.util.isDescriptorModel
+import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.tasks.SyncTaskAction
@@ -51,6 +56,15 @@ import org.modelix.mps.sync.util.waitForCompletionOfEach
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.concurrent.CompletableFuture
 
+/**
+ * The change listener that is called, when a change on in an [SModule] in MPS occurred. This change will be played onto
+ * the model server MPS in a way that the MPS elements are transformed to modelix elements by the corresponding
+ * transformer methods.
+ *
+ * @param serviceLocator a collector class to simplify injecting the commonly used services in the sync plugin.
+ *
+ * @property branch the modelix branch we are connected to.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -107,12 +121,38 @@ class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceL
      */
     private val nodeSynchronizer = NodeSynchronizer(branch, serviceLocator = serviceLocator)
 
-    private val moduleChangeSyncInProgress = synchronizedLinkedHashSet<SModule>()
+    /**
+     * A barrier to block consecutive calls of [moduleChanged] for the same [SModule].
+     */
+    private val moduleChangeSyncInProgress = synchronizedLinkedHashSet<SModuleReference>()
 
+    /**
+     * Handles a model added event. The added [model] should be synced to the model server.
+     *
+     * @param module the parent [SModule] of the model.
+     * @param model the newly added [SModel].
+     *
+     * @see [ModelSynchronizer.addModelAndActivate].
+     * @see [SModuleListener.modelAdded].
+     */
     override fun modelAdded(module: SModule, model: SModel) {
         modelSynchronizer.addModelAndActivate(model as SModelBase)
     }
 
+    /**
+     * Handles a model removed event. The removed model, referred to by the [reference], must be removed from the
+     * model server.
+     *
+     * If [reference] identifies a Descriptor Model,see [isDescriptorModel], then this method does nothing. That's
+     * because Descriptor Models are not synced to the model server, therefore they are not removed either.
+     *
+     * @param module the old parent [SModule] of the model.
+     * @param reference a reference to the [SModel] that was removed.
+     *
+     * @see [isDescriptorModel].
+     * @see [NodeSynchronizer.removeNode].
+     * @see [SModuleListener.modelRemoved].
+     */
     override fun modelRemoved(module: SModule, reference: SModelReference) {
         if (projectLifecycleTracker.projectClosing) {
             return
@@ -135,16 +175,31 @@ class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceL
         }
     }
 
+    /**
+     * Handles a module changed event. This event occurs if the [module]'s dependencies changed (a new one was added,
+     * an old one removed), or the [module] was renamed.
+     *
+     * If a new Module Dependency is added, then the dependent [SModule] is also transitively synced to modelix.
+     * However, if the Module Dependency is removed, then the dependent is [SModule] is not removed from modelix.
+     *
+     * @param [module] the [SModule] that changed.
+     *
+     * @see [NodeSynchronizer.setProperty].
+     * @see [NodeSynchronizer.removeNode].
+     * @see [ModuleSynchronizer.addDependency].
+     * @see [ModuleChangeListener.moduleChanged].
+     */
     override fun moduleChanged(module: SModule) {
-        synchronized(module) {
-            /*
-             * in some cases MPS might call this method multiple times consecutively(e.g. when we add the new
-             * dependency), and we want to avoid breaking an ongoing synchronizations.
-             */
-            if (moduleChangeSyncInProgress.contains(module)) {
+        /*
+         * in some cases MPS might call this method multiple times consecutively(e.g. when we add the new
+         * dependency), and we want to avoid breaking an ongoing synchronizations.
+         */
+        val moduleReference = module.moduleReference
+        synchronized(moduleReference) {
+            if (moduleChangeSyncInProgress.contains(moduleReference)) {
                 return
             }
-            moduleChangeSyncInProgress.add(module)
+            moduleChangeSyncInProgress.add(moduleReference)
         }
 
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
@@ -248,23 +303,71 @@ class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceL
         }
     }
 
-    override fun dependencyAdded(module: SModule, dependency: SDependency) {
-        // handled by moduleChanged, because this method is never called
-    }
+    /**
+     * Does nothing. This case is already handled by [moduleChanged], because this method is never called.
+     *
+     * @see [moduleChanged].
+     * @see [SModuleListener.dependencyAdded].
+     */
+    override fun dependencyAdded(module: SModule, dependency: SDependency) {}
 
-    override fun dependencyRemoved(module: SModule, dependency: SDependency) {
-        // handled by moduleChanged, because this method is never called
-    }
+    /**
+     * Does nothing. This case is already handled by [moduleChanged], because this method is never called.
+     *
+     * @see [moduleChanged].
+     * @see [SModuleListener.dependencyRemoved].
+     */
+    override fun dependencyRemoved(module: SModule, dependency: SDependency) {}
 
-    override fun modelRenamed(module: SModule, model: SModel, reference: SModelReference) {
-        // duplicate of SModelListener.modelRenamed
-    }
+    /**
+     * Does nothing, because it is a duplicate of [SModelListener.modelRenamed].
+     *
+     * @see [SModuleListener.modelRenamed].
+     */
+    override fun modelRenamed(module: SModule, model: SModel, reference: SModelReference) {}
 
+    /**
+     * Does nothing.
+     *
+     * @see [SModuleListener.languageAdded].
+     */
     override fun languageAdded(module: SModule, language: SLanguage) {}
+
+    /**
+     * Does nothing.
+     *
+     * @see [SModuleListener.languageRemoved].
+     */
     override fun languageRemoved(module: SModule, language: SLanguage) {}
+
+    /**
+     * Does nothing.
+     *
+     * @see [SModuleListener.beforeModelRemoved].
+     */
     override fun beforeModelRemoved(module: SModule, model: SModel) {}
+
+    /**
+     * Does nothing.
+     *
+     * @see [SModuleListener.beforeModelRenamed].
+     */
     override fun beforeModelRenamed(module: SModule, model: SModel, reference: SModelReference) {}
 
+    /**
+     * A circuit breaker if any exception occurs while executing [func] with the [input]. If an exception occurred,
+     * then we have to remove the [module] from [moduleChangeSyncInProgress], notify the user about it, and break the
+     * chain of [ContinuableSyncTask] coming after this task.
+     *
+     * @param input the parameter of [func].
+     * @param module the [SModule] that we were syncing.
+     * @param func the action that we want to execute with the [input] parameter.
+     *
+     * @throws [Throwable] if an error occurred while executing [func] with the [input] parameter.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     */
+    @Throws(Throwable::class)
     private fun errorHandlerWrapper(
         input: Any?,
         module: SModule,
@@ -277,7 +380,7 @@ class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceL
             if (result is CompletableFuture<*>) {
                 result.whenComplete { taskResult, throwable ->
                     if (throwable != null) {
-                        moduleChangeSyncInProgress.remove(module)
+                        moduleChangeSyncInProgress.remove(module.moduleReference)
                         continuation.completeExceptionally(throwable)
                     } else {
                         continuation.complete(taskResult)
@@ -295,8 +398,22 @@ class ModuleChangeListener(private val branch: IBranch, serviceLocator: ServiceL
         }
     }
 
+    /**
+     * Removes the [module] from the [moduleChangeSyncInProgress] barrier and then logs and rethrows [throwable] after
+     * wrapping it into an [MpsToModelixSynchronizationException] (unless the [throwable] is null).
+     *
+     * @param module the [SModule] that we were syncing.
+     * @param throwable the cause of the error the occurred.
+     *
+     * @throws rethrows [throwable] if it is not null.
+     *
+     * @see [moduleChangeSyncInProgress].
+     * @see [MpsToModelixSynchronizationException].
+     * @see [WrappedNotifier.notifyAndLogError].
+     */
+    @Throws(Throwable::class)
     private fun removeModuleFromSyncInProgressAndRethrow(module: SModule, throwable: Throwable?) {
-        moduleChangeSyncInProgress.remove(module)
+        moduleChangeSyncInProgress.remove(module.moduleReference)
         throwable?.let {
             val exception = MpsToModelixSynchronizationException(it.message ?: pleaseCheckLogs, it)
             notifier.notifyAndLogError(exception.message, exception, logger)
