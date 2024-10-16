@@ -50,6 +50,13 @@ import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
 
+/**
+ * Synchronizes an [SModule] to the modelix model server. This is the class that performs the node operations on the
+ * [IBranch], that will be automatically synced to the model server by modelix.
+ *
+ * @property branch the modelix branch we are connected to.
+ * @property serviceLocator a collector class to simplify injecting the commonly used services in the sync plugin.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -96,6 +103,16 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
      */
     private val modelSynchronizer = ModelSynchronizer(branch, serviceLocator, true)
 
+    /**
+     * Adds the [module] to the model server by synchronizing all its properties, dependencies and children models
+     * recursively.
+     *
+     * @param module the [SModule] to be added to the model server.
+     * @param isTransformationStartingModule if true, then we resolve references only after all dependent (and
+     * contained) modules and models have been transformed.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     */
     fun addModule(
         module: AbstractModule,
         isTransformationStartingModule: Boolean = false,
@@ -174,6 +191,14 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
             bindings
         }
 
+    /**
+     * Adds the outgoing Module Dependency ([dependency]) of [module] to the model server. If the dependency target
+     * [SModule] is not read-only and is not synchronized to the model server yet, then it will be implicitly and
+     * automatically done so.
+     *
+     * @param module the [SModule] from which the Dependency is outgoing.
+     * @param dependency the Module Dependency to be added to the model server.
+     */
     fun addDependency(module: SModule, dependency: SDependency) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val targetModule = dependency.targetModule.resolve(mpsRepository)
@@ -271,8 +296,21 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
             dependencyBindings
         }
 
+    /**
+     * Resolves the unresolved cross-model references, i.e. Model Imports and node references between the model nodes.
+     * An unresolved reference (Model Import or node reference) is created, if at the time of the creation of the
+     * reference the target (Model / Node) was not synchronized to modelix yet.
+     *
+     * @see [ModelSynchronizer.resolveCrossModelReferences].
+     */
     fun resolveCrossModelReferences() = modelSynchronizer.resolveCrossModelReferences()
 
+    /**
+     * Synchronizes the properties of the MPS [module] to the corresponding modelix node ([cloudModule]).
+     *
+     * @param module the MPS Module that will be synchronized to modelix.
+     * @param cloudModule the modelix node that represents the [module].
+     */
     private fun synchronizeModuleProperties(cloudModule: INode, module: SModule) {
         cloudModule.setPropertyValue(
             BuiltinLanguages.MPSRepositoryConcepts.Module.id,
@@ -298,6 +336,11 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
         )
     }
 
+    /**
+     * Notifies the user about the error [message] and logs this message via the [logger] too.
+     *
+     * @param message the error to notify the user about.
+     */
     private fun notifyAndLogError(message: String) {
         val exception = MpsToModelixSynchronizationException(message)
         notifier.notifyAndLogError(message, exception, logger)
