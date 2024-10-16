@@ -31,8 +31,10 @@ import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid
 import org.modelix.model.api.ChildLinkFromName
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INode
 import org.modelix.model.api.getNode
 import org.modelix.model.api.getRootNode
@@ -55,6 +57,17 @@ import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 import java.text.ParseException
 import java.util.concurrent.CompletableFuture
 
+/**
+ * Transforms a modelix [INode] that represents an MPS Module to the corresponding [SModule], or to concepts related to
+ * that (e.g., Module Dependencies). Besides, it transforms the changes that occurred to its properties or references
+ * on the modelix side to the corresponding changes on the MPS side.
+ *
+ * @param mpsLanguageRepository the [ILanguageRepository] that can resolve Concept UIDs of modelix nodes to Concepts in
+ * MPS.
+ *
+ * @property branch the modelix branch we are connected to.
+ * @property serviceLocator a collector class to simplify injecting the commonly used services in the sync plugin.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -66,8 +79,14 @@ class ModuleTransformer(
 ) {
 
     companion object {
+
+        /**
+         * @param moduleDependency the modelix node that represents a Module Dependency.
+         *
+         * @return an [SModuleId] that is created from the [uuid] field of the modelix node
+         */
         fun getTargetModuleIdFromModuleDependency(moduleDependency: INode): SModuleId {
-            val uuid = moduleDependency.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid)!!
+            val uuid = moduleDependency.getPropertyValue(uuid)!!
             return PersistenceFacade.getInstance().createModuleId(uuid)
         }
     }
@@ -119,6 +138,19 @@ class ModuleTransformer(
      */
     private val modelTransformer = ModelTransformer(branch, serviceLocator, mpsLanguageRepository)
 
+    /**
+     * Transforms a modelix node, identified by its [nodeId], to an [SModule] completely (i.e., all Module Dependencies,
+     * contained Models - see [ModelTransformer.transformToModelCompletely]).
+     *
+     * The transformed elements are automatically added to the project in MPS and are not returned by the transformation
+     * methods.
+     *
+     * @param nodeId the identifier of the modelix node that represents the [SModule].
+     * @param isTransformationStartingModule if true, then the cross-model references will be resolved after the
+     * transformation of the dependent models.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     */
     fun transformToModuleCompletely(nodeId: Long, isTransformationStartingModule: Boolean = false) =
         transformToModule(nodeId, true)
             .continueWith(linkedSetOf(SyncLock.MODELIX_READ), SyncDirection.MODELIX_TO_MPS) { dependencyBindings ->
@@ -183,7 +215,19 @@ class ModuleTransformer(
                 moduleBinding.activate()
             }
 
-    fun transformToModule(nodeId: Long, fetchTargetModule: Boolean = false) =
+    /**
+     * Transforms a modelix node, identified by its [nodeId], to an [SModule] without transforming the contained models.
+     *
+     * The transformed elements are automatically added to the project in MPS and are not returned by the transformation
+     * methods.
+     *
+     * @param nodeId the identifier of the modelix node that represents the [SModule].
+     * @param fetchTargetModule if true, then the target [SModule]s of the Module Dependencies (outgoing from this
+     * source [SModule]) will be also transformed.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     */
+    private fun transformToModule(nodeId: Long, fetchTargetModule: Boolean = false) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val iNode = branch.getNode(nodeId)
             val serializedId = iNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id) ?: ""
@@ -210,6 +254,20 @@ class ModuleTransformer(
             (unflattenedBindings as Iterable<Iterable<IBinding>>).flatten()
         }
 
+    /**
+     * Transforms a modelix node, identified by its [nodeId], to a Module Dependency that is outgoing from the
+     * [parentModule].
+     *
+     * The transformed elements are automatically added to the project in MPS and are not returned by the transformation
+     * methods.
+     *
+     * @param nodeId the identifier of the modelix node that represents the [SModule].
+     * @param parentModule the [SModule] that contains the outgoing Module Dependency.
+     * @param fetchTargetModule if true, then the target [SModule]s of the Module Dependencies (outgoing from this
+     * source [SModule]) will be also transformed.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     */
     fun transformModuleDependency(
         nodeId: Long,
         parentModule: AbstractModule,
@@ -285,6 +343,16 @@ class ModuleTransformer(
             dependencyBinding
         }
 
+    /**
+     * Handles a property change event in modelix, that should be played into MPS. This event occurs if a property of
+     * a modelix node changed, and this property represents an [SModule] in MPS.
+     *
+     * @param role the name or UID of the property.
+     * @param nodeId the identifier of the modelix node that represents the [SModule] and whose property changed.
+     * @param sModule the [SModule] whose property changed.
+     * @param newValue the new value of the property.
+     * @param usesRoleIds shows if [role] is a human-readable name or a UID.
+     */
     fun modulePropertyChanged(role: String, nodeId: Long, sModule: SModule, newValue: String?, usesRoleIds: Boolean) {
         val moduleId = sModule.moduleId
         if (sModule !is AbstractModule) {
@@ -365,6 +433,13 @@ class ModuleTransformer(
         }
     }
 
+    /**
+     * Handles a node removed event in modelix. If a node that represents an [SModule] is deleted in modelix, then it
+     * should be also removed in MPS.
+     *
+     * @param sModule the [SModule] that should be removed in MPS.
+     * @param nodeId the identifier of the modelix node that represents the [SModule] that was deleted.
+     */
     fun moduleDeleted(sModule: SModule, nodeId: Long) {
         sModule.models.forEach { model ->
             val modelNodeId = nodeMap[model]
@@ -375,6 +450,13 @@ class ModuleTransformer(
         nodeMap.remove(nodeId)
     }
 
+    /**
+     * Handles a node removed event in modelix. If a node that represents a Module Dependency is deleted in modelix,
+     * then it should be also removed in modelix.
+     *
+     * @param moduleWithModuleReference represents a Module Dependency in MPS that should be deleted.
+     * @param nodeId the identifier of the modelix node that represents the Module Dependency.
+     */
     fun outgoingModuleReferenceFromModuleDeleted(moduleWithModuleReference: ModuleWithModuleReference, nodeId: Long) {
         val sourceModule = moduleWithModuleReference.sourceModuleReference.resolve(mpsRepository)
         if (sourceModule !is AbstractModule) {
@@ -397,6 +479,11 @@ class ModuleTransformer(
         }
     }
 
+    /**
+     * Notifies the user about the error [message] and logs this message via the [logger] too.
+     *
+     * @param message the error to notify the user about.
+     */
     private fun notifyAndLogError(message: String) {
         val exception = ModelixToMpsSynchronizationException(message)
         notifier.notifyAndLogError(message, exception, logger)

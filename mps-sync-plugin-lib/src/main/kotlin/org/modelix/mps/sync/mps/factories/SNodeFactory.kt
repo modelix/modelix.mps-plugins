@@ -92,7 +92,7 @@ class SNodeFactory(
      * @param nodeId the modelix node ID of the node to transform.
      * @param model the [SModel] that is the parent of the node.
      *
-     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
      */
     fun createNodeRecursively(nodeId: Long, model: SModel?): ContinuableSyncTask =
         createNode(nodeId, model)
