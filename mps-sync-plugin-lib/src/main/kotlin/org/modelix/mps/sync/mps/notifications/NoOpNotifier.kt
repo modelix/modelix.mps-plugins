@@ -10,9 +10,25 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
 class NoOpNotifier : INotifier {
+
+    /**
+     * Does nothing.
+     *
+     * @see [INotifier.error].
+     */
     override fun error(message: String, responseListener: UserResponseListener?) {}
 
+    /**
+     * Does nothing.
+     *
+     * @see [INotifier.warning].
+     */
     override fun warning(message: String, responseListener: UserResponseListener?) {}
 
+    /**
+     * Does nothing.
+     *
+     * @see [INotifier.info].
+     */
     override fun info(message: String, responseListener: UserResponseListener?) {}
 }
