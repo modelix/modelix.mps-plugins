@@ -149,7 +149,9 @@ class ModuleTransformer(
      * @param isTransformationStartingModule if true, then the cross-model references will be resolved after the
      * transformation of the dependent models.
      *
-     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed. The result of
+     * this task is a [Set] of [IBinding]s. One of them is the [ModuleBinding] that represents the synchronized Module.
+     * The other [IBinding]s were created by synchronizing the Module Dependency target modules (and their models).
      */
     fun transformToModuleCompletely(nodeId: Long, isTransformationStartingModule: Boolean = false) =
         transformToModule(nodeId, true)
@@ -225,7 +227,9 @@ class ModuleTransformer(
      * @param fetchTargetModule if true, then the target [SModule]s of the Module Dependencies (outgoing from this
      * source [SModule]) will be also transformed.
      *
-     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed. The result of
+     * this task is a [List] of [IBinding]s that were created by synchronizing the Module Dependency target module (and
+     * its models). If the Module Dependency target was not synchronized then a [List] of [EmptyBinding]s is returned.
      */
     private fun transformToModule(nodeId: Long, fetchTargetModule: Boolean = false) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
@@ -266,7 +270,9 @@ class ModuleTransformer(
      * @param fetchTargetModule if true, then the target [SModule]s of the Module Dependencies (outgoing from this
      * source [SModule]) will be also transformed.
      *
-     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed. The result of
+     * this task is a [Set] of [IBinding]s that were created by synchronizing the Module Dependency target module (and
+     * its models). If the Module Dependency target was not synchronized then a [Set] of [EmptyBinding]s is returned.
      */
     fun transformModuleDependency(
         nodeId: Long,

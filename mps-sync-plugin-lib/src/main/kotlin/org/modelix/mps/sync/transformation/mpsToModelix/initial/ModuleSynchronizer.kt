@@ -111,7 +111,9 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
      * @param isTransformationStartingModule if true, then we resolve references only after all dependent (and
      * contained) modules and models have been transformed.
      *
-     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed. The result of
+     * this task is a [Set] of [IBinding]s. One of them is the [ModuleBinding] that represents the synchronized Module.
+     * The other [IBinding]s were created by synchronizing the Module Dependency target modules (and their models).
      */
     fun addModule(
         module: AbstractModule,
@@ -198,6 +200,10 @@ class ModuleSynchronizer(private val branch: IBranch, private val serviceLocator
      *
      * @param module the [SModule] from which the Dependency is outgoing.
      * @param dependency the Module Dependency to be added to the model server.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed. The result of
+     * this task is a [Set] of [IBinding]s that were created by synchronizing the Module Dependency target module (and
+     * its models). If the Module Dependency target was not synchronized then a [Set] of [EmptyBinding]s is returned.
      */
     fun addDependency(module: SModule, dependency: SDependency) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {

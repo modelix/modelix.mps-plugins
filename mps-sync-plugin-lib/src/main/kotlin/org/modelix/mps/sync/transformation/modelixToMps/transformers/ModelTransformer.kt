@@ -145,7 +145,9 @@ class ModelTransformer(
      *
      * @param nodeId the identifier of the modelix node that represents the [SModel].
      *
-     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed. The result of
+     * this task is a [ModelBinding] that was created for the synchronized model. If model was a Descriptor Model, then
+     * an [EmptyBinding] is created because we do not synchronize Descriptor Models.
      */
     fun transformToModelCompletely(nodeId: Long) =
         transformToModel(nodeId)
