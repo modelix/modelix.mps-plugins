@@ -22,6 +22,7 @@ import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNode
+import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.BuiltinLanguages
@@ -37,14 +38,26 @@ import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.services.ServiceLocator
 import org.modelix.mps.sync.mps.util.getModelixId
 import org.modelix.mps.sync.mps.util.isDescriptorModel
+import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
+import org.modelix.mps.sync.tasks.SyncTask
 import org.modelix.mps.sync.transformation.exceptions.ModelAlreadySynchronized
 import org.modelix.mps.sync.transformation.exceptions.ModelAlreadySynchronizedException
 import org.modelix.mps.sync.transformation.exceptions.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.util.synchronizedLinkedHashSet
 import org.modelix.mps.sync.util.waitForCompletionOfEachTask
 
+/**
+ * Synchronizes an [SModel] to the modelix model server. This is the class that performs the node operations on the
+ * [IBranch], that will be automatically synced to the model server by modelix.
+ *
+ * @param postponeReferenceResolution if true, then the references between the modelix node will not be resolved when
+ * they are to be created.
+ *
+ * @property branch the modelix branch we are connected to.
+ * @property serviceLocator a collector class to simplify injecting the commonly used services in the sync plugin.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -94,8 +107,25 @@ class ModelSynchronizer(
         NodeSynchronizer(branch, serviceLocator = serviceLocator)
     }
 
+    /**
+     * Model Imports between [SModel]s that should be resolved at a later point in time, because the modelix nodes
+     * that represent the target [SModel]s might not be available on the [branch] yet.
+     */
     private val resolvableModelImports = synchronizedLinkedHashSet<CloudResolvableModelImport>()
 
+    /**
+     * Adds the [model] to the model server by synchronizing all its properties, Model Imports, Language and DevKit
+     * Dependencies and children nodes recursively. After the synchronization is done, the [ModelBinding] created from
+     * the [model] is activated (see [ModelBinding.activate]).
+     *
+     * Note: that the target models of the Model Imports are not synced implicitly. They are synced as a child model,
+     * when their parent [SModule] is added to modelix (see [ModuleSynchronizer.addModule]).
+     *
+     * Note: the target Languages of Language Dependencies are not synced to the model server, because we assume that
+     * the Languages are available in modelix at runtime.
+     *
+     * @param model the [SModel] to be added to the model server.
+     */
     fun addModelAndActivate(model: SModelBase) {
         addModel(model)
             .continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
@@ -103,6 +133,22 @@ class ModelSynchronizer(
             }
     }
 
+    /**
+     * Adds the [model] to the model server by synchronizing all its properties, Model Imports, Language and DevKit
+     * Dependencies and children nodes recursively. After the synchronization is done, the [ModelBinding] created from
+     * the [model] is activated (see [ModelBinding.activate]).
+     *
+     * Note: that the target models of the Model Imports are not synced implicitly. They are synced as a child model,
+     * when their parent [SModule] is added to modelix (see [ModuleSynchronizer.addModule]).
+     *
+     * Note: the target Languages of Language Dependencies are not synced to the model server, because we assume that
+     * the Languages are available in modelix at runtime.
+     *
+     * @param model the [SModel] to be added to the model server.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed. The result of
+     * this task is a [ModelBinding].
+     */
     fun addModel(model: SModelBase) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             // We do not track changes in descriptor models. See ModelTransformer.isDescriptorModel()
@@ -179,6 +225,12 @@ class ModelSynchronizer(
             }
         }
 
+    /**
+     * Synchronizes the properties of the MPS [model] to the modelix node [cloudModel].
+     *
+     * @param cloudModel the modelix node that represents [model].
+     * @param model the MPS Model.
+     */
     private fun synchronizeModelProperties(cloudModel: INode, model: SModel) {
         cloudModel.setPropertyValue(
             BuiltinLanguages.MPSRepositoryConcepts.Model.id,
@@ -193,6 +245,16 @@ class ModelSynchronizer(
         }
     }
 
+    /**
+     * Adds the [importedModelReference] as an outgoing Model Import of [model] to the model server. If the target
+     * [SModel] has not been synced to modelix yet, then the Model Import will be added to [resolvableModelImports] and
+     * will be manually resolved later (see [resolveModelImports]).
+     *
+     * @param model the MPS Model.
+     * @param importedModelReference the outgoing Model Import that will be added to modelix.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     */
     fun addModelImport(model: SModel, importedModelReference: SModelReference) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val targetModel = importedModelReference.resolve(model.repository)
@@ -205,6 +267,15 @@ class ModelSynchronizer(
             }
         }
 
+    /**
+     * Adds a Model Import from [source] to [targetModel] on the model server.
+     *
+     * @param source the Model Import's source MPS Model.
+     * @param targetModel the Model Import's target MPS Model.
+     *
+     * @see [addReadOnlyModelImportToCloud].
+     * @see [addNormalModelImportToCloud].
+     */
     private fun addModelImportToCloud(source: SModel, targetModel: SModel) =
         if (targetModel.isReadOnly) {
             addReadOnlyModelImportToCloud(source, targetModel)
@@ -212,6 +283,12 @@ class ModelSynchronizer(
             addNormalModelImportToCloud(source, targetModel)
         }
 
+    /**
+     * Adds a read-only Model Import from [source] to [targetModel] on the model server.
+     *
+     * @param source the Model Import's source MPS Model.
+     * @param targetModel the Model Import's target MPS Model.
+     */
     private fun addReadOnlyModelImportToCloud(source: SModel, targetModel: SModel) {
         val modelixId = requireNotNull(nodeMap[source]) { "SModel '$source' is not found in the synchronization map." }
         val cloudParentNode = branch.getNode(modelixId)
@@ -242,6 +319,12 @@ class ModelSynchronizer(
         cloudModelReference.setReferenceTarget(targetModelReference, targetModelNodeReference)
     }
 
+    /**
+     * Adds a normal (not read-only) Model Import from [source] to [targetModel] on the model server.
+     *
+     * @param source the Model Import's source MPS Model.
+     * @param targetModel the Model Import's target MPS Model.
+     */
     private fun addNormalModelImportToCloud(source: SModel, targetModel: SModel) {
         val modelixId = requireNotNull(nodeMap[source]) { "SModel '$source' is not found in the synchronization map." }
         val cloudParentNode = branch.getNode(modelixId)
@@ -273,6 +356,14 @@ class ModelSynchronizer(
         cloudModelReference.setReferenceTarget(targetModelReference, cloudTargetModel)
     }
 
+    /**
+     * Adds a Language Dependency from the source [model] to the [language] on the model server.
+     *
+     * @param model the MPS Model that depends on the target [language].
+     * @param language the Language, the [model] uses.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     */
     fun addLanguageDependency(model: SModel, language: SLanguage) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val modelixId = nodeMap[model]!!
@@ -316,6 +407,14 @@ class ModelSynchronizer(
             )
         }
 
+    /**
+     * Adds a DevKit Dependency from the source [model] to the [devKit] on the model server.
+     *
+     * @param model the MPS Model that depends on the target [devKit].
+     * @param devKit the DevKit, the [model] uses.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     */
     fun addDevKitDependency(model: SModel, devKit: SModuleReference) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             val modelixId = nodeMap[model]!!
@@ -355,17 +454,38 @@ class ModelSynchronizer(
             )
         }
 
+    /**
+     * Runs the [resolveModelImports] in a [SyncTask] asynchronously.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     *
+     * @see [resolveModelImports].
+     */
     fun resolveModelImportsInTask() =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_WRITE, SyncLock.MPS_READ), SyncDirection.MPS_TO_MODELIX) {
             resolveModelImports()
         }
 
+    /**
+     * Resolves the unresolved Model Imports and the (cross-model) node references. An unresolved Model Import was
+     * created if the modelix node that corresponds to the Model Import's target [SModel] was not available on the
+     * [branch] when the Model Import was created. An unresolved (cross-model) node reference was created if the modelix
+     * node that corresponds to the MPS Node was not available in the [branch] when the node reference was created.
+     *
+     * @see [resolveModelImports].
+     * @see [NodeSynchronizer.resolveReferences].
+     */
     fun resolveCrossModelReferences() {
         resolveModelImports()
         // resolve (cross-model) references
         nodeSynchronizer.resolveReferences()
     }
 
+    /**
+     * Resolves the unresolved Model Imports that are stored in [resolveModelImports]. An unresolved Model Import was
+     * created if the modelix node that corresponds to the Model Import's target [SModel] was not available on the
+     * [branch] when the Model Import was created.
+     */
     private fun resolveModelImports() {
         resolvableModelImports.forEach {
             try {
@@ -378,12 +498,25 @@ class ModelSynchronizer(
         resolvableModelImports.removeIf { it.isResolved }
     }
 
+    /**
+     * Notifies the user about the error [message] and logs this message via the [logger] too.
+     *
+     * @param message the error to notify the user about.
+     */
     private fun notifyAndLogError(message: String) {
         val exception = MpsToModelixSynchronizationException(message)
         notifier.notifyAndLogError(message, exception, logger)
     }
 }
 
+/**
+ * Represents a reference (Model Import) between two modelix nodes (that represent [SModel]s on the model server) that
+ * should be created on the modelix model server.
+ *
+ * @property sourceModel the source [SModel] of the Model Import.
+ * @property targetModel the target [SModel] of the Model Import.
+ * @property isResolved true, if the Model Import is resolved, i.e., is synchronized to the modelix model server.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
