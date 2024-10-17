@@ -18,12 +18,18 @@ package org.modelix.mps.sync.plugin.action
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.DataKey
 import jetbrains.mps.extapi.model.SModelBase
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.model.SModel
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.bindings.ModelBinding
 
+/**
+ * An MPS action to deactivate the [ModelBinding] of an [SModel] and therefore stop the MPS Model's synchronization to
+ * the model server. The action is registered in the MPS UI and thereby is triggered by the user.
+ *
+ * @see [AnAction].
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -31,16 +37,22 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 @Suppress("ComponentNotRegistered")
 object UnbindModelAction : AnAction("Unbind Model") {
 
-    private val contextModel = DataKey.create<SModel>("MPS_Context_SModel")
-
     /**
      * Just a normal logger to log messages.
      */
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * Deactivates the [ModelBinding] of the [SModel] that is in the [event] and therefore stops the MPS Model's
+     * synchronization to the model server.
+     *
+     * @param event the event from MPS, to fetch the [SModel] from it.
+     *
+     * @see [AnAction.actionPerformed].
+     */
     override fun actionPerformed(event: AnActionEvent) =
         actionPerformedSafely(event, logger, "Model unbind error occurred.") { serviceLocator ->
-            val model = event.getData(contextModel) as? SModelBase
+            val model = event.getData(getMpsContextModelDataKey()) as? SModelBase
             checkNotNull(model) { "Unbinding is not possible, because Model (${model?.name}) is not an SModelBase." }
             check(!model.isReadOnly) { "Unbinding is not possible, because Model (${model.name}) is read-only." }
 
