@@ -20,18 +20,37 @@ import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.JBColor
 import org.modelix.kotlin.utils.UnstableModelixFeature
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * Some custom rendered icons used on the UI.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 object CloudIcons {
 
+    /**
+     * The standard font size in points.
+     */
     private const val FONT_SIZE = 14
 
+    /**
+     * The icon in the Tool Window.
+     */
     val ROOT_ICON = LetterInSquareIcon("C", FONT_SIZE, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
-    val MODEL_SERVER_ICON = LetterInSquareIcon("S", FONT_SIZE, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
-    val REPOSITORY_ICON = LetterInSquareIcon("R", FONT_SIZE, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
-    val BRANCH_ICON = LetterInSquareIcon("B", FONT_SIZE, 3.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
-    val MODULE_ICON = LetterInSquareIcon("M", FONT_SIZE, 2.0f, 13.0f, JBColor.YELLOW, JBColor.BLACK)
-    val MODEL_ICON = LetterInSquareIcon("m", FONT_SIZE, 2.0f, 12.0f, JBColor.YELLOW, JBColor.BLACK)
+
+    /**
+     * The icon to show that we are connected to the model server.
+     */
     val CONNECTION_ON = LetterInSquareIcon("", FONT_SIZE, 2.0f, 12.0f, JBColor.GREEN, JBColor.BLACK)
+
+    /**
+     * The icon to show that we are disconnected from the model server.
+     */
     val CONNECTION_OFF = LetterInSquareIcon("", FONT_SIZE, 2.0f, 12.0f, JBColor.RED, JBColor.BLACK)
+
+    /**
+     * The plugin's icon shown in the Plugin's list on the Settings page.
+     */
     val PLUGIN_ICON = IconLoader.getIcon("/META-INF/pluginIcon.svg", javaClass)
 }
