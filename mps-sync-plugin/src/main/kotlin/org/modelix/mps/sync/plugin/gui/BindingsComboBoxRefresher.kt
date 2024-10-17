@@ -24,14 +24,30 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.BindingLifecycleState
 import org.modelix.mps.sync.bindings.BindingSortComparator
+import org.modelix.mps.sync.bindings.BindingsRegistry
 import org.modelix.mps.sync.mps.services.ServiceLocator
+import org.modelix.mps.sync.plugin.gui.ModelSyncGuiFactory.ModelSyncGui
 
+/**
+ * Keeps the [ModelSyncGui.bindingsModel] ComboBox in sync with the active [IBinding]s from the [BindingsRegistry].
+ * I.e., newly activated [IBinding]s are added to the ComboBox, while the deactivated [IBinding]s are removed from it.
+ *
+ * The class is implemented as a [Thread], so it can be started separately in the background and is not disturbing the
+ * MPS UI.
+ *
+ * @param project the active [Project] in MPS.
+ *
+ * @property pluginGui the MPS GUI of the modelix sync plugin.
+ *
+ * @see [Thread].
+ * @see [Disposable].
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
 class BindingsComboBoxRefresher(
-    private val pluginGui: ModelSyncGuiFactory.ModelSyncGui,
+    private val pluginGui: ModelSyncGui,
     project: Project,
 ) : Thread(), Disposable {
 
@@ -45,13 +61,25 @@ class BindingsComboBoxRefresher(
      */
     private var bindingsRegistry = project.service<ServiceLocator>().bindingsRegistry
 
+    /**
+     * The comparator is used to sort the [IBinding]s in the correct order.
+     */
     private val bindingsComparator = BindingSortComparator()
+
+    /**
+     * The [IBinding]s that are shown in the ComboBox.
+     */
     private var existingBindings = LinkedHashSet<IBinding>()
 
     init {
         start()
     }
 
+    /**
+     * Waits for the new items in the [BindingsRegistry.changedBindings] queue, adds or removes the newly received
+     * [IBinding] in the [existingBindings] collection, then sorts them in the correct order and finally populates the
+     * [ModelSyncGui.bindingsModel] with the latest list of [IBinding]s.
+     */
     override fun run() {
         try {
             while (!isInterrupted) {
@@ -72,6 +100,11 @@ class BindingsComboBoxRefresher(
         }
     }
 
+    /**
+     * Interrupts the [Thread] to stop its operation.
+     *
+     * @see [run].
+     */
     override fun dispose() {
         interrupt()
     }
