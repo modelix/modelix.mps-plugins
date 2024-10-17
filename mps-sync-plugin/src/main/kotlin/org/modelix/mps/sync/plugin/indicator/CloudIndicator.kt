@@ -28,29 +28,59 @@ import org.jetbrains.annotations.Nls
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.plugin.icons.CloudIcons
 import java.awt.event.MouseEvent
-import javax.swing.JComponent
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * A factory to create a status bar widget about the connection status to the model sever.
+ *
+ * @see [StatusBarWidgetFactory].
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class CloudIndicator : StatusBarWidgetFactory {
+
     companion object {
+
+        /**
+         * The ID of the widget.
+         */
         private const val ID = "CloudStatus"
-        private const val TOOLTIP_CONTENT = "<table><tr><td>{0}:</td><td align=right>{1}</td></tr></table>"
     }
+
     override fun getId(): String = ID
 
     @Nls
-    override fun getDisplayName(): String = "Cloud Status"
-    override fun isAvailable(project: Project): Boolean = true
+    override fun getDisplayName() = "Cloud Status"
+    override fun isAvailable(project: Project) = true
     override fun createWidget(project: Project): StatusBarWidget = CloudToolWidget()
-    override fun canBeEnabledOn(statusBar: StatusBar): Boolean = true
+    override fun canBeEnabledOn(statusBar: StatusBar) = true
     override fun disposeWidget(widget: StatusBarWidget) {}
 
+    /**
+     * The status bar widget about the connection status to the model server.
+     *
+     * @see [JBLabel].
+     * @see [CustomStatusBarWidget].
+     */
     private class CloudToolWidget : JBLabel(), CustomStatusBarWidget {
+
+        companion object {
+            /**
+             * The tooltip content placeholder string formatted as a table with one row and two columns.
+             */
+            private const val TOOLTIP_CONTENT = "<table><tr><td>{0}:</td><td align=right>{1}</td></tr></table>"
+        }
+
+        /**
+         * If true then the widget is toggled on otherwise off.
+         */
+        private var isToggledOn = true
 
         init {
             object : ClickListener() {
                 override fun onClick(event: MouseEvent, clickCount: Int): Boolean {
-                    // todo: maybe even allow opening the tool bar from here
+                    // TODO maybe even allow opening the tool bar from here
                     // ToolWindowManager.getInstance(e.project!!).getToolWindow("Modelix Model Synchronization")!!.show()
                     toggleStatus()
                     return true
@@ -58,25 +88,29 @@ class CloudIndicator : StatusBarWidgetFactory {
             }.installOn(this, true)
         }
 
-        override fun ID(): String = ID
-        var state = true
+        override fun ID() = ID
 
-        override fun install(statusBar: StatusBar) {
-            toggleStatus()
-        }
+        override fun install(statusBar: StatusBar) = toggleStatus()
 
-        fun toggleStatus() {
-            state = !state
-            if (state) {
-                this.icon = CloudIcons.CONNECTION_ON
-                toolTipText = UIBundle.message(TOOLTIP_CONTENT, TOOLTIP_CONTENT.format("Server 1", "ON"))
-            } else {
-                this.icon = CloudIcons.CONNECTION_OFF
-                toolTipText = UIBundle.message(TOOLTIP_CONTENT, "Server 1", "OFF")
-            }
-        }
-        override fun getComponent(): JComponent = this
+        override fun getComponent() = this
 
         override fun dispose() {}
+
+        /**
+         * Flips [isToggledOn] and updates the icon and tooltip text accordingly.
+         *
+         * @see [setIcon].
+         * @see [setToolTipText].
+         */
+        private fun toggleStatus() {
+            isToggledOn = !isToggledOn
+            if (isToggledOn) {
+                icon = CloudIcons.CONNECTION_ON
+                toolTipText = UIBundle.message(TOOLTIP_CONTENT, TOOLTIP_CONTENT.format("Server 1", "ON"))
+            } else {
+                icon = CloudIcons.CONNECTION_OFF
+                toolTipText = UIBundle.message(TOOLTIP_CONTENT, TOOLTIP_CONTENT.format("Server 1", "OFF"))
+            }
+        }
     }
 }
