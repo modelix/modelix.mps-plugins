@@ -82,10 +82,10 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
         logger.debug { "ModelixSyncPlugin: InjectableNotifierWrapper is initialized" }
     }
 
-    override fun connectModelServer(serverURL: String, jwt: String?): ModelClientV2? {
+    override fun connectModelServer(serverURL: String, authProvider: () -> String?): ModelClientV2? {
         var client: ModelClientV2? = null
         try {
-            client = syncService.connectModelServer(URL(serverURL), jwt)
+            client = syncService.connectModelServer(URL(serverURL), authProvider)
             notifier.notifyAndLogInfo("Connected to server: $serverURL", logger)
         } catch (t: Throwable) {
             val message = "Unable to connect to $serverURL. Cause: ${t.message}"

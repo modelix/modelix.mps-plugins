@@ -14,10 +14,10 @@ import java.util.concurrent.CompletableFuture
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 interface ISyncService : IRebindModulesSyncService {
 
-    override fun connectModelServer(serverURL: String, jwt: String?) = connectModelServer(URL(serverURL), jwt)
+    override fun connectModelServer(serverURL: String, authProvider: () -> String?) = connectModelServer(URL(serverURL), authProvider)
 
     @Throws(IOException::class)
-    fun connectModelServer(serverURL: URL, jwt: String? = null): ModelClientV2
+    fun connectModelServer(serverURL: URL, authProvider: () -> String?): ModelClientV2
 
     fun disconnectModelServer(client: ModelClientV2)
 
