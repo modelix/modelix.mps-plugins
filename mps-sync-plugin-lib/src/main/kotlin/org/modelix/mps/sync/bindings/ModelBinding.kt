@@ -17,7 +17,6 @@
 package org.modelix.mps.sync.bindings
 
 import jetbrains.mps.extapi.model.SModelBase
-import jetbrains.mps.model.ModelDeleteHelper
 import mu.KotlinLogging
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
@@ -52,9 +51,6 @@ class ModelBinding(val model: SModelBase, branch: IBranch, serviceLocator: Servi
 
     @Volatile
     private var isActivated = false
-
-    @Volatile
-    private var modelDeletedLocally = false
 
     @Synchronized
     override fun activate(callback: Runnable?) {
@@ -99,30 +95,6 @@ class ModelBinding(val model: SModelBase, branch: IBranch, serviceLocator: Servi
                     }
 
                     isActivated = false
-                }
-            }
-        }.continueWith(linkedSetOf(SyncLock.MPS_WRITE), SyncDirection.MPS_TO_MODELIX) {
-            synchronized(this) {
-                try {
-                    // delete model
-                    if (!removeFromServer && !modelDeletedLocally) {
-                        /*
-                         * to delete the files locally, otherwise MPS takes care of calling
-                         * ModelDeleteHelper(model).delete() to delete the model (if removeFromServer is true)
-                         */
-                        ModelDeleteHelper(model).delete()
-                        modelDeletedLocally = true
-                    }
-                } catch (ex: Exception) {
-                    logger.error(ex) { "Exception occurred while deactivating ${name()}." }
-                    /*
-                     * if any error occurs, then we put the binding back to let the rest of the application know that
-                     * it exists
-                     */
-                    bindingsRegistry.addModelBinding(this)
-                    activate()
-
-                    throw ex
                 }
             }
         }.continueWith(linkedSetOf(SyncLock.NONE), SyncDirection.NONE) {
