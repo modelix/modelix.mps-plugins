@@ -39,6 +39,8 @@ import com.intellij.openapi.project.Project
 import jetbrains.mps.extapi.model.SModelBase
 import jetbrains.mps.project.AbstractModule
 import mu.KotlinLogging
+import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.client2.ModelClientV2
@@ -48,6 +50,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.IRebindModulesSyncService
 import org.modelix.mps.sync.ISyncService
+import org.modelix.mps.sync.SyncServiceImpl
 import org.modelix.mps.sync.mps.notifications.BalloonNotifier
 import org.modelix.mps.sync.mps.notifications.WrappedNotifier
 import org.modelix.mps.sync.mps.services.ServiceLocator
@@ -55,6 +58,13 @@ import org.modelix.mps.sync.mps.util.ModuleIdWithName
 import org.modelix.mps.sync.plugin.action.ModelixActionGroup
 import java.net.URL
 
+/**
+ * The bridge between the modelix sync plugin's UI and the [SyncServiceImpl] that is actually coordinating the
+ * synchronization process. Most of its methods are doing the same thing as in [SyncServiceImpl] plus with some
+ * additional user notifications about the operation results via the [notifier] field.
+ *
+ * @see [IRebindModulesSyncService].
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -118,6 +128,15 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
         }
     }
 
+    /**
+     * Disconnects the [modelClient] from the server.
+     *
+     * @param modelClient the model client to disconnect from the server.
+     *
+     * @return null if the disconnection was successful, otherwise the living client.
+     *
+     * @see [SyncServiceImpl.disconnectModelServer].
+     */
     fun disconnectServer(modelClient: ModelClientV2): ModelClientV2? {
         var client: ModelClientV2? = modelClient
         val baseUrl = modelClient.baseUrl
@@ -132,6 +151,16 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
         return client
     }
 
+    /**
+     * Connects the [client] to the branch identified by its [branchReference].
+     *
+     * @param client the client to use for the connection.
+     * @param branchReference the identifier of the branch to connect to.
+     *
+     * @return the active branch we are connected to or null if an exception occurred.
+     *
+     * @see [SyncServiceImpl.connectToBranch].
+     */
     fun connectToBranch(client: ModelClientV2, branchReference: BranchReference): IBranch? {
         try {
             val branch = syncService.connectToBranch(client, branchReference)
@@ -144,6 +173,14 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
         }
     }
 
+    /**
+     * Disconnects from the [branch].
+     *
+     * @param branch the active branch to disconnect.
+     * @param branchName the name of the active branch.
+     *
+     * @see [SyncServiceImpl.disconnectFromBranch].
+     */
     fun disconnectFromBranch(branch: IBranch, branchName: String) {
         try {
             syncService.disconnectFromBranch(branch, branchName)
@@ -154,8 +191,24 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
         }
     }
 
+    /**
+     * @return the active branch.
+     *
+     * @see [SyncServiceImpl.getActiveBranch].
+     */
     fun getActiveBranch() = syncService.getActiveBranch()
 
+    /**
+     * Binds the [module] from the [branchName] branch of the repository, identified by its [repositoryID], on the model
+     * server to which we are connected by the [client].
+     *
+     * After binding the [module], the method activates the created [IBinding]s automatically.
+     *
+     * @param client the model client we use to connect to the model server.
+     * @param branchName the name of the branch from which we want to bind the Module.
+     * @param module the ID and name of the Module we want to bind.
+     * @param repositoryID the ID of the repository on the model server.
+     */
     fun bindModuleFromServer(
         client: ModelClientV2,
         branchName: String,
@@ -175,10 +228,22 @@ class ModelSyncService(project: Project) : IRebindModulesSyncService {
         }
     }
 
+    /**
+     * @see [SyncServiceImpl.bindModuleFromMps].
+     */
     fun bindModuleFromMps(module: AbstractModule, branch: IBranch) = syncService.bindModuleFromMps(module, branch)
 
+    /**
+     * @see [SyncServiceImpl.bindModelFromMps].
+     */
     fun bindModelFromMps(model: SModelBase, branch: IBranch) = syncService.bindModelFromMps(model, branch)
 
+    /**
+     * Registers the modelix sync plugin's UI actions to MPS, so that they can be triggered from the context menu of
+     * the [SModule]s and [SModel]s in the Project explorer window.
+     *
+     * @see [ModelixActionGroup].
+     */
     private fun registerSyncActions() {
         listOf(
             "jetbrains.mps.ide.actions.ModelActions_ActionGroup",
