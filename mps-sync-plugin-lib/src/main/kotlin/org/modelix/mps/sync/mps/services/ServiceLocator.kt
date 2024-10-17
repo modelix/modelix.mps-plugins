@@ -24,9 +24,14 @@ import org.modelix.mps.sync.transformation.cache.MpsToModelixMap
  * A collector class to simplify injecting the commonly used services in the sync plugin. In this way, we do not have to
  * worry about the initialization sequence of the services.
  *
+ * This class is a [Service] class whose lifecycle is bound to the opened [Project]. Note that the singleton instance of
+ * this class will be automatically created if you use the `project.service<ServiceLocator>()` call.
+ *
  * Add your class here, whose lifecycle you would like to bind to the recently opened [Project], and if you want to use
  * it from other (service) classes. The class must implement the [InjectableService] interface so that it can be
  * initialized and disposed according to the [Project]'s lifecycle.
+ *
+ * @see [Service].
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
