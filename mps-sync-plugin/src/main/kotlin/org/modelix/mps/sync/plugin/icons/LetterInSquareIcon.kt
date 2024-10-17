@@ -16,8 +16,6 @@
 
 package org.modelix.mps.sync.plugin.icons
 
-import com.intellij.ui.Gray
-import com.intellij.ui.JBColor
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.awt.Color
 import java.awt.Component
@@ -28,7 +26,22 @@ import java.awt.RenderingHints
 import java.awt.geom.RoundRectangle2D
 import javax.swing.Icon
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * Represents a letter in a square as icon.
+ *
+ * @property letter the letter to display in the icon.
+ * @property fontSize the size of the [letter] in points.
+ * @property offsetX the X-axis offset of the letter in the icon.
+ * @property offsetY the Y-axis offset of the letter in the icon.
+ * @property backgroundColor the background colour of the icon.
+ * @property foregroundColor the foreground colour of the icon.
+ *
+ * @see [Icon]
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class LetterInSquareIcon(
     private val letter: String,
     private val fontSize: Int,
@@ -38,16 +51,7 @@ class LetterInSquareIcon(
     private val foregroundColor: Color,
 ) : Icon {
 
-    constructor(letter: String, fontSize: Int, offsetX: Float, offsetY: Float) : this(
-        letter,
-        fontSize,
-        offsetX,
-        offsetY,
-        JBColor.BLACK,
-        Gray._200,
-    )
-
-    override fun paintIcon(c: Component, graphics: Graphics, x: Int, y: Int) {
+    override fun paintIcon(component: Component, graphics: Graphics, x: Int, y: Int) {
         val g = graphics.create() as Graphics2D
         try {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
