@@ -18,12 +18,20 @@ package org.modelix.mps.sync.plugin.action
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.DataKey
 import jetbrains.mps.project.AbstractModule
 import mu.KotlinLogging
+import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
+import org.modelix.mps.sync.bindings.ModelBinding
+import org.modelix.mps.sync.bindings.ModuleBinding
 
+/**
+ * An MPS action to synchronize an [SModule] to the model server. The action is registered in the MPS UI and thereby
+ * is triggered by the user.
+ *
+ * @see [AnAction].
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
@@ -31,16 +39,23 @@ import org.modelix.kotlin.utils.UnstableModelixFeature
 @Suppress("ComponentNotRegistered")
 object ModuleSyncAction : AnAction("Synchronize Module to Server") {
 
-    val contextModule = DataKey.create<SModule>("MPS_Context_SModule")
-
     /**
      * Just a normal logger to log messages.
      */
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * Synchronizes the [SModule] that is in the [event] to the model server and activates its [ModuleBinding] and the
+     * related [ModuleBinding]s and [ModelBinding]s of the contained [SModel]s' or the dependent [SModule]s' and their
+     * [SModel]s'.
+     *
+     * @param event the event from MPS, to fetch the [SModule] from it.
+     *
+     * @see [AnAction.actionPerformed].
+     */
     override fun actionPerformed(event: AnActionEvent) =
         actionPerformedSafely(event, logger, "Module synchronization error occurred.") { serviceLocator ->
-            val module = event.getData(contextModule) as? AbstractModule
+            val module = event.getData(getMpsContextModuleDataKey()) as? AbstractModule
             checkNotNull(module) { "Synchronization is not possible, because Module (${module?.moduleName}) is not an AbstractModule." }
             check(!module.isReadOnly) { "Synchronization action is not allowed on read-only Module (${module.moduleName})." }
 

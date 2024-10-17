@@ -15,6 +15,8 @@ import java.util.concurrent.CompletableFuture
 /**
  * The interface of the synchronization coordinator class, that can connect to the model server and bind models and
  * modules in both directions, starting from the model server or from MPS as well.
+ *
+ * @see [IRebindModulesSyncService].
  */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
