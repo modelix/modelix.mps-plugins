@@ -19,8 +19,20 @@ package org.modelix.mps.sync.util
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.util.Collections
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * @return a [MutableMap] wrapped by [Collections.synchronizedMap].
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 fun <K, V> synchronizedMap(): MutableMap<K, V> = Collections.synchronizedMap(mutableMapOf<K, V>())
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * @return a [MutableSet] wrapped by [Collections.synchronizedSet].
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 fun <K> synchronizedLinkedHashSet(): MutableSet<K> = Collections.synchronizedSet(LinkedHashSet<K>())

@@ -19,11 +19,23 @@ package org.modelix.mps.sync.util
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import java.text.ParseException
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * A workaround util class for extension methods of String.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 object BooleanUtil {
 
     /**
-     * Drop-in replacement, because String.toStringBoolean() does not compile
+     * Drop-in replacement, because [String.toBooleanStrict] does not compile.
+     *
+     * @throws ParseException if [value] is not a boolean.
+     *
+     * @param value the [String] to be converted to a [Boolean].
+     *
+     * @see [String.toBooleanStrict].
      */
     @Throws(ParseException::class)
     fun toBooleanStrict(value: String) =

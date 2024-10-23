@@ -21,12 +21,18 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ProjectManagerListener
 import org.modelix.kotlin.utils.UnstableModelixFeature
 
+/**
+ * Tracks the active [Project]'s lifecycle and sets [projectClosing] to true, if the project is closing.
+ */
 @UnstableModelixFeature(
     reason = "The new modelix MPS plugin is under construction",
     intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
 )
 class ProjectLifecycleTracker : InjectableService {
 
+    /**
+     * True if the active [Project] is closing.
+     */
     var projectClosing = false
         private set
 
