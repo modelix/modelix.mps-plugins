@@ -2,6 +2,8 @@
 
 The classes and interfaces participating in persisting and restoring the sync plugin's state. Classes and interfaces without a label are residing in the `mps-sync-plugin-lib` project.
 
+Note that the `WrappedNotifier` class is omitted from the figure, because it is used by almost all classes and therefore would make the figure cluttered by a lot of arrows.
+
 <details>
 <summary>PlantUML source</summary>
 <pre>
@@ -18,6 +20,7 @@ interface "IRebindModulesSyncService" as iRebindModulesSyncService
 interface "ISyncService" as iSyncService
 class "SyncServiceImpl" as syncServiceImpl
 
+interface "InjectableService" as injectableService
 class "ServiceLocator" as serviceLocator
 class "BindingsRegistry" as bindingsRegistry
 class "BranchRegistry" as branchRegistry
@@ -29,8 +32,6 @@ class "MpsToModelixMapInitializerVisitor" as mpsToModelixMapInitializerVisitor
 interface "IBinding" as iBinding
 class "ModelBinding" as modelBinding
 class "ModuleBinding" as moduleBinding
-
-interface "InjectableService" as injectableService
 
 'Relations'
 modelSyncGui --> modelSyncService
