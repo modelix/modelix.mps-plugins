@@ -64,7 +64,7 @@ class BindingsRegistry : InjectableService {
     val changedBindings = LinkedBlockingQueue<BindingState>()
 
     /**
-     * Adds a [ModelBinding] to the registry, and puts it in [changedBindings] with the [BindingLifecycleState.ADD]
+     * Adds a [ModelBinding] to the registry, and puts it in [changedBindings] with the [ADD]
      * state.
      *
      * @param binding the [ModelBinding] to be put in the registry.
@@ -75,7 +75,7 @@ class BindingsRegistry : InjectableService {
     }
 
     /**
-     * Adds a [ModuleBinding] to the registry, and puts it in [changedBindings] with the [BindingLifecycleState.ADD]
+     * Adds a [ModuleBinding] to the registry, and puts it in [changedBindings] with the [ADD]
      * state.
      *
      * @param binding the [ModuleBinding] to be put in the registry.
@@ -86,8 +86,7 @@ class BindingsRegistry : InjectableService {
     }
 
     /**
-     * Removes a [ModelBinding] from the registry, and puts it in [changedBindings] with the
-     * [BindingLifecycleState.REMOVE] state.
+     * Removes a [ModelBinding] from the registry, and puts it in [changedBindings] with the [REMOVE] state.
      *
      * @param binding the [ModelBinding] to be removed from the registry.
      */
@@ -97,8 +96,7 @@ class BindingsRegistry : InjectableService {
     }
 
     /**
-     * Removes a [ModuleBinding] from the registry and puts it in [changedBindings] with the
-     * [BindingLifecycleState.REMOVE] state.
+     * Removes a [ModuleBinding] from the registry and puts it in [changedBindings] with the [REMOVE] state.
      *
      * @param binding the [ModuleBinding] to be removed from the registry.
      */
@@ -153,12 +151,12 @@ class BindingsRegistry : InjectableService {
     fun getModuleBinding(module: AbstractModule) = moduleBindings.find { it.module == module }
 
     /**
-     * Adds a new [BindingState] to the [changedBindings] with the given binding and [BindingLifecycleState.ACTIVATE].
+     * Adds a new [BindingState] to the [changedBindings] with the given binding and [ACTIVATE].
      *
-     * @param binding the [IBinding] whose state we would like to set to [BindingLifecycleState.ACTIVATE].
+     * @param binding the [IBinding] whose state we would like to set to [ACTIVATE].
      */
     fun bindingActivated(binding: IBinding) =
-        changedBindings.put(BindingState(binding, BindingLifecycleState.ACTIVATE))
+        changedBindings.put(BindingState(binding, ACTIVATE))
 
     /**
      * Deactivates all [IBinding]s that are stored in this registry.
@@ -203,20 +201,20 @@ class BindingsRegistry : InjectableService {
     }
 
     /**
-     * Adds a new [BindingState] to the [changedBindings] with the given binding and [BindingLifecycleState.ADD].
+     * Adds a new [BindingState] to the [changedBindings] with the given binding and [ADD].
      *
-     * @param binding the [IBinding] whose state we would like to set to [BindingLifecycleState.ADD].
+     * @param binding the [IBinding] whose state we would like to set to [ADD].
      */
     private fun bindingAdded(binding: IBinding) =
-        changedBindings.put(BindingState(binding, BindingLifecycleState.ADD))
+        changedBindings.put(BindingState(binding, ADD))
 
     /**
-     * Adds a new [BindingState] to the [changedBindings] with the given binding and [BindingLifecycleState.REMOVE].
+     * Adds a new [BindingState] to the [changedBindings] with the given binding and [REMOVE].
      *
-     * @param binding the [IBinding] whose state we would like to set to [BindingLifecycleState.REMOVE].
+     * @param binding the [IBinding] whose state we would like to set to [REMOVE].
      */
     private fun bindingRemoved(binding: IBinding) =
-        changedBindings.put(BindingState(binding, BindingLifecycleState.REMOVE))
+        changedBindings.put(BindingState(binding, REMOVE))
 
     /**
      * Deactivates all [IBinding]s that are stored in this registry.
