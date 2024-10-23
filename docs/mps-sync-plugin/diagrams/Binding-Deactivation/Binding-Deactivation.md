@@ -9,7 +9,9 @@ Note that the `WrappedNotifier` class is omitted from the figure, because it is 
 <pre>
 @startuml
 'Entities'
-interface "IBinding" as iBinding
+interface IBinding {
++{abstract} deactivate(removeFromServer: Boolean, callback: Runnable? = null): CompletableFuture<Any?>
+}
 class "ModelBinding" as modelBinding
 class "ModuleBinding" as moduleBinding
 
@@ -25,8 +27,8 @@ class "ModelChangeListener" as modelChangeListener
 class "ModuleChageListener" as moduleChangeListener
 
 'Relations'
-iBinding <|.. modelBinding
-iBinding <|.. moduleBinding
+IBinding <|.. modelBinding
+IBinding <|.. moduleBinding
 
 serviceLocator *--> bindingsRegistry
 serviceLocator *--> syncQueue
@@ -59,6 +61,7 @@ moduleChangeListener ..> serviceLocator
 syncQueue ..> futuresWaitQueue
 
 'Notes'
+note right of IBinding: start:\ndeactivate(...): CompletableFuture<Any?>
 
 @enduml
 </pre>

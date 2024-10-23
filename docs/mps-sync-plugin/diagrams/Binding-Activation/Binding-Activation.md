@@ -7,7 +7,9 @@ The classes and interfaces participating when `IBinding.activate` method is call
 <pre>
 @startuml
 'Entities'
-interface "IBinding" as iBinding
+interface IBinding {
++{abstract} activate(callback: Runnable): Unit
+}
 class "ModelBinding" as modelBinding
 class "ModuleBinding" as moduleBinding
 
@@ -21,8 +23,8 @@ class "ModelChangeListener" as modelChangeListener
 class "ModuleChageListener" as moduleChangeListener
 
 'Relations'
-iBinding <|.. modelBinding
-iBinding <|.. moduleBinding
+IBinding <|.. modelBinding
+IBinding <|.. moduleBinding
 
 serviceLocator *--> wrappedNotifier
 serviceLocator *--> bindingsRegistry
@@ -48,6 +50,7 @@ modelChangeListener ..> serviceLocator
 moduleChangeListener ..> serviceLocator
 
 'Notes'
+note right of IBinding: start: activate(callback: Runnable)
 
 @enduml
 </pre>

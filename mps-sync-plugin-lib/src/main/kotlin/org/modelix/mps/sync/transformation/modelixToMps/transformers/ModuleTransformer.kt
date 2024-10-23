@@ -21,6 +21,7 @@ import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
+import jetbrains.mps.project.Solution
 import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.project.structure.modules.SolutionDescriptor
 import mu.KotlinLogging
@@ -131,6 +132,9 @@ class ModuleTransformer(
      */
     private val mpsRepository = serviceLocator.mpsRepository
 
+    /**
+     *  Factory class to create a [Solution] in MPS and persist it in the file system.
+     */
     private val solutionProducer = SolutionProducer(mpsProject)
 
     /**

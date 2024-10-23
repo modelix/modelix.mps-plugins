@@ -40,6 +40,9 @@ serviceLocator *--> bindingsRegistry
 serviceLocator *--> branchRegistry
 serviceLocator .. injectableService
 
+syncServiceImpl --> branchRegistry
+syncServiceImpl --> bindingsRegistry
+
 modelSyncGui --> modelSyncService
 modelSyncService ..> serviceLocator
 modelSyncService --> iSyncService
