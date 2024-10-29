@@ -29,7 +29,6 @@ import org.modelix.mps.sync.transformation.exceptions.ModelixToMpsSynchronizatio
 import org.modelix.mps.sync.transformation.exceptions.MpsToModelixSynchronizationException
 import org.modelix.mps.sync.transformation.exceptions.SynchronizationException
 import org.modelix.mps.sync.transformation.exceptions.pleaseCheckLogs
-import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -95,7 +94,8 @@ class SyncQueue : InjectableService {
         if (noTaskIsRunning || isNoneDirection || runningTaskDirectionIsTheSame) {
             enqueueAndFlush(task)
         } else {
-            task.result.completeWithDefault()
+            // Fail the result in this case, because the follower tasks assume that its predecessor task ran.
+            task.result.completeExceptionally(IllegalStateException("Predecessor task was not scheduled in the SyncQueue."))
         }
     }
 
