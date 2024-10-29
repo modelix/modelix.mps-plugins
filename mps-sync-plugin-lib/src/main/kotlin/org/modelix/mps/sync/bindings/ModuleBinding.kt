@@ -111,9 +111,9 @@ class ModuleBinding(val module: AbstractModule, branch: IBranch, serviceLocator:
 
             isDisposed = true
 
-            val message = "${name()} is deactivated and module is removed locally${
+            val message = "${name()} is deactivated${
                 if (removeFromServer) {
-                    " and from server"
+                    " and module is removed from the server"
                 } else {
                     ""
                 }
