@@ -41,7 +41,7 @@ import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.mpsadapters.MPSLanguageRepository
 import org.modelix.model.mpsadapters.MPSModelImportAsNode
-import org.modelix.mps.sync.bindings.BindingsRegistry
+import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.bindings.EmptyBinding
 import org.modelix.mps.sync.bindings.ModelBinding
 import org.modelix.mps.sync.modelix.util.getModel
@@ -54,6 +54,7 @@ import org.modelix.mps.sync.mps.util.createModel
 import org.modelix.mps.sync.mps.util.deleteDevKit
 import org.modelix.mps.sync.mps.util.deleteLanguage
 import org.modelix.mps.sync.mps.util.descriptorSuffix
+import org.modelix.mps.sync.tasks.ContinuableSyncTask
 import org.modelix.mps.sync.tasks.SyncDirection
 import org.modelix.mps.sync.tasks.SyncLock
 import org.modelix.mps.sync.transformation.cache.ModelWithModelReference
@@ -79,6 +80,11 @@ class ModelTransformer(
 
     private val notifier = serviceLocator.wrappedNotifier
 
+    /**
+     * The registry to store the [IBinding]s.
+     */
+    private val bindingsRegistry = serviceLocator.bindingsRegistry
+
     private val mpsProject = serviceLocator.mpsProject
     private val mpsRepository = serviceLocator.mpsRepository
 
@@ -86,7 +92,7 @@ class ModelTransformer(
 
     private val resolvableModelImports = mutableListOf<ResolvableModelImport>()
 
-    fun transformToModelCompletely(nodeId: Long, branch: IBranch, bindingsRegistry: BindingsRegistry) =
+    fun transformToModelCompletely(nodeId: Long) =
         transformToModel(nodeId)
             .continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
                 val model = branch.getNode(nodeId)
@@ -115,7 +121,27 @@ class ModelTransformer(
                 }
             }
 
-    fun transformToModel(nodeId: Long) =
+    /**
+     * Transforms a modelix node, identified by its [nodeId], to an [SModel] and then creates and activates its
+     * [ModelBinding].
+     *
+     * @param nodeId the identifier of the modelix node that represents the [SModel].
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     *
+     * @see [transformToModel]
+     */
+    fun transformToModelAndActivate(nodeId: Long) =
+        transformToModel(nodeId)
+            .continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+                val iNode = branch.getNode(nodeId)
+                val model = nodeMap.getModel(iNode.nodeIdAsLong()) as SModelBase
+                val binding = ModelBinding(model, branch, serviceLocator)
+                bindingsRegistry.addModelBinding(binding)
+                binding.activate()
+            }
+
+    private fun transformToModel(nodeId: Long) =
         syncQueue.enqueue(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
             val iNode = branch.getNode(nodeId)
             val name = iNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)
