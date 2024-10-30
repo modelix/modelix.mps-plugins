@@ -26,7 +26,18 @@ import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.mps.sync.mps.factories.ModelPersistenceWithFixedId
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * Creates an [SModel] in the [SModule] with the given name and ID.
+ *
+ * @param name the name of the [SModel] to be created.
+ * @param id the ID of the [SModel] to be created.
+ *
+ * @return the created [SModel] or null if an error happened during the creation.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 internal fun SModule.createModel(name: String, id: SModelId): SModel? {
     val modelName = SModelName(name)
     val modelRoot = this.modelRoots.filterIsInstance<DefaultModelRoot>().firstOrNull { it.canCreateModel(modelName) }
@@ -38,8 +49,23 @@ internal fun SModule.createModel(name: String, id: SModelId): SModel? {
     return null
 }
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * @return [SModule.getModuleId] as String.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 internal fun SModule.getModelixId() = this.moduleId.toString()
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * A data class to store module ID and name together.
+ *
+ * @property id the ID of the module
+ * @property name the name of the module
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 data class ModuleIdWithName(val id: String, val name: String)

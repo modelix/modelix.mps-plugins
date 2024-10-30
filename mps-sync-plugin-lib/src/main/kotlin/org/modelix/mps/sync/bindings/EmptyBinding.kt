@@ -21,12 +21,32 @@ import org.modelix.mps.sync.IBinding
 import org.modelix.mps.sync.util.completeWithDefault
 import java.util.concurrent.CompletableFuture
 
-@UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
+/**
+ * An empty binding that does nothing, but can be used as a placeholder where we have [IBinding]s.
+ */
+@UnstableModelixFeature(
+    reason = "The new modelix MPS plugin is under construction",
+    intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.",
+)
 class EmptyBinding : IBinding {
+
+    /**
+     * Does nothing.
+     */
     override fun activate(callback: Runnable?) {}
 
+    /**
+     * Does nothing, just returns a default value.
+     *
+     * @return a [CompletableFuture] completed by a default value.
+     *
+     * @see [CompletableFuture.completeWithDefault]
+     */
     override fun deactivate(removeFromServer: Boolean, callback: Runnable?) =
         CompletableFuture<Any?>().completeWithDefault()
 
+    /**
+     * @return the name of this class
+     */
     override fun name(): String = this.javaClass.name
 }
