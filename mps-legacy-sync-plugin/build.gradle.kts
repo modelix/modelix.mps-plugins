@@ -103,7 +103,7 @@ val enableTests = !setOf(212, 213, 222).contains(mpsPlatformVersion)
 tasks {
     patchPluginXml {
         sinceBuild.set("211") // 203 is not supported, because VersionFixer was replaced by ModuleDependencyVersions in 211
-        untilBuild.set("232.10072.781")
+        untilBuild.set("233.*")
     }
 
     test {

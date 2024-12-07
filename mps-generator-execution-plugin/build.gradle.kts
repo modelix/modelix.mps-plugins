@@ -92,7 +92,7 @@ intellij {
 tasks {
     patchPluginXml {
         sinceBuild.set("211") // 203 not supported, because VersionFixer was replaced by ModuleDependencyVersions in 211
-        untilBuild.set("232.10072.781")
+        untilBuild.set("233.*")
     }
 
     test {
