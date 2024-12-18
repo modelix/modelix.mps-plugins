@@ -67,9 +67,9 @@ class SyncServiceImpl : ISyncService, InjectableService {
     }
 
     @Throws(IOException::class)
-    override fun connectModelServer(serverURL: URL, jwt: String?): ModelClientV2 {
+    override fun connectModelServer(serverURL: URL, authProvider: () -> String?): ModelClientV2 {
         logger.info { "Connecting to $serverURL" }
-        val modelClientV2 = ModelClientV2.builder().url(serverURL.toString()).authToken { jwt }.build()
+        val modelClientV2 = ModelClientV2.builder().url(serverURL.toString()).authToken(authProvider).build()
         runBlocking(networkDispatcher) {
             modelClientV2.init()
         }
