@@ -105,7 +105,7 @@ data class PersistableState(
      *
      * @return some context statistics about the restored state
      */
-    fun restoreState(syncService: IRebindModulesSyncService, project: Project): RestoredStateContext? {
+    fun restoreState(syncService: IRebindModulesSyncService, project: Project, authProvider: () -> String? = { null }): RestoredStateContext? {
         var client: ModelClientV2? = null
 
         try {
@@ -121,7 +121,7 @@ data class PersistableState(
 
             logger.debug { "Restoring connection to model server." }
             // TODO FIXME auth token is missing
-            client = syncService.connectModelServer(clientUrl)
+            client = syncService.connectModelServer(clientUrl, authProvider)
             if (client == null) {
                 throw IllegalStateException("Connection to $clientUrl failed, thus PersistableState is not restored.")
             }
