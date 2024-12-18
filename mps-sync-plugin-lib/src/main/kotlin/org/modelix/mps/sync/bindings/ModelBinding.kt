@@ -110,9 +110,9 @@ class ModelBinding(val model: SModelBase, branch: IBranch, serviceLocator: Servi
 
             isDisposed = true
 
-            val message = "${name()} is deactivated and model is removed locally${
+            val message = "${name()} is deactivated${
                 if (removeFromServer) {
-                    " and from server"
+                    " and is removed from the server"
                 } else {
                     ""
                 }

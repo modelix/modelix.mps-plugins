@@ -221,7 +221,7 @@ class ModelixTreeChangeVisitor(
 
             val iNode = getNode(nodeId)
             if (iNode.isModule()) {
-                moduleTransformer.transformToModule(nodeId)
+                moduleTransformer.transformToModuleAndActivate(nodeId)
             } else if (iNode.isModuleDependency()) {
                 val moduleNodeId = iNode.getModule()?.nodeIdAsLong()
                 val parentModule = nodeMap.getModule(moduleNodeId)!!
@@ -233,7 +233,7 @@ class ModelixTreeChangeVisitor(
                 }
                 moduleTransformer.transformModuleDependency(nodeId, parentModule)
             } else if (iNode.isModel()) {
-                modelTransformer.transformToModel(nodeId)
+                modelTransformer.transformToModelAndActivate(nodeId)
             } else if (iNode.isModelImport()) {
                 modelTransformer.transformModelImport(nodeId)
             } else if (iNode.isSingleLanguageDependency()) {
