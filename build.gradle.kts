@@ -1,12 +1,8 @@
-import org.gradle.kotlin.dsl.support.unzipTo
-import org.gradle.kotlin.dsl.support.zipTo
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformJvmPlugin
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import java.util.zip.ZipInputStream
 
 buildscript {
@@ -193,32 +189,6 @@ mpsHome.get().asFile.let { baseDir ->
                 }
             }
         }
-    }
-
-    // Workaround for https://youtrack.jetbrains.com/issue/KT-69541/Kotlin-2.0-compiler-cannot-use-JAR-packaged-as-ZIP64
-    //
-    // The issue was first detected with `lib/app.jar` in 2022.2 and 2022.3.
-    // This JAR is needed since this versions because it contained `com.intellij.openapi.project.ProjectManager`.
-    // Before that, `lib/platform-api.jar` contained `com.intellij.openapi.project.ProjectManager`.
-    //
-    // The workaround is to unzip the JAR with and zip it again.
-    // Unzipping with Gradle supports ZIP64, but ZIP64 is not used when zipping again.
-    //
-    // TODO MODELIX-968 Remove this workaround after it is not needed anymore.
-    val appJarFile = mpsHome.get().asFile.resolve("lib/app.jar")
-    if (appJarFile.exists()) {
-        val appJarContent = mpsHome.get().asFile.resolve("lib/appJarContent")
-        val appJarFileNotZip64 = mpsHome.get().asFile.resolve("lib/appNotZip64.jar")
-        println("Unzipping $appJarFile into $appJarContent")
-        unzipTo(appJarContent, appJarFile)
-        println("Zipping $appJarContent into $appJarFileNotZip64")
-        zipTo(appJarFileNotZip64, appJarContent)
-        println("Deleting $appJarContent")
-        delete {
-            this.delete(appJarContent)
-        }
-        println("Overriding $appJarFile with $appJarFileNotZip64")
-        Files.move(appJarFileNotZip64.toPath(), appJarFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
     }
 
     // The build number of a local IDE is expected to contain a product code, otherwise an exception is thrown.
