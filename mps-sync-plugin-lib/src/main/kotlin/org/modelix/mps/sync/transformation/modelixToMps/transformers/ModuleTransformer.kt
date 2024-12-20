@@ -91,7 +91,7 @@ class ModuleTransformer(
                 val module = branch.getNode(nodeId)
                 val modelBindingsFuture = module.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models)
                     .waitForCompletionOfEachTask(futuresWaitQueue, collectResults = true) {
-                        modelTransformer.transformToModelCompletely(it.nodeIdAsLong(), branch, bindingsRegistry)
+                        modelTransformer.transformToModelCompletely(it.nodeIdAsLong())
                     }
 
                 // join the newly added model bindings with the existing bindings
@@ -124,6 +124,28 @@ class ModuleTransformer(
                 bindings.addAll(dependencyAndModelBindings as Iterable<IBinding>)
                 bindings.add(moduleBinding)
                 bindings
+            }
+
+    /**
+     * Transforms a modelix node, identified by its [nodeId], to an [SModule] without transforming the contained models.
+     * After that it creates and activates the module's [ModuleBinding].
+     *
+     * @param nodeId the identifier of the modelix node that represents the [SModule].
+     * @param fetchTargetModule if true, then the target [SModule]s of the Module Dependencies (outgoing from this
+     * source [SModule]) will be also transformed.
+     *
+     * @return the [ContinuableSyncTask] handle to append a new sync task after this one is completed.
+     *
+     * @see [transformToModule]
+     */
+    fun transformToModuleAndActivate(nodeId: Long, fetchTargetModule: Boolean = false) =
+        transformToModule(nodeId, fetchTargetModule)
+            .continueWith(linkedSetOf(SyncLock.MODELIX_READ, SyncLock.MPS_WRITE), SyncDirection.MODELIX_TO_MPS) {
+                val iNode = branch.getNode(nodeId)
+                val module = nodeMap.getModule(iNode.nodeIdAsLong()) as AbstractModule
+                val moduleBinding = ModuleBinding(module, branch, serviceLocator)
+                bindingsRegistry.addModuleBinding(moduleBinding)
+                moduleBinding.activate()
             }
 
     fun transformToModule(nodeId: Long, fetchTargetModule: Boolean = false) =
