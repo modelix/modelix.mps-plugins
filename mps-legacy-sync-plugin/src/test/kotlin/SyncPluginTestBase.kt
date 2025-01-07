@@ -41,8 +41,7 @@ import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.module.SModule
-import org.modelix.authorization.installAuthentication
-import org.modelix.model.InMemoryModels
+import org.modelix.authorization.ModelixAuthorization
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2
@@ -53,13 +52,13 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.mps.ProjectAsNode
 import org.modelix.model.mpsadapters.mps.SModuleAsNode
 import org.modelix.model.server.Main.installStatusPages
+import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.LocalModelClient
-import org.modelix.model.server.store.forContextRepository
+import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.forGlobalRepository
 import org.modelix.mps.sync.ModelSyncService
 import org.modelix.mps.sync.api.IBinding
@@ -74,7 +73,7 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
     companion object {
         suspend fun delayUntil(
             checkIntervalMilliseconds: Long = 1000,
-            timeoutMilliseconds: Long = 30_000,
+            timeoutMilliseconds: Long = 60_000,
             exceptionMessage: String? = "Waited too long.",
             condition: suspend () -> Boolean,
         ) {
@@ -143,7 +142,10 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
 
     protected fun runTestWithModelServer(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
-            installAuthentication(unitTestMode = true)
+            install(ModelixAuthorization) {
+                configureForUnitTests()
+                permissionSchema = ModelServerPermissionSchema.SCHEMA
+            }
             install(ContentNegotiation) {
                 json()
             }
@@ -151,14 +153,17 @@ abstract class SyncPluginTestBase(private val testDataName: String?) : HeavyPlat
             install(io.ktor.server.resources.Resources)
             install(io.ktor.server.routing.IgnoreTrailingSlash)
             installStatusPages()
-            val inMemoryModels = InMemoryModels()
             val storeClient = InMemoryStoreClient()
-            val localModelClient = LocalModelClient(storeClient.forContextRepository())
-            storeClient.forGlobalRepository().put("server-id", "sync-plugin-test")
-            val repositoriesManager = RepositoriesManager(localModelClient)
-            KeyValueLikeModelServer(repositoriesManager, storeClient.forGlobalRepository(), inMemoryModels).init(this)
-            ModelReplicationServer(repositoriesManager, localModelClient, inMemoryModels).init(this)
-            IdsApiImpl(repositoriesManager, localModelClient).init(this)
+
+            @OptIn(RequiresTransaction::class)
+            storeClient.runWrite {
+                storeClient.forGlobalRepository().put("server-id", "sync-plugin-test", true)
+            }
+
+            val repositoriesManager = RepositoriesManager(storeClient)
+            KeyValueLikeModelServer(repositoriesManager).init(this)
+            ModelReplicationServer(repositoriesManager).init(this)
+            IdsApiImpl(repositoriesManager).init(this)
         }
         httpClient = client
         postModelServerSetup()
