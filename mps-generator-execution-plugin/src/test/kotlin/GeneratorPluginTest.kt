@@ -1,9 +1,11 @@
 import jetbrains.mps.ide.project.ProjectHelper
 import org.modelix.mps.generator.web.AsyncGenerator
 import org.modelix.mps.generator.web.computeRead
+import kotlin.time.ExperimentalTime
 
 class GeneratorPluginTest : GeneratorPluginTestBase() {
 
+    @OptIn(ExperimentalTime::class)
     fun testAsyncGenerator() = kotlinx.coroutines.test.runTest {
         val generator = AsyncGenerator()
         val mpsProject = checkNotNull(ProjectHelper.fromIdeaProject(project)) { "MPSProject is null" }

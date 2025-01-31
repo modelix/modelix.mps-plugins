@@ -24,14 +24,13 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
+import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.IgnoreTrailingSlash
-import io.ktor.server.routing.Routing
 import jetbrains.mps.project.MPSProject
 import java.io.File
 import java.util.Collections
@@ -51,7 +50,7 @@ class DiffServerForProject(private val project: Project) : Disposable {
 @Service(Service.Level.APP)
 class DiffServer : Disposable {
 
-    private var server: NettyApplicationEngine? = null
+    private var server: EmbeddedServer<*, *>? = null
     private val projects: MutableSet<Project> = Collections.synchronizedSet(HashSet())
 
     fun registerProject(project: Project) {
@@ -88,7 +87,6 @@ class DiffServer : Disposable {
 
     fun initKtorServer(application: Application) {
         application.apply {
-            install(Routing)
             install(IgnoreTrailingSlash)
             install(CORS) {
                 anyHost()
