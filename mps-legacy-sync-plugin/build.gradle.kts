@@ -4,6 +4,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.modelix.buildtools.ModuleId
 import org.modelix.buildtools.ModuleIdAndName
 import org.modelix.buildtools.StubsSolutionGenerator
+import org.modelix.mpsHomeDir
+import org.modelix.mpsPlatformVersion
 import java.util.zip.ZipInputStream
 
 buildscript {
@@ -18,9 +20,6 @@ plugins {
 }
 
 group = "org.modelix.mps"
-val mpsVersion = project.findProperty("mps.version").toString()
-val mpsPlatformVersion = project.findProperty("mps.platform.version").toString().toInt()
-val mpsHome = rootProject.layout.buildDirectory.dir("mps-$mpsVersion")
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11
@@ -66,7 +65,7 @@ dependencies {
     implementation(coreLibs.ktor.server.resources)
 
     // There is a usage of MakeActionParameters in ProjectMakeRunner which we might want to delete
-    compileOnly(mpsHome.map { it.files("plugins/mps-make/languages/jetbrains.mps.ide.make.jar") })
+    compileOnly(mpsHomeDir.map { it.files("plugins/mps-make/languages/jetbrains.mps.ide.make.jar") })
 
     testImplementation(coreLibs.kotlin.coroutines.test)
     testImplementation(coreLibs.ktor.server.test.host)
@@ -80,7 +79,7 @@ dependencies {
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
-    localPath = mpsHome.map { it.asFile.absolutePath }
+    localPath = mpsHomeDir.map { it.asFile.absolutePath }
     instrumentCode = false
     plugins = listOf("jetbrains.mps.ide.make")
 }
@@ -98,7 +97,7 @@ val testClassPartitionsToRunInIsolation = listOf(
 // Tests currently fail for these versions because of some deadlock.
 // The deadlock does not seem to be caused by our test code.
 // Even an unmodified `HeavyPlatformTestCase` hangs.
-val enableTests = !setOf(212, 213, 222).contains(mpsPlatformVersion)
+val enableTests = !setOf(212, 213, 222, 223, 232).contains(mpsPlatformVersion)
 
 tasks {
     patchPluginXml {
