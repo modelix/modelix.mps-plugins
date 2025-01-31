@@ -10,10 +10,10 @@ import io.ktor.server.response.respondOutputStream
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import io.ktor.util.pipeline.PipelineContext
 import jetbrains.mps.smodel.MPSModuleRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.html.FlowContent
@@ -111,7 +111,7 @@ class GeneratorOutputHandlerImpl(val generator: AsyncGenerator) {
             }
         }
         route("/modules/{moduleId}/models/{modelId}/generatorOutput/") {
-            fun PipelineContext<*, ApplicationCall>.getModel(): SModel {
+            fun RoutingContext.getModel(): SModel {
                 val moduleIdStr = call.parameters["moduleId"]!!
                 val modelIdStr = call.parameters["modelId"]!!
                 val moduleId = PersistenceFacade.getInstance().createModuleId(moduleIdStr)
@@ -139,7 +139,7 @@ class GeneratorOutputHandlerImpl(val generator: AsyncGenerator) {
             }
 
             route("/files/{fileName}/") {
-                suspend fun PipelineContext<*, ApplicationCall>.getFile(): AsyncGenerator.GeneratedFile? {
+                suspend fun RoutingContext.getFile(): AsyncGenerator.GeneratedFile? {
                     val fileName = call.parameters["fileName"]!!
                     val generatorOutput: AsyncGenerator.GeneratorOutput = generator.getTextGenOutput(getModel())
                     val file = generatorOutput.outputFiles.await().firstOrNull { it.name == fileName }
@@ -177,7 +177,7 @@ class GeneratorOutputHandlerImpl(val generator: AsyncGenerator) {
         return MPSModuleRepository.getInstance()
     }
 
-    private suspend fun PipelineContext<Unit, ApplicationCall>.getFilesIfCompleted(output: AsyncGenerator.GeneratorOutput): List<AsyncGenerator.GeneratedFile>? {
+    private suspend fun RoutingContext.getFilesIfCompleted(output: AsyncGenerator.GeneratorOutput): List<AsyncGenerator.GeneratedFile>? {
         return if (output.outputFiles.isActive) {
             call.respondHtmlSafe {
                 head {
