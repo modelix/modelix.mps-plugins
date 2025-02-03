@@ -4,15 +4,14 @@ import com.intellij.openapi.project.ProjectManager
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.call
 import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.response.respondOutputStream
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import io.ktor.util.pipeline.PipelineContext
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
@@ -56,7 +55,7 @@ class DiffHandlerImpl() {
             call.respondText("Cache cleared")
         }
         route("/{leftRevision}/{rightRevision}") {
-            suspend fun PipelineContext<Unit, ApplicationCall>.getImages(): Deferred<List<DiffImage>>? {
+            suspend fun RoutingContext.getImages(): Deferred<List<DiffImage>>? {
                 val diffRequest = DiffRequest(call.parameters["leftRevision"]!!, call.parameters["rightRevision"]!!)
 
                 var diffResult = diffRequests[diffRequest]
