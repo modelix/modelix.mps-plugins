@@ -98,10 +98,10 @@ subprojects {
 
 allprojects {
     repositories {
-        mavenLocal()
         maven { url = uri("https://artifacts.itemis.cloud/repository/maven-mps/") }
         mavenCentral()
         maven { url = uri("https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven") }
+        mavenLocal()
     }
 
     publishing {

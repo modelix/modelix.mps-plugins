@@ -24,8 +24,6 @@ import jetbrains.mps.messages.IMessageHandler
 import jetbrains.mps.messages.Message
 import jetbrains.mps.messages.MessageKind
 import jetbrains.mps.project.Project
-import jetbrains.mps.project.ProjectManager
-import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.resources.ModelsToResources
 import jetbrains.mps.text.TextGenResult
 import jetbrains.mps.text.TextUnit
@@ -37,6 +35,8 @@ import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.module.ModelAccess
 import org.jetbrains.mps.openapi.util.ProgressMonitor
+import org.modelix.mps.api.ModelixMpsApi
+import java.lang.reflect.Constructor
 import java.util.Collections
 import java.util.concurrent.Future
 
@@ -70,8 +70,7 @@ class AsyncGenerator {
             // most of the following code is similar to the one in
             // https://github.com/JetBrains/MPS/blob/master/plugins/mps-make/source_gen/jetbrains/mps/ide/make/actions/TextPreviewModel_Action.java
 
-            val projects = ProjectManager.getInstance().openedProjects
-            val project: Project = projects.first()
+            val project = ModelixMpsApi.getMPSProject() as Project
             val textGenName =
                 resolveFacetName("jetbrains.mps.make.facets.TextGen", "jetbrains.mps.lang.core.TextGen")
             val scr: IScript =
@@ -124,7 +123,10 @@ class AsyncGenerator {
         // Some facets where moved to a different package in MPS 2022.3
         // See https://github.com/JetBrains/MPS/commit/e15a11d4b5e84ff3372365cdab832c56b68b7050
         // To make the plugin compatible with version before and after the renaming we have to look up the correct name.
-        val facetRegistry = ProjectManager.getInstance().openedProjects.mapNotNull { it.getComponent(FacetRegistry::class.java) }.first()
+        val facetRegistry = ModelixMpsApi.getMPSProjects()
+            .filterIsInstance<Project>()
+            .mapNotNull { it.getComponent(FacetRegistry::class.java) }
+            .first()
         val resolvedFacet = alternativeNames.asSequence().mapNotNull { facetRegistry.lookup(IFacet.Name(it)) }.firstOrNull()
         return requireNotNull(resolvedFacet) {
             "None of the facet names found: $alternativeNames"
@@ -132,7 +134,7 @@ class AsyncGenerator {
     }
 
     private fun computeModelHash(model: SModel): String? {
-        return MPSModuleRepository.getInstance().getModelAccess().computeRead {
+        return ModelixMpsApi.getRepository().modelAccess.computeRead {
             (model as? GeneratableSModel)?.modelHash
         }
     }
@@ -153,7 +155,7 @@ class AsyncGenerator {
             }
             val makeSeq: MakeSequence = MakeSequence(resources, script, session)
             val ctl: IScriptController = this.completeController(controller, session)
-            val task: CoreMakeTask = CoreMakeTask(scrName, makeSeq, ctl, session.getMessageHandler())
+            val task: CoreMakeTask = createCoreMakeTask(makeSeq, ctl, session.getMessageHandler())
             task.run(monitor)
             return FutureValue(task.getResult())
         }
@@ -207,3 +209,23 @@ fun <R> ModelAccess.computeRead(body: () -> R): R {
     }
     return result as R
 }
+
+/**
+ * Using reflection because of a breaking change in MPS.
+ */
+private fun createCoreMakeTask(makeSeq: MakeSequence, ctl: IScriptController, mh: IMessageHandler): CoreMakeTask {
+    val taskConstructor = CoreMakeTask::class.java.firstConstructor()
+    val parameterValues = taskConstructor.parameterTypes.map {
+        when (it) {
+            String::class.java -> ""
+            MakeSequence::class.java -> makeSeq
+            IScriptController::class.java -> ctl
+            IMessageHandler::class.java -> mh
+            else -> error("Unexpected parameter: $it")
+        }
+    }.toTypedArray()
+    return taskConstructor.newInstance(*parameterValues)
+}
+
+@Suppress("UNCHECKED_CAST")
+private fun <T> Class<T>.firstConstructor() = CoreMakeTask::class.java.constructors.first() as Constructor<T>

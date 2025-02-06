@@ -6,7 +6,6 @@ import org.modelix.buildtools.ModuleIdAndName
 import org.modelix.buildtools.StubsSolutionGenerator
 import org.modelix.mpsHomeDir
 import org.modelix.mpsPlatformVersion
-import java.util.zip.ZipInputStream
 
 buildscript {
     dependencies {
@@ -188,31 +187,6 @@ tasks {
     withType<PrepareSandboxTask> {
         intoChild(pluginName.map { "$it/languages" })
             .from(project.layout.projectDirectory.dir("repositoryconcepts"))
-    }
-
-    val checkBinaryCompatibility by registering {
-        group = "verification"
-        doLast {
-            val ignoredFiles = setOf(
-                "META-INF/MANIFEST.MF",
-                "org/modelix/model/mpsplugin/AllowedBinaryIncompatibilityKt.class",
-            )
-            fun loadEntries(fileName: String) = rootProject.layout.buildDirectory
-                .dir("binary-compatibility")
-                .dir(project.name)
-                .file(fileName)
-                .get().asFile.inputStream().use {
-                    val zip = ZipInputStream(it)
-                    val entries = generateSequence { zip.nextEntry }
-                    entries.associate { it.name to "size:${it.size},crc:${it.crc}" }
-                } - ignoredFiles
-            val entriesA = loadEntries("a.jar")
-            val entriesB = loadEntries("b.jar")
-            val mismatches = (entriesA.keys + entriesB.keys).map { it to (entriesA[it] to entriesB[it]) }.filter { it.second.first != it.second.second }
-            check(mismatches.isEmpty()) {
-                "The following files have a different content:\n" + mismatches.joinToString("\n") { "  ${it.first}: ${it.second.first} != ${it.second.second}" }
-            }
-        }
     }
 }
 

@@ -30,6 +30,7 @@ import git4idea.repo.GitRepositoryImpl
 import jetbrains.mps.baseLanguage.closures.runtime.Wrappers._T
 import jetbrains.mps.baseLanguage.closures.runtime._FunctionTypes._return_P0_E0
 import jetbrains.mps.ide.ThreadUtils
+import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.internal.collections.runtime.CollectionSequence
 import jetbrains.mps.internal.collections.runtime.ILeftCombinator
 import jetbrains.mps.internal.collections.runtime.ISelector
@@ -41,7 +42,6 @@ import jetbrains.mps.internal.collections.runtime.SetSequence
 import jetbrains.mps.nodeEditor.EditorComponent
 import jetbrains.mps.nodeEditor.NodeHighlightManager
 import jetbrains.mps.project.AbstractModule
-import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.vcs.diff.ui.RootDifferencePaneBase
 import jetbrains.mps.vcs.diff.ui.common.DiffModelTree
 import jetbrains.mps.vcs.diff.ui.common.DiffModelTree.RootTreeNode
@@ -61,6 +61,8 @@ import javax.swing.JTree
 import javax.swing.tree.TreePath
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.reflect.KClass
+import kotlin.reflect.full.primaryConstructor
 
 class DiffImages(
     private val project: Project = (ProjectManager.getInstance().openProjects + ProjectManager.getInstance().defaultProject).first(),
@@ -96,7 +98,7 @@ class DiffImages(
             repoRoots.addAll(additionalGitRepos.mapNotNull { LocalFileSystem.getInstance().findFileByIoFile(it)?.also { ensureRepoLoaded(project, it) } })
 
             if (repoRoots.isEmpty()) {
-                val moduleRepo = MPSModuleRepository.getInstance()
+                val moduleRepo = ProjectHelper.getProjectRepository(project)!!
                 lateinit var moduleFiles: List<IFile>
                 moduleRepo.modelAccess.runReadAction {
                     moduleFiles = moduleRepo.modules.filterIsInstance<AbstractModule>().mapNotNull { it.moduleSourceDir }
@@ -235,7 +237,12 @@ class DiffImages(
         val modelDiffViewer = ModelDiffViewer((context)!!, (diffRequest as ContentDiffRequest?)!!)
         try {
             val viewer = modelDiffViewer.component
-            val frame = FrameWrapper(project, null, false, "Modelix Diff Viewer", viewer)
+            // reflection because of binary incompatibility from MPS 2023.2 to 2023.3
+            val frame = FrameWrapper::class.instantiate(
+                "project" to project,
+                "title" to "Modelix Diff Viewer",
+                "component" to viewer,
+            )
             try {
                 frame.show()
             } catch (ex: Exception) {
@@ -549,4 +556,17 @@ class DiffImages(
             return (if (type.isInstance(o)) o as T else null)
         }
     }
+}
+
+fun <T : Any> KClass<T>.instantiate(vararg parameters: Pair<String, Any?>): T {
+    return instantiate(mapOf(*parameters))
+}
+
+fun <T : Any> KClass<T>.instantiate(parameters: Map<String, Any?>): T {
+    return primaryConstructor!!.callBy(
+        primaryConstructor!!
+            .parameters
+            .filter { parameters.containsKey(it.name) }
+            .associateWith { parameters[it.name] },
+    )
 }

@@ -72,7 +72,7 @@ class GeneratorServer : Disposable {
     fun ensureStarted() {
         if (server != null) return
 
-        println("starting diff server")
+        println("starting generator server")
 
         server = embeddedServer(Netty, port = 33335) {
             initKtorServer(this)
@@ -123,8 +123,9 @@ class GeneratorServer : Disposable {
     }
 }
 
-class GeneratorServerStartupActivity : StartupActivity.Background {
+class GeneratorServerStartupActivity : StartupActivity {
     override fun runActivity(project: Project) {
+        println(this::class.java.name + " called")
         project.service<GeneratorServerForProject>() // just ensure it's initialized
     }
 }

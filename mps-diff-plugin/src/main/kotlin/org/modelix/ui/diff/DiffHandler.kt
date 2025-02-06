@@ -18,7 +18,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.swing.Swing
 import kotlinx.coroutines.withContext
 import kotlinx.html.HTML
 import kotlinx.html.body
@@ -78,10 +77,7 @@ class DiffHandlerImpl() {
                                     .diffRevisions(diffRequest.leftRevision, diffRequest.rightRevision).flatMap {
                                         // The computation of the diff is not allowed to happen on the EDT,
                                         // but the rendering of the diff dialog has to happen on the EDT.
-                                        //
-                                        // Using Dispatchers.Swing instead of Dispatchers.Main, because it's not
-                                        // initialized in older MPS versions.
-                                        withContext(Dispatchers.Swing) {
+                                        withContext(Dispatchers.Main) {
                                             it()
                                         }
                                     }
