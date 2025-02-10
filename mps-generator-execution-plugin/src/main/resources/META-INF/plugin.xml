@@ -24,8 +24,6 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-<!--        <applicationService serviceImplementation="org.modelix.mps.sync.ModelSyncService"/>-->
-        <backgroundPostStartupActivity implementation="org.modelix.mps.generator.web.GeneratorServerStartupActivity" />
-<!--        <mps.LanguageLibrary dir="/languages" />-->
+        <postStartupActivity implementation="org.modelix.mps.generator.web.GeneratorServerStartupActivity" />
     </extensions>
 </idea-plugin>

@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.modelix.excludeMPSLibraries
 import org.modelix.mpsHomeDir
@@ -17,30 +16,10 @@ plugins {
 
 group = "org.modelix.mps"
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(11))
-    }
-    withSourcesJar()
-}
-
-tasks.compileJava {
-    options.release = 11
-}
-
-tasks.compileKotlin {
-    kotlinOptions {
-        jvmTarget = "11"
-        freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
-        apiVersion = "1.6"
-    }
-}
-
 kotlin {
+    jvmToolchain(11)
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_11)
+        freeCompilerArgs.addAll("-Xjvm-default=all-compatibility")
     }
     sourceSets {
         main {
@@ -56,18 +35,14 @@ dependencies {
         implementation(dependencyNotation, excludeMPSLibraries)
     }
 
-    implementationWithoutBundled(coreLibs.ktor.server.html.builder)
-    implementationWithoutBundled(coreLibs.ktor.server.netty)
-    implementationWithoutBundled(coreLibs.ktor.server.cors)
-    implementationWithoutBundled(coreLibs.ktor.server.status.pages)
-    implementationWithoutBundled(coreLibs.kotlin.logging)
+    implementation(coreLibs.ktor.server.html.builder)
+    implementation(coreLibs.ktor.server.netty)
+    implementation(coreLibs.ktor.server.cors)
+    implementation(coreLibs.ktor.server.status.pages)
+    implementation(coreLibs.kotlin.logging)
+    implementation(libs.modelix.mpsApi)
 
     compileOnly(mpsHomeDir.map { it.files("languages/languageDesign/jetbrains.mps.lang.core.jar") })
-
-    testImplementation(coreLibs.kotlin.coroutines.test, excludeMPSLibraries)
-    testImplementation(coreLibs.ktor.server.test.host, excludeMPSLibraries)
-    testImplementation(coreLibs.ktor.client.cio, excludeMPSLibraries)
-    testImplementation(libs.zt.zip, excludeMPSLibraries)
 }
 
 // Configure Gradle IntelliJ Plugin
@@ -75,16 +50,12 @@ dependencies {
 intellij {
     localPath = mpsHomeDir.map { it.asFile.absolutePath }
     instrumentCode = false
-    plugins = listOf(
-        "Git4Idea",
-        "jetbrains.mps.vcs",
-    )
 }
 
 tasks {
     patchPluginXml {
-        sinceBuild.set("211") // 203 not supported, because VersionFixer was replaced by ModuleDependencyVersions in 211
-        untilBuild.set("232.10072.781")
+        sinceBuild.set("203")
+        untilBuild.set("243.*")
     }
 
     test {
@@ -97,7 +68,16 @@ tasks {
 //        ).contains(mpsPlatformVersion)
 
         // incompatibility of ktor 3 with the bundled coroutines version
-        enabled = false
+        enabled = true
+
+        jvmArgs("-Dintellij.platform.load.app.info.from.resources=true")
+        val arch = System.getProperty("os.arch")
+        val jnaDir = mpsHomeDir.get().asFile.resolve("lib/jna/$arch")
+        if (jnaDir.exists()) {
+            jvmArgs("-Djna.boot.library.path=${jnaDir.absolutePath}")
+            jvmArgs("-Djna.noclasspath=true")
+            jvmArgs("-Djna.nosys=true")
+        }
     }
 
     buildSearchableOptions {
@@ -111,9 +91,9 @@ tasks {
 
     val mpsPluginDir = project.findProperty("mps$mpsPlatformVersion.plugins.dir")?.toString()?.let { file(it) }
     if (mpsPluginDir != null && mpsPluginDir.isDirectory) {
-        create<Sync>("installMpsPlugin") {
+        register<Sync>("installMpsPlugin") {
             dependsOn(prepareSandbox)
-            from(buildDir.resolve("idea-sandbox/plugins/mps-generator-execution-plugin"))
+            from(layout.buildDirectory.dir("idea-sandbox/plugins/mps-generator-execution-plugin"))
             into(mpsPluginDir.resolve("mps-generator-execution-plugin"))
         }
     }
@@ -130,7 +110,3 @@ publishing {
         }
     }
 }
-
-fun Provider<Directory>.dir(name: String): Provider<Directory> = map { it.dir(name) }
-fun Provider<Directory>.file(name: String): Provider<RegularFile> = map { it.file(name) }
-fun Provider<Directory>.dir(name: Provider<out CharSequence>): Provider<Directory> = flatMap { it.dir(name) }

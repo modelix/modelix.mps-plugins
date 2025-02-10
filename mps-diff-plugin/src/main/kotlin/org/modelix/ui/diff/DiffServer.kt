@@ -127,8 +127,9 @@ class DiffServer : Disposable {
     }
 }
 
-class DiffServerStartupActivity : StartupActivity.Background {
+class DiffServerStartupActivity : StartupActivity {
     override fun runActivity(project: Project) {
+        println(this::class.java.name + " called")
         project.service<DiffServerForProject>() // just ensure it's initialized
     }
 }

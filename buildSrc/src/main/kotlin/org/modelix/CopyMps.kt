@@ -58,8 +58,6 @@ val Project.mpsPlatformVersion: Int get() {
     return mpsVersion.replace(Regex("""20(\d\d)\.(\d+).*"""), "$1$2").toInt()
 }
 
-val Project.mpsJavaVersion: Int get() = if (mpsPlatformVersion >= 223) 17 else 11
-
 val Project.mpsHomeDir: Provider<Directory> get() {
     if (project != rootProject) return rootProject.mpsHomeDir
     return project.layout.buildDirectory.dir("mps-$mpsVersion")
