@@ -24,20 +24,23 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.isSubConceptOf
-import org.modelix.model.mpsadapters.MPSNode
+import org.modelix.model.mpsadapters.MPSWritableNode
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
-fun INode.nodeIdAsLong(): Long =
-    when (this) {
-        is PNodeAdapter -> this.nodeId
-        is MPSNode -> {
-            val nodeId = this.node.nodeId
+fun INode.nodeIdAsLong(): Long {
+    val node = this
+    val writableNode = this.asWritableNode()
+    return when {
+        node is PNodeAdapter -> node.nodeId
+        writableNode is MPSWritableNode -> {
+            val nodeId = writableNode.node.nodeId
             check(nodeId is Regular) { "Unsupported NodeId format: $nodeId" }
             nodeId.id
         }
 
         else -> throw IllegalStateException("Unsupported INode implementation")
     }
+}
 
 @UnstableModelixFeature(reason = "The new modelix MPS plugin is under construction", intendedFinalization = "This feature is finalized when the new sync plugin is ready for release.")
 fun INode.isModule(): Boolean {

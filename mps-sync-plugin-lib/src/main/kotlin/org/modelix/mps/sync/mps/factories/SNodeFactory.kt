@@ -32,9 +32,9 @@ import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.getNode
 import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.mpsadapters.MPSLanguageRepository
-import org.modelix.model.mpsadapters.MPSNode
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.MPSReferenceLink
+import org.modelix.model.mpsadapters.MPSWritableNode
 import org.modelix.mps.sync.modelix.util.getMpsNodeId
 import org.modelix.mps.sync.modelix.util.nodeIdAsLong
 import org.modelix.mps.sync.mps.services.ServiceLocator
@@ -151,7 +151,7 @@ class SNodeFactory(
             } else {
                 // target node is an existing SNode
                 val area = MPSArea(mpsRepository)
-                val mpsNode = area.resolveNode(targetNodeReference) as MPSNode?
+                val mpsNode = area.resolveNode(targetNodeReference)?.asWritableNode() as MPSWritableNode?
                 requireNotNull(mpsNode) { "SNode identified by Node $sourceNodeId is not found." }
                 source.setReferenceTarget(reference, mpsNode.node)
             }

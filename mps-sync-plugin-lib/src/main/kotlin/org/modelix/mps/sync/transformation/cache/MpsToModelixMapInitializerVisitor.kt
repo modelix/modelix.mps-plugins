@@ -143,7 +143,7 @@ class MpsToModelixMapInitializerVisitor(
             Pair(modelId, modelName)
         } else {
             // target is an SModel in MPS
-            val modelixModelImport = MPSArea(repository).resolveNode(targetModelRef) as MPSModelImportAsNode?
+            val modelixModelImport = MPSArea(repository).resolveNode(targetModelRef)?.asWritableNode() as MPSModelImportAsNode?
             requireNotNull(modelixModelImport) { "Model Import identified by Node $modelImport is not found." }
             val targetModel = modelixModelImport.importedModel
             val modelId = targetModel.modelId
