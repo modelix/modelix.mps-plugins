@@ -62,6 +62,7 @@ dependencies {
 
     implementation(coreLibs.kotlin.reflect)
     implementation(coreLibs.ktor.server.resources)
+    implementation(libs.modelix.mpsApi)
 
     // There is a usage of MakeActionParameters in ProjectMakeRunner which we might want to delete
     compileOnly(mpsHomeDir.map { it.files("plugins/mps-make/languages/jetbrains.mps.ide.make.jar") })

@@ -1,0 +1,43 @@
+name: MPS compatibility
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request: {}
+  # allow manual execution just in case
+  workflow_dispatch:
+
+jobs:
+  assemble-mps-components:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+#          - "2020.3"
+          - "2021.1"
+          - "2021.2"
+          - "2021.3"
+          - "2022.2"
+          - "2022.3"
+          - "2023.2"
+          - "2024.1"
+#          - "2024.3"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Set up Gradle
+        uses: gradle/gradle-build-action@v3
+      - name: Assemble with ${{ matrix.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          ./gradlew --build-cache
+          assemble
+          -Pmps.version.major=${{ matrix.version }}
