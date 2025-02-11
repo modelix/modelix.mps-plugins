@@ -73,7 +73,8 @@ class ModelRenameHelper(private val model: EditableSModelBase, private val mpsPr
             while (var4.hasNext()) {
                 val sm: SModel = var4.next() as SModel
                 if (!sm.isReadOnly) {
-                    if (sm is EditableSModelBase && sm.updateExternalReferences(mpsProject.repository)) {
+                    if (sm is EditableSModelBase) {
+                        sm.updateExternalReferences(mpsProject.repository)
                         sm.isChanged = true
                     }
                 }

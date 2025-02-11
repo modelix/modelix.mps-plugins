@@ -1,3 +1,5 @@
+@file:Suppress("removal", "UnstableApiUsage")
+
 package org.modelix.model.mpsplugin.projectview
 
 import com.intellij.openapi.application.ApplicationManager
@@ -6,8 +8,6 @@ import jetbrains.mps.baseLanguage.closures.runtime.Wrappers._T
 import jetbrains.mps.baseLanguage.closures.runtime._FunctionTypes._void_P1_E0
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.ide.projectPane.ProjectPane
-import jetbrains.mps.ide.projectPane.logicalview.ProjectTree
-import jetbrains.mps.ide.ui.tree.MPSTreeNode
 import jetbrains.mps.ide.ui.tree.TextTreeNode
 import jetbrains.mps.internal.collections.runtime.ISelector
 import jetbrains.mps.internal.collections.runtime.IVisitor
@@ -35,10 +35,12 @@ import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.Icon
+import javax.swing.JTree
 import javax.swing.Timer
 import javax.swing.event.TreeModelEvent
 import javax.swing.event.TreeModelListener
 import javax.swing.tree.DefaultTreeModel
+import javax.swing.tree.MutableTreeNode
 import javax.swing.tree.TreeNode
 import kotlin.math.min
 
@@ -127,8 +129,8 @@ class CloudProjectViewExtension(private val project: Project?) {
         }
     }
 
-    private fun waitForProjectTree(callback: _void_P1_E0<in ProjectTree>) {
-        val tree: ProjectTree? = projectTree
+    private fun waitForProjectTree(callback: _void_P1_E0<in JTree>) {
+        val tree = projectTree
         if (tree != null) {
             callback.invoke(tree)
         } else {
@@ -137,7 +139,7 @@ class CloudProjectViewExtension(private val project: Project?) {
                 1000,
                 object : ActionListener {
                     override fun actionPerformed(e: ActionEvent) {
-                        val tree: ProjectTree? = projectTree
+                        val tree = projectTree
                         if (tree != null) {
                             callback.invoke(tree)
                             timer.value!!.stop()
@@ -153,7 +155,7 @@ class CloudProjectViewExtension(private val project: Project?) {
         }
     }
 
-    private val projectTree: ProjectTree?
+    private val projectTree: JTree?
         private get() {
             if (project!!.isDisposed) {
                 return null
@@ -184,10 +186,8 @@ class CloudProjectViewExtension(private val project: Project?) {
         val projectPane: ProjectPane = ProjectPane.getInstance(
             project,
         )
-        val root: MPSTreeNode? = projectPane.tree.rootNode
-        if (root == null) {
-            return
-        }
+        val root = projectPane.tree.model.root ?: return
+        root as MutableTreeNode
         val model: DefaultTreeModel? = TreeModelUtil.getModel(projectPane.tree)
 
         // wrong parent
@@ -238,10 +238,7 @@ class CloudProjectViewExtension(private val project: Project?) {
     }
 
     fun updateModules() {
-        val root: MPSTreeNode? = projectTree?.rootNode
-        if (root == null) {
-            return
-        }
+        val root = projectTree?.model?.root ?: return
         val treeModel: DefaultTreeModel? = TreeModelUtil.getModel(projectTree)
         project!!.repository.modelAccess.runReadAction(object : Runnable {
             override fun run() {
