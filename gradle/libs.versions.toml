@@ -22,7 +22,7 @@ modelix-model-datastructure = { group = "org.modelix", name = "model-datastructu
 modelix-mps-model-adapters = { group = "org.modelix.mps", name = "model-adapters", version.ref = "modelixCore" }
 modelix-mpsApi = { group = "org.modelix.mps", name = "stable-api", version = "1.1.1" }
 
-kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version = "7.0.4" }
+kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version = "7.0.5" }
 kotlin-logging-microutils = { group = "io.github.microutils", name = "kotlin-logging", version = "3.0.5" }
 kotlin-html = "org.jetbrains.kotlinx:kotlinx-html:0.12.0"
 kotlin-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinCoroutines" }
