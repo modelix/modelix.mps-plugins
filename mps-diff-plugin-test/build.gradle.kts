@@ -2,7 +2,7 @@ import org.zeroturnaround.zip.ZipUtil
 
 buildscript {
     dependencies {
-        classpath("org.modelix.mps:build-tools-lib:1.8.1")
+        classpath("org.modelix.mps:build-tools-lib:1.9.0")
     }
 }
 
