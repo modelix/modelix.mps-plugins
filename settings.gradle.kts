@@ -26,10 +26,7 @@ pluginManagement {
 
 rootProject.name = "modelix.mps-plugins"
 
-include("mps-legacy-sync-plugin")
 include("mps-diff-plugin")
 include("mps-diff-plugin-test")
 include("mps-generator-execution-plugin")
 include("mps-generator-execution-plugin-test")
-include("mps-sync-plugin")
-include("mps-sync-plugin-lib")
