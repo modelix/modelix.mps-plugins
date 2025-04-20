@@ -117,7 +117,7 @@ class DiffServer : Disposable {
     @Synchronized
     fun ensureStopped() {
         if (server == null) return
-        println("stopping modelix server")
+        println("stopping modelix diff server")
         server?.stop()
         server = null
     }
