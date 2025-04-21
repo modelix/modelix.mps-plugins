@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
-import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformJvmPlugin
+import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
 import org.modelix.copyMps
 
 buildscript {
@@ -75,7 +75,7 @@ subprojects {
         }
     }
 
-    subproject.plugins.withType<KotlinPlatformJvmPlugin> {
+    subproject.plugins.withType<KotlinPluginWrapper> {
         subproject.extensions.configure<KotlinJvmProjectExtension> {
             compilerOptions {
                 jvmTarget.set(JvmTarget.JVM_11)
