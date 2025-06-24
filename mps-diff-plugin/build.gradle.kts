@@ -24,7 +24,7 @@ kotlin {
     sourceSets {
         main {
             languageSettings {
-                apiVersion = KotlinVersion.KOTLIN_1_6.version
+                apiVersion = KotlinVersion.KOTLIN_1_8.version
             }
         }
     }
