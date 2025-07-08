@@ -90,7 +90,7 @@ class DiffPluginTest(val mpsVersion: String) {
     }
 }
 
-private fun <T : GenericContainer<T>> T.withCopy(from: String, to: String): T {
+private fun GenericContainer<*>.withCopy(from: String, to: String): GenericContainer<*> {
     require(File(from).exists()) { "Doesn't exist: $from" }
     return withCopyFileToContainer(MountableFile.forHostPath(from), to)
 }
