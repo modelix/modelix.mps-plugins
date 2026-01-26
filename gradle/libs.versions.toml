@@ -31,5 +31,5 @@ kotlin-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 
 zt-zip = { group = "org.zeroturnaround", name = "zt-zip", version = "1.17" }
-logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.5.18" }
+logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.5.26" }
 jackson-dataformat-xml = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-xml", version = "2.19.1" }
