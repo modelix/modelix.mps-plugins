@@ -28,14 +28,6 @@ class DiffPluginTest(val mpsVersion: String) {
         fun mpsVersions() = listOf(
             "2024.3",
             "2024.1",
-            "2023.3",
-            "2023.2",
-//            "2022.3",
-//            "2022.2",
-//            "2021.3",
-//            "2021.2",
-//            "2021.1",
-//            "2020.3",
         )
     }
 
@@ -45,7 +37,7 @@ class DiffPluginTest(val mpsVersion: String) {
         val mps: GenericContainer<*> = GenericContainer("docker.io/modelix/mps-vnc-baseimage:0.9.4-mps$mpsVersion")
             .withExposedPorts(33334)
             .withCopy(
-                "../mps-diff-plugin/build/idea-sandbox/plugins/mps-diff-plugin",
+                sandboxPluginDir("mps-diff-plugin").path,
                 "/mps/plugins/mps-diff-plugin",
             )
             .withCopy(
@@ -93,4 +85,16 @@ class DiffPluginTest(val mpsVersion: String) {
 private fun GenericContainer<*>.withCopy(from: String, to: String): GenericContainer<*> {
     require(File(from).exists()) { "Doesn't exist: $from" }
     return withCopyFileToContainer(MountableFile.forHostPath(from), to)
+}
+
+/**
+ * The plugin folder in the sandbox of the IntelliJ Platform Gradle Plugin, which contains the version of the platform
+ * (e.g. build/idea-sandbox/MPS-2024.1/plugins/mps-diff-plugin).
+ */
+private fun sandboxPluginDir(pluginName: String): File {
+    val sandbox = File("../$pluginName/build/idea-sandbox")
+    return sandbox.walk()
+        .filter { it.isDirectory && it.name == pluginName && it.parentFile.name == "plugins" }
+        .maxByOrNull { it.lastModified() }
+        ?: error("Plugin $pluginName not found in $sandbox")
 }

@@ -16,15 +16,8 @@ jobs:
       fail-fast: false
       matrix:
         version:
-#          - "2020.3"
-          - "2021.1"
-          - "2021.2"
-          - "2021.3"
-          - "2022.2"
-          - "2022.3"
-          - "2023.2"
           - "2024.1"
-#          - "2024.3"
+          - "2024.3"
     steps:
       - uses: actions/checkout@v5
       - name: Set up JDK
