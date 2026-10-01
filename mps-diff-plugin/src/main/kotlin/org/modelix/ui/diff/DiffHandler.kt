@@ -28,7 +28,6 @@ import kotlinx.html.h2
 import kotlinx.html.html
 import kotlinx.html.img
 import kotlinx.html.stream.createHTML
-import kotlinx.html.style
 import java.util.Collections
 import javax.imageio.ImageIO
 
@@ -102,7 +101,9 @@ class DiffHandlerImpl() {
                             }
                             div {
                                 img(src = image.id + ".png") {
-                                    style = "height:auto;max-width:100%;width:${image.size.width}px"
+                                    // The generated attribute accessors (style = ...) are compiled against the wrong
+                                    // receiver type when compiling against MPS 2024.1 and fail with NoSuchMethodError.
+                                    attributes["style"] = "height:auto;max-width:100%;width:${image.size.width}px"
                                 }
                                 br { }
                                 br { }

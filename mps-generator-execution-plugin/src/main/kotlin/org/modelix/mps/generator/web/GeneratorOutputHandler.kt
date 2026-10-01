@@ -26,11 +26,9 @@ import kotlinx.html.h1
 import kotlinx.html.h2
 import kotlinx.html.head
 import kotlinx.html.html
-import kotlinx.html.id
 import kotlinx.html.meta
 import kotlinx.html.pre
 import kotlinx.html.stream.createHTML
-import kotlinx.html.style
 import kotlinx.html.table
 import kotlinx.html.td
 import kotlinx.html.tr
@@ -259,11 +257,13 @@ class GeneratorOutputHandlerImpl(val generator: AsyncGenerator) {
         br { }
         generatedFiles.forEach { file ->
             h2 {
-                id = file.name
+                // The generated attribute accessors (id = ...) are compiled against the wrong receiver type when
+                // compiling against MPS 2024.1 and fail with NoSuchMethodError.
+                attributes["id"] = file.name
                 +file.name
             }
             pre {
-                style = "border:1px solid white"
+                attributes["style"] = "border:1px solid white"
                 +file.text.let {
                     val limit = 100000
                     if (it.length > limit) {
