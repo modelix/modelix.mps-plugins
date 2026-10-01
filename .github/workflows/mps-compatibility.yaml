@@ -17,7 +17,8 @@ jobs:
       matrix:
         version:
           - "2024.1"
-          - "2024.3"
+          # mps-diff-plugin doesn't compile against MPS 2024.3 yet (VCS APIs moved to lib/modules)
+#          - "2024.3"
     steps:
       - uses: actions/checkout@v5
       - name: Set up JDK
