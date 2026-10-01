@@ -20,7 +20,7 @@ jobs:
           # mps-diff-plugin doesn't compile against MPS 2024.3 yet (VCS APIs moved to lib/modules)
 #          - "2024.3"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
