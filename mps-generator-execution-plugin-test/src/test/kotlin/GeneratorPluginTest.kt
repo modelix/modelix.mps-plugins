@@ -80,12 +80,13 @@ private fun GenericContainer<*>.withCopy(from: String, to: String): GenericConta
 
 /**
  * The plugin folder in the sandbox of the IntelliJ Platform Gradle Plugin, which contains the version of the platform
- * (e.g. build/idea-sandbox/MPS-2024.1/plugins/mps-generator-execution-plugin).
+ * (e.g. .intellijPlatform/sandbox/mps-generator-execution-plugin/MPS-2024.1.1/plugins/mps-generator-execution-plugin).
+ * If there are sandboxes for multiple versions, the most recently built one is used.
  */
 private fun sandboxPluginDir(pluginName: String): File {
-    val sandbox = File("../$pluginName/build/idea-sandbox")
+    val sandbox = File("../.intellijPlatform/sandbox/$pluginName")
     return sandbox.walk()
         .filter { it.isDirectory && it.name == pluginName && it.parentFile.name == "plugins" }
-        .maxByOrNull { it.lastModified() }
-        ?: error("Plugin $pluginName not found in $sandbox")
+        .maxByOrNull { dir -> dir.walk().filter { it.isFile }.maxOfOrNull { it.lastModified() } ?: 0L }
+        ?: error("Plugin $pluginName not found in ${sandbox.absolutePath}")
 }
