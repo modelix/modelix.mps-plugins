@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
 import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
-import org.modelix.copyMps
+import org.modelix.gradle.mpsplatform.copyMps
 
 buildscript {
     dependencies {
@@ -18,6 +18,8 @@ plugins {
     alias(coreLibs.plugins.kotlin.serialization) apply false
     alias(coreLibs.plugins.gitVersion)
     alias(coreLibs.plugins.node) apply false
+    alias(libs.plugins.modelix.mps.platform) apply false
+    alias(libs.plugins.modelix.mps.plugin) apply false
 }
 
 group = "org.modelix.mps"
@@ -52,15 +54,15 @@ subprojects {
 
     subproject.plugins.withType<JavaPlugin> {
         subproject.extensions.configure<JavaPluginExtension> {
-            sourceCompatibility = JavaVersion.VERSION_11
-            targetCompatibility = JavaVersion.VERSION_11
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
         }
     }
 
     subproject.plugins.withType<KotlinPluginWrapper> {
         subproject.extensions.configure<KotlinJvmProjectExtension> {
             compilerOptions {
-                jvmTarget.set(JvmTarget.JVM_11)
+                jvmTarget.set(JvmTarget.JVM_17)
             }
         }
     }

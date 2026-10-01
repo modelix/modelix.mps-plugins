@@ -1,10 +1,13 @@
 [bundles]
 
 [plugins]
+modelix-mps-platform = { id = "org.modelix.mps.platform", version.ref = "modelixBuildtools" }
+modelix-mps-plugin = { id = "org.modelix.mps.plugin", version.ref = "modelixBuildtools" }
 modelix-model-api-gen = { id = "org.modelix.model-api-gen", version.ref = "modelixCore" }
 npm-publish = { id = "dev.petuska.npm.publish", version = "3.5.3" }
 
 [versions]
+modelixBuildtools = "2.1.0"
 modelixCore = "15.5.2"
 kotlinCoroutines="1.10.2"
 ktor="3.4.0"

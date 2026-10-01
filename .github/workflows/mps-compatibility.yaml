@@ -16,14 +16,8 @@ jobs:
       fail-fast: false
       matrix:
         version:
-#          - "2020.3"
-          - "2021.1"
-          - "2021.2"
-          - "2021.3"
-          - "2022.2"
-          - "2022.3"
-          - "2023.2"
           - "2024.1"
+          # mps-diff-plugin doesn't compile against MPS 2024.3 yet (VCS APIs moved to lib/modules)
 #          - "2024.3"
     steps:
       - uses: actions/checkout@v5
