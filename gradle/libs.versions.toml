@@ -10,7 +10,7 @@ npm-publish = { id = "dev.petuska.npm.publish", version = "3.5.3" }
 modelixBuildtools = "2.1.0"
 modelixCore = "15.5.2"
 kotlinCoroutines="1.10.2"
-ktor="3.4.0"
+ktor="3.6.0"
 
 [libraries]
 modelix-model-api = { group = "org.modelix", name = "model-api", version.ref = "modelixCore" }
